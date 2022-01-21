@@ -1,0 +1,4 @@
+[submodule "CGMF"]
+	path = CGMF
+	url = git@github.com:beykyle/CGMF.git
+	branch = main
