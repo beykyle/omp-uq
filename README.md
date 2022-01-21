@@ -3,7 +3,7 @@ Uncertainty quantification of Koning-Delaroche global optical model parameters i
 
 # install
 
-First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html) the linked submodule verison of CMGF, for example:
+First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html#installing-cgmf) the linked submodule verison of CMGF, for example:
 
 ```
 cd CGMF
