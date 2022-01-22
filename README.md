@@ -1,5 +1,6 @@
 # omp-uq
-Uncertainty quantification of Koning-Delaroche global optical model parameters in fission fragment de-excitation
+
+Uncertainty quantification of fission and fission fragment de-excitation observables, due to model paramater uncertainty in the [Koning-Delaroche global optical model](https://www.sciencedirect.com/science/article/pii/S0375947402013210?casa_token=ADeCX1nO83AAAAAA:Xwa6DlMKYvVU0ygGxoD0C6bfFlG0UB9hrOHojDbv2dQ7zsZvd7hhlZzvDo1b1sVxOYzL90kj) for fragment neutron emission.
 
 # download 
 
