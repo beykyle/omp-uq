@@ -24,3 +24,8 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  ..
 make
 sudo make install
 ```
+
+# update CGMF
+```
+git submodule update --remote --recursive
+```
