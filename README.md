@@ -4,7 +4,7 @@ Uncertainty quantification of fission and fission fragment de-excitation observa
 
 This code takes in a covariance matrix of global optical model parameters, and performs UQ on a variety of fission observables and fragment-dexciation variables using a modified version of LANL's [CGMF](https://github.com/lanl/cgmf) fission event generator. The modified version used in this code lives [here](https://github.com/beykyle/cgmf), and is included as a git submodule.
 
-The meat of this code is the jupyter-notebook scripts in [analysis](https://github.com/beykyle/omp-uq/tree/main/analysis) that run CGMF and analyze histories.
+The meat of this code is the jupyter-notebook scripts in [analysis/](https://github.com/beykyle/omp-uq/tree/main/analysis) that run CGMF and analyze histories.
 
 # download 
 
