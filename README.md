@@ -20,7 +20,7 @@ First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html#inst
 cd CGMF
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
 make
 sudo make install
 ```
