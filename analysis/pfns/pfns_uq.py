@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import re
 import matplotlib.pyplot as plt
 from CGMFtk import histories as fh
 
@@ -26,8 +27,8 @@ nevents = int(1E4)
 nu  = []
 pnu = []
 
+
 for filename in os.scandir(data_dir):
-    #if filename.is_file() and "42" in filename.path:
     if filename.is_file():
         print(filename.path)
 
@@ -38,10 +39,9 @@ for filename in os.scandir(data_dir):
         os.system("rm histories.cgmf.*")
 
         # read histories
+        sample_number = str(re.findall(r'\d+', filename.name))
         hist = fh.Histories(workdir + histFile, nevents=nevents)
         n, p= hist.Pnu()
-        np.save("nu_" + filename.path[-7:-5] , n )
-        np.save("pnu_" + filename.path[-7:-5], p )
-
-
-
+        np.save("nu_"  + sample_number, n )
+        np.save("pnu_" + sample_number, p )
+        os.system("rm histories.out")
