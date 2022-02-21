@@ -18,15 +18,14 @@ mpl.rcParams['image.cmap'] = 'BuPu'
 
 data_dir  = "/home/beykyle/db/projects/OM/KDOMPuq/KDUQSamples"
 workdir   = './'
+outdir    = "./run2/"
 histFile  = 'histories.out'
 timeFile  = 'histories.out'
 yeildFile = 'yeilds.cgmf.0'
 
-nevents = int(1E4)
-
-nu  = []
-pnu = []
-
+nevents = int(1E2)
+nubars   = []
+nubars2 = []
 
 for filename in os.scandir(data_dir):
     if filename.is_file():
@@ -39,9 +38,24 @@ for filename in os.scandir(data_dir):
         os.system("rm histories.cgmf.*")
 
         # read histories
-        sample_number = str(re.findall(r'\d+', filename.name))
+        sample_number = str(re.findall(r'\d+', filename.name)[-1])
         hist = fh.Histories(workdir + histFile, nevents=nevents)
-        n, p= hist.Pnu()
-        np.save("nu_"  + sample_number, n )
-        np.save("pnu_" + sample_number, p )
-        os.system("rm histories.out")
+        nu, pnu    = hist.Pnu()
+        ebins,pfns = hist.pfns()
+        nubarA     = hist.nubarA()
+
+        nubar  = np.dot(nu,pnu)
+        nubar2 = np.sqrt(np.dot(pnu, (nu - nubar)**2))
+        nubars.append(nubar)
+        nubars2.append(nubar2)
+
+        np.save(outdir + "nu_"     + sample_number, nu )
+        np.save(outdir + "pnu_"    + sample_number, pnu )
+        np.save(outdir + "ebins_"  + sample_number, ebins )
+        np.save(outdir + "pfns_"   + sample_number, pfns )
+        np.save(outdir + "A_"      + sample_number, nubarA[0] )
+        np.save(outdir + "nuA_"    + sample_number, nubarA[1] )
+
+np.save("nubars"  , np.array(nubars))
+np.save("nubars2" , np.array(nubars2))
+os.system("rm histories.out")
