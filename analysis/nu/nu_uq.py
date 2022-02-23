@@ -18,44 +18,50 @@ mpl.rcParams['image.cmap'] = 'BuPu'
 
 data_dir  = "/home/beykyle/db/projects/OM/KDOMPuq/KDUQSamples"
 workdir   = './'
-outdir    = "./run2/"
+outdir    = "./run4/"
 histFile  = 'histories.out'
 timeFile  = 'histories.out'
 yeildFile = 'yeilds.cgmf.0'
 
-nevents = int(1E2)
+nevents = int(1E4)
 nubars   = []
 nubars2 = []
 
-for filename in os.scandir(data_dir):
-    if filename.is_file():
-        print(filename.path)
+for i in range(1,99):
+    # run CGMF
+    sample_number = str(i)
+    filename = data_dir + "/" + sample_number + ".json"
+    cmd = "time mpirun -np 8 --use-hwthread-cpus cgmf.mpi.x -t -1 -i 98252 -e 0.0 -n " + str(nevents) +  " -o " + str(filename)
+    os.system(cmd)
+    os.system("cat histories.cgmf.* > histories.out")
+    os.system("rm histories.cgmf.*")
 
-        # run CGMF
-        cmd = "mpirun -np 8 --use-hwthread-cpus cgmf.mpi.x -t -1 -i 98252 -e 0.0 -n " + str(nevents) +  " -o " + str(filename.path)
-        os.system(cmd)
-        os.system("cat histories.cgmf.* > histories.out")
-        os.system("rm histories.cgmf.*")
+    # read histories
+    hist = fh.Histories(workdir + histFile, nevents=nevents)
 
-        # read histories
-        sample_number = str(re.findall(r'\d+', filename.name)[-1])
-        hist = fh.Histories(workdir + histFile, nevents=nevents)
-        nu, pnu    = hist.Pnu()
-        ebins,pfns = hist.pfns()
-        nubarA     = hist.nubarA()
+    # save histories for sample
+    os.system("mv histories.out " + outdir + "/histories_" + sample_number + ".out" )
 
-        nubar  = np.dot(nu,pnu)
-        nubar2 = np.sqrt(np.dot(pnu, (nu - nubar)**2))
-        nubars.append(nubar)
-        nubars2.append(nubar2)
+    # extract some data from history files for immediate post-processing
+    nu          = hist.getNutot()
+    nubins, pnu = hist.Pnu()
+    ebins,pfns  = hist.pfns()
+    nubarA      = hist.nubarA()
 
-        np.save(outdir + "nu_"     + sample_number, nu )
-        np.save(outdir + "pnu_"    + sample_number, pnu )
-        np.save(outdir + "ebins_"  + sample_number, ebins )
-        np.save(outdir + "pfns_"   + sample_number, pfns )
-        np.save(outdir + "A_"      + sample_number, nubarA[0] )
-        np.save(outdir + "nuA_"    + sample_number, nubarA[1] )
+    nubar  = np.mean(nu)
+    nubar2 = np.sqrt(np.var(nu))
+    nubars.append(nubar)
+    nubars2.append(nubar2)
 
+    # save compressed post-processed distributions
+    np.save(outdir + "nu_"     + sample_number, nubins )
+    np.save(outdir + "pnu_"    + sample_number, pnu )
+    np.save(outdir + "ebins_"  + sample_number, ebins )
+    np.save(outdir + "pfns_"   + sample_number, pfns )
+    np.save(outdir + "A_"      + sample_number, nubarA[0] )
+    np.save(outdir + "nuA_"    + sample_number, nubarA[1] )
+
+# final saves and cleanup
 np.save("nubars"  , np.array(nubars))
 np.save("nubars2" , np.array(nubars2))
 os.system("rm histories.out")

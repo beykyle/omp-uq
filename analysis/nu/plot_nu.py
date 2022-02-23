@@ -6,6 +6,8 @@ from CGMFtk import histories as fh
 
 import matplotlib as mpl
 
+nubar_0 = 3.7506911764705886
+
 mpl.rcParams['font.size'] = 12
 mpl.rcParams['font.family'] = 'Helvetica','serif'
 mpl.rcParams['font.weight'] = 'normal'
@@ -17,37 +19,37 @@ mpl.rcParams['xtick.major.pad'] = '10'
 mpl.rcParams['ytick.major.pad'] = '10'
 mpl.rcParams['image.cmap'] = 'BuPu'
 
-data_dir  = "/home/beykyle/umich/omp-uq/analysis/nu/data"
+data_dir  = "/home/beykyle/umich/omp-uq/analysis/nu"
 workdir   = './'
 histFile  = 'histories.out'
 timeFile  = 'histories.out'
 yeildFile = 'yeilds.cgmf.0'
 nevents = int(1E4)
 
-nu = []
+nu_fname  = data_dir +  "/nubars.npy"
+nu2_fname  = data_dir +  "/nubars2.npy"
+n = np.load(nu_fname)
+n2 = np.load(nu2_fname)
 
-
-for i in [11,13,15,25,26,30,31,40,52,54,55,60,61,63,71,75,82,84,88,94]:
-    nu_fname  = data_dir +  "/nu_" + str(i) + ".npy"
-    pnu_fname = data_dir + "/pnu_" + str(i) + ".npy"
-    n = np.load(nu_fname)
-    p = np.load(pnu_fname)
-    plt.semilogy(n,p)
-    nubar = np.dot(n,p)
-    nu.append(nubar)
-
-plt.xlabel(r"$\nu$")
-plt.ylabel(r"$P(\nu)$")
-plt.show()
-#plt.savefig("pnu.pdf")
-
-
-plt.hist(100*(np.array(nu)-3.7676)/3.7676,bins=6)
-plt.xlabel(r"Percent relative deviation $\bar{\nu}$")
+#plt.plot([(3.7676-nubar_0)/nubar_0,(3.7676-nubar_0)/nubar_0],[0,100], "--", label="ENDF/B-VI.8")
+plt.hist(100*(np.array(n)-nubar_0)/nubar_0)
+plt.xlim(-1.2,1.2)
+plt.xlabel(r"$\Delta \bar{\nu} / \bar{\nu}$ [%]")
 plt.ylabel(r"frequency")
+plt.legend()
 plt.tight_layout()
 plt.savefig("pnubar.pdf")
+plt.close()
 
+plt.tight_layout()
+plt.hist(100*n2/nubar_0)
+plt.xlim(-1.2,1.2)
+plt.xlabel(r"$ \sigma_{\nu}} /\bar{\nu}_{ENDF}$ [%]")
+plt.ylabel(r"frequency")
+plt.tight_layout()
+plt.savefig("pnubar2.pdf")
+plt.close()
 
-print(np.mean(nu))
-print(np.sqrt(np.var(nu)))
+print(np.mean(n))
+print(np.mean(n2))
+print(np.sqrt(np.var(n)))

@@ -133,3 +133,9 @@ dmypy.json
 *.cgmf
 *.o
 *.[0-9]
+
+#numpy files
+*.npy
+
+#figures
+*.pdf
