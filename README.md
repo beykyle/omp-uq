@@ -23,6 +23,8 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
 make
 sudo make install
+cd ../tools/
+pip install . --user
 ```
 
 # update CGMF
