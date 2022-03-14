@@ -20,12 +20,12 @@ def run_ensemble(param_fname : Path, results_dir : Path,
         mpi_options = " --np " + str(cores)
 
     if slurm:
-        cmd = "srun "  + mpi_options + " cgmf.mpi.x " + options
+        cmd = "srun "  + mpi_options + " cgmf.mpi.x " + cgmf_options
     else:
-        cmd = "mpirun " + mpi_options + " cgmf.mpi.x " + options
+        cmd = "mpirun " + mpi_options + " cgmf.mpi.x " + cgmf_options
 
     # run CGMF and aggregate histories
-    result_fpath = str(results_dir / "histories_" + sample_name + ".o")
+    result_fpath = str(results_dir / ("histories_" + sample_name + ".o"))
     os.system(cmd)
     os.system("cat histories.cgmf.* > " + result_fpath)
     os.system("rm histories.cgmf.*")
@@ -77,3 +77,4 @@ def calculate_ensemble_nubar(sample_name : str, results_dir : Path):
     nu   = np.load(str(results_dir / ("nu_"     + sample_name + ".npy")))
     pnu  = np.load(str(results_dir / ("pnu_"    + sample_name + ".npy")))
     return np.dot(nu,pnu)
+
