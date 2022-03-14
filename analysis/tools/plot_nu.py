@@ -45,10 +45,12 @@ if __name__ == "__main__":
     if args.r:
         plt.hist(100*(np.array(n)-nubar_0)/nubar_0)
         plt.xlabel(r"$\Delta \bar{\nu} / \bar{\nu}$ [%]")
+        plt.xlim([-1.2,1.2])
     else:
         plt.hist(np.array(n))
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
 
+    plt.ylim([0,120])
     plt.ylabel(r"frequency")
     plt.legend()
     plt.tight_layout()
