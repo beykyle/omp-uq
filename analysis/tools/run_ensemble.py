@@ -39,7 +39,6 @@ def process_ensemble(results_dir : Path, sample_name : str, num_hist=None):
         hist = fh.Histories(result_fpath)
 
     # extract some data from history files for immediate post-processing
-    nu          = hist.getNutot()
     nubins, pnu = hist.Pnu()
     ebins,pfns  = hist.pfns()
     nubarA      = hist.nubarA()
@@ -51,6 +50,21 @@ def process_ensemble(results_dir : Path, sample_name : str, num_hist=None):
     np.save(str(results_dir / ("pfns_"   + sample_name)), pfns )
     np.save(str(results_dir / ("A_"      + sample_name)), nubarA[0] )
     np.save(str(results_dir / ("nuA_"    + sample_name)), nubarA[1] )
+
+def process_ensemble_corr(results_dir : Path, sample_name : str, num_hist=None):
+    result_fpath = str(results_dir / str("histories_" + sample_name + ".o"))
+    if num_hist != None:
+        hist = fh.Histories(result_fpath, nevents=num_hist)
+    else:
+        hist = fh.Histories(result_fpath)
+
+    # extract some data from history files for immediate post-processing
+    nug = hist.getNugtot()
+    nu  = hist.getNutot()
+
+    # save compressed post-processed distributions
+    np.save(str(results_dir / ("event_nu_p_"     + sample_name)), nug )
+    np.save(str(results_dir / ("event_nu_n_"     + sample_name)), nu )
 
 
 def run_and_process_ensemble(param_fname : Path, results_dir : Path,
