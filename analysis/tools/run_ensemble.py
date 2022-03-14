@@ -30,8 +30,13 @@ def run_ensemble(param_fname : Path, results_dir : Path,
     os.system("cat histories.cgmf.* > " + result_fpath)
     os.system("rm histories.cgmf.*")
 
-    # read histories
-    hist = fh.Histories(result_fpath, nevents=num_hist)
+
+def process_ensemble(results_dir : Path, sample_name : str, num_hist=None):
+    result_fpath = str(results_dir / str("histories_" + sample_name + ".o"))
+    if num_hist != None:
+        hist = fh.Histories(result_fpath, nevents=num_hist)
+    else:
+        hist = fh.Histories(result_fpath)
 
     # extract some data from history files for immediate post-processing
     nu          = hist.getNutot()
@@ -47,6 +52,12 @@ def run_ensemble(param_fname : Path, results_dir : Path,
     np.save(str(results_dir / ("A_"      + sample_name)), nubarA[0] )
     np.save(str(results_dir / ("nuA_"    + sample_name)), nubarA[1] )
 
+
+def run_and_process_ensemble(param_fname : Path, results_dir : Path,
+                             num_hist : int, zaid : int , energy_MeV : float,
+                             sample_name : str, slurm=False, cores=None):
+    run_ensemble(param_fname, results_dir, num_hist, zaid, energy_MeV, sample_name, slurm, cores)
+    process_ensemble(results_dir, sample_name, num_hist=num_hist)
 
 def calculate_ensemble_nubar(sample_name : str, results_dir : Path):
     nu   = np.load(str(results_dir / ("nu_"     + sample_name + ".npy")))
