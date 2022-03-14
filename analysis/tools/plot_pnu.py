@@ -20,8 +20,12 @@ def get_fact_moments(moments : np.array, nu : np.array, pnu : np.array):
     assert(nu.shape == pnu.shape)
     assert(np.sum(pnu) - 1.0 < 1E-10)
     fact_moments = np.zeros(moments.shape)
+    fall_fact = np.zeros(nu.shape)
     for i in range(0,len(moments)):
-        fact_moments[i] = np.dot(pnu,np.math.factorial(nu[i])/np.math.factorial(nu[i] - moments[i]))
+        for j in range(0,len(nu)):
+            if moments[i] <= nu[j]:
+                fall_fact[j] = np.math.factorial(nu[j])/np.math.factorial(nu[j] - moments[i])
+        fact_moments[i] = np.dot(pnu,fall_fact)
 
     return fact_moments
 
@@ -31,9 +35,9 @@ def normalize(arr : np.array):
 
 #data_dir  = "/home/beykyle/scratch/omp_uq/cf_252_sf/default/out_960kh_98s"
 labels = ["Cf-252 (sf)", "U-235 (nth,f)"]
-data_dir =  ["/home/beykyle/scratch/omp_uq/cf_252_sf/out_384kh_415s", "/home/beykyle/scratch/omp_uq/u235_nth_f/out_384kh_415s"]
+data_dir =  ["/home/beykyle/db/projects/OM/compressed_results/cf252/", "/home/beykyle/db/projects/OM/compressed_results/u235"]
 
-default_data_files =  ["/home/beykyle/scratch/omp_uq/cf_252_sf/default/out_960kh_98s/pnu_8.npy", "/home/beykyle/scratch/omp_uq/u235_nth_f/default/pnu.npy"]
+default_data_files =  ["/home/beykyle/db/projects/OM/compressed_default/cf252/pnu.npy", "/home/beykyle/db/projects/OM/compressed_default/u235/pnu.npy"]
 
 nplots = len(labels)
 nsamples = 415
@@ -43,16 +47,20 @@ bins    = np.array(range(0,nbins))
 moments = np.array(range(0,nmoments))
 
 fm        = np.zeros((nplots,nsamples,nmoments))
+fm_0      = np.zeros((nplots,nmoments))
+fm_mean   = np.zeros((nplots,nmoments))
+fm_stdev  = np.zeros((nplots,nmoments))
 pnu       = np.zeros((nplots,nsamples,nbins))
 pnu_mean  = np.zeros((nplots,nbins))
 pnu_stdev = np.zeros((nplots,nbins))
 
+# calculate observables and plot P(nu)
 for j in range(0,nplots):
     for i in range(1,nsamples):
         fname     = data_dir[j]  + "/pnu_" + str(i) + ".npy"
         pnu_d     = np.load(fname)
-        fm[j,i,:] = get_fact_moments(moments, bins, pnu_d)
         pnu[j,i,0:pnu_d.shape[0]] = pnu_d
+        fm[j,i,:] = get_fact_moments(moments, bins, pnu[j,i,:])
 
 
     for i in range(0,nbins):
@@ -63,8 +71,8 @@ for j in range(0,nplots):
     pnu_0  = np.zeros(nbins)
     pnu_0_tmp = np.load(default_data_files[j])
     pnu_0[0:pnu_0_tmp.shape[0]] = pnu_0_tmp
-    print(pnu_0)
-    print(pnu_mean[j])
+
+    fm_0[j,:] = get_fact_moments(moments, bins, pnu_0)
 
     #plt.errorbar(bins, 100*(pnu_mean[j] - pnu_0)/pnu_0,
     #             yerr=(100*pnu_stdev[j]/pnu_0), marker="*" , label=labels[j])
@@ -74,11 +82,34 @@ for j in range(0,nplots):
             label=labels[j] + " default", zorder=99, color=p1[0].get_color())
 
 #plt.ylabel(r'$\frac{\Delta P(\nu)}{P(\nu)}$ [%]')
-plt.xlim([0,9])
+plt.xlim([0,8])
 plt.ylabel(r"$P(\nu)$")
 plt.xlabel(r"$\nu$")
 plt.legend()
 plt.tight_layout()
-out_dir = "/home/beykyle/scratch/omp_uq/"
 plt.savefig("pnu.pdf")
 plt.savefig("pnu.png")
+plt.close()
+
+# plot factorial moments
+for j in range(0,nplots):
+    for i in range(0,nmoments):
+        fm_mean[j,i]  = np.mean(fm[j,:,i])
+        #pnu_stdev[i] = np.sqrt(np.var(p[:,i]) * 960/380 * 99/415)
+        fm_stdev[j,i] = np.sqrt(np.var(fm[j,:,i]) )
+
+    scaling = np.array([np.math.factorial(m) for m in moments])
+    p1 = plt.errorbar(moments, fm_mean[j,:]/scaling,
+                      yerr=fm_stdev[j,:]/scaling, label=labels[j], zorder=0)
+    plt.plot(moments, fm_0[j,:]/scaling, marker="." , linestyle="none", markersize=12,
+            label=labels[j] + " default", zorder=99, color=p1[0].get_color())
+
+plt.xlim([0,6])
+plt.ylabel(r"E$\left[ \frac{\nu !}{(\nu -m)!}\right] \frac{1}{m!}$")
+plt.xlabel(r"$m$")
+plt.legend()
+plt.tight_layout()
+#plt.show()
+plt.savefig("fm.pdf")
+plt.savefig("fm.png")
+plt.close()
