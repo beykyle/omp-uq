@@ -20,7 +20,7 @@ def run_ensemble(param_fname : Path, results_dir : Path,
         mpi_options = " --np " + str(cores)
 
     if slurm:
-        cmd = "srun "  + mpi_options + " cgmf.mpi.x " + cgmf_options
+        cmd = "mpirun "  + mpi_options + " cgmf.mpi.x " + cgmf_options
     else:
         cmd = "mpirun " + mpi_options + " cgmf.mpi.x " + cgmf_options
 

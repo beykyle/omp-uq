@@ -18,11 +18,9 @@ results_dir = Path("/home/beykyle/scratch/omp_uq/cf_252_sf/default/out_192kh_415
 zaid = 98252
 energy_MeV = 0.0
 
-# run 99 identical ensembles of default OMPs to compare MCHF
-# statistical uncertainty to OMP uncertainty
-for i in range(1,415):
+for i in range(287,416):
     sample_name = str(i)
-    run_ensemble.run_ensemble(param_fname, results_dir, nevents, zaid, energy_MeV, sample_name, slurm=True)
+    run_ensemble.run_ensemble(param_fname, results_dir, nevents, zaid, energy_MeV, sample_name)
     run_ensemble.process_ensemble(results_dir, sample_name)
     run_ensemble.process_ensemble_corr(results_dir, sample_name)
     np.save(results_dir / "nubars", np.array([run_ensemble.calculate_ensemble_nubar(sample_name, results_dir)]))
