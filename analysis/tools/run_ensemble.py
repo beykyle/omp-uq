@@ -8,19 +8,32 @@ Run CGMF on MPI with supplied options and OMPs read in from json file at path pa
 """
 def run_ensemble(param_fname : Path, results_dir : Path,
                  num_hist : int, zaid : int , energy_MeV : float,
-                 sample_name : str, slurm=False, cores=None):
+                 sample_name : str, slurm=False, cpus_per_node=1, nodes=1):
+
+    if slurm:
+        print("running {} histories, on {} CPUs".format(num_hist, nodes*cpus_per_node))
+        num_hist = num_hist / (nodes * cpus_per_node)
+
 
     cgmf_options = " -i " + str(zaid)         \
                  + " -e " + str(energy_MeV)   \
                  + " -n " + str(num_hist)     \
                  + " -o " + str(param_fname)
 
+    slurm_options = " --job-name " + sample_name                \
+                  + " --nodes=" + str(nodes)                    \
+                  + " --ntasks-per-node=" + str(cpus_per_node)  \
+                  + " --cpus-per-task=1"                        \
+                  + " --mem-per-cpu=1g"                         \
+                  + " --time=24:00:00"                          \
+                  + " --account=bckiedro0"                      \
+                  + " --partition=standard"                     \
+                  + " --mail-type=BEGIN,END,FAIL"
+
     mpi_options = ""
-    if cores != None:
-        mpi_options = " --np " + str(cores)
 
     if slurm:
-        cmd = "mpirun "  + mpi_options + " cgmf.mpi.x " + cgmf_options
+        cmd = "srun "  + slurm_options + " cgmf.mpi.x " + cgmf_options
     else:
         cmd = "mpirun " + mpi_options + " cgmf.mpi.x " + cgmf_options
 
