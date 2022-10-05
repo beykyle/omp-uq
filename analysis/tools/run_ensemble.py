@@ -1,4 +1,5 @@
 import os
+import math
 import numpy as np
 from pathlib import Path
 from CGMFtk import histories as fh
@@ -12,7 +13,8 @@ def run_ensemble(param_fname : Path, results_dir : Path,
 
     if slurm:
         print("running {} histories, on {} CPUs".format(num_hist, nodes*cpus_per_node))
-        num_hist = num_hist / (nodes * cpus_per_node)
+        num_hist = int(math.ceil(num_hist / (nodes * cpus_per_node)))
+        print("running {} histories / cpu".format(num_hist))
 
 
     cgmf_options = " -i " + str(zaid)         \
@@ -24,8 +26,8 @@ def run_ensemble(param_fname : Path, results_dir : Path,
                   + " --nodes=" + str(nodes)                    \
                   + " --ntasks-per-node=" + str(cpus_per_node)  \
                   + " --cpus-per-task=1"                        \
-                  + " --mem-per-cpu=1g"                         \
-                  + " --time=24:00:00"                          \
+                  + " --mem-per-cpu=5g"                         \
+                  + " --time=72:00:00"                          \
                   + " --account=bckiedro0"                      \
                   + " --partition=standard"                     \
                   + " --mail-type=BEGIN,END,FAIL"
