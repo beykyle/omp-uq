@@ -8,7 +8,7 @@ from omp_uq import run_ensemble
 # where are we putting the results
 res_dir = Path("/home/beykyle/scratch/aps/gook_comp/cgmf/histories")
 
-# optical model param file
+# optical model param file - use default params
 omp_fpath = Path("/home/beykyle/OM/KDOMPuq/KDGlobal.json")
 
 # 252Cf sf
