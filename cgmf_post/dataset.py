@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 
-class DataSet:
+class DataSetUQUncorr:
     def __init__(self, results_dir: Path, num_samples: int,
             num_hist: int, label : str, default_sample_name="", corr=False):
 

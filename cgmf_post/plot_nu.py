@@ -20,7 +20,7 @@ mpl.rcParams['ytick.major.pad'] = '10'
 mpl.rcParams['image.cmap'] = 'BuPu'
 
 
-from dataset import DataSet
+from dataset import DataSetUQUncorr
 
 def get_fact_moments(moments : np.array, nu : np.array, pnu : np.array):
     assert(nu.shape == pnu.shape)

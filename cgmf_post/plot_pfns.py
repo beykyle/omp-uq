@@ -21,9 +21,9 @@ mpl.rcParams['image.cmap'] = 'BuPu'
 def normalize(arr : np.array):
     return arr / np.sum(arr)
 
-from dataset import DataSet
+from dataset import DataSetUQUncorr
 
-def plot_pfns(d : DataSet, rel=True, save=True, outfile=""):
+def plot_pfns(d : DataSetUQUncorr, rel=True, save=True, outfile=""):
 
     fig, (ax1,ax2) = plt.subplots(2,1, sharex=True, gridspec_kw={'height_ratios':  [3,1]}, figsize=(8,6))
 

@@ -3,20 +3,15 @@ import numpy as np
 from pathlib import Path
 from matplotlib import pyplot as plt
 
-sys.path.append("/home/beykyle/umich/omp-uq/analysis/tools")
-
-from dataset import DataSet
-from plot_nu import plot_nubar, plot_pnu, plot_fm
-from plot_pfns import plot_pfns
-from plot_nu_corr import plot_nu_corr_dev
+from omp_uq import *
 
 #cf_252_datapath = Path(sys.argv[1])
 #u_235_datapath = Path(sys/argv[2])
 cf_252_datapath = Path("/home/beykyle/db/projects/OM/comp_res/cf252")
 u_235_datapath = Path("/home/beykyle/db/projects/OM/comp_res/u235")
 
-cf252 = DataSet(cf_252_datapath, 415, 192000, "252Cf (sf)", corr=True)
-u235  = DataSet(u_235_datapath, 415, 192000, "235U (nth,f)", corr=True)
+cf252 = DataSetUQUncorr(cf_252_datapath, 415, 192000, "252Cf (sf)", corr=True)
+u235  = DataSetUQUncorr(u_235_datapath, 415, 192000, "235U (nth,f)", corr=True)
 
 data_sets = [cf252, u235]
 

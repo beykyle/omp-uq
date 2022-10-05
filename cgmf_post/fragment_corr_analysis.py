@@ -4,9 +4,6 @@ from matplotlib import pyplot as plt
 from pathlib import Path
 from CGMFtk import histories as fh
 
-MAX_SF_N = 5
-MAX_SF_G = 7
-
 def to_zaid(a,z):
     return 1000*z + a
 

@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 
 # tools to run CGMF on MPI in a SLURM job and concatenate history files
-sys.path.append("/home/beykyle/omp-uq/analysis/tools")
-from run_ensemble import run_ensemble
+from omp_uq import run_ensemble
 
 # where are we putting the results
 res_dir = Path("/home/beykyle/scratch/aps/gook_comp/cgmf/histories")

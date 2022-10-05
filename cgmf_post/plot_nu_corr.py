@@ -9,7 +9,7 @@ from CGMFtk import histories as fh
 import matplotlib as mpl
 
 
-from dataset import DataSet
+from dataset import DataSetUQUncorr
 
 def plot_nu_corr_dev(d, save=False, rel=False, outfile=""):
     mpl.rcParams['font.size'] = 22
