@@ -14,7 +14,7 @@ matplotlib.rcParams['xtick.major.pad'] = '10'
 matplotlib.rcParams['ytick.major.pad'] = '10'
 matplotlib.rcParams['image.cmap'] = 'BuPu'
 
-from omp_uq import DataSetUQUncorr, plot_nubar, plot_pnu, plot_fm, plot_pfns
+from cgmf_post import DataSetUQUncorr, plot_nubar, plot_pnu, plot_fm, plot_pfns
 
 #cf_252_datapath = Path(sys.argv[1])
 #u_235_datapath = Path(sys/argv[2])
