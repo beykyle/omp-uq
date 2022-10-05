@@ -23,8 +23,13 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
 make
 sudo make install
-cd ../tools/
-pip install . --user
+pip install -e ./tools/ --user
+```
+
+Next, download and extract the [ENSDF files](https://www.nndc.bnl.gov/ensdfarchivals/) to a path pointed to by `$XDG_DATA_HOME/ensdf`, as described in the [Nudel documentation](https://github.com/op3/nudel#ensdf). Then, install:
+
+```
+pip install -e ./nudel --user
 ```
 
 # update CGMF
