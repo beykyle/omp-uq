@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from matplotlib import pyplot as plt
 
-from omp_uq import *
+from omp_uq import DataSetUQUncorr, plot_nubar, plot_pnu, plot_fm, plot_pfns
 
 #cf_252_datapath = Path(sys.argv[1])
 #u_235_datapath = Path(sys/argv[2])
@@ -42,13 +42,4 @@ plt.close()
 plot_pnu(data_sets, save=True, rel=True, outfile="./pnu.png")
 plt.close()
 plot_fm(data_sets, save=True, rel=True, outfile="./fm.png")
-plt.close()
-
-plot_nu_corr_dev(cf252, save=True, outfile="./plot_nu_corr_dev_cf252.pdf")
-plt.close()
-plot_nu_corr_dev(u235, save=True, outfile="./plot_nu_corr_dev_u235.pdf")
-plt.close()
-plot_nu_corr_dev(cf252, save=True, outfile="./plot_nu_corr_dev_cf252.png")
-plt.close()
-plot_nu_corr_dev(u235, save=True, outfile="./plot_nu_corr_dev_u235.png")
 plt.close()

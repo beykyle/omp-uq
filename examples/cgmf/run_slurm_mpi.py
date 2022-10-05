@@ -16,7 +16,7 @@ target_zaid = 98252 # 252Cf
 e_inc = 0.0
 
 # run num_hist total histories, dividing evenly across SLURM resources
-num_hist = int(96E4)
+num_hist = int(96E2)
 cpus_per_node    = int(os.environ["SLURM_TASKS_PER_NODE"].split("(")[0])
 nodes            = int(os.environ["SLURM_NNODES"])
 num_hist_per_cpu = int(num_hist / (nodes * cpus_per_node))
