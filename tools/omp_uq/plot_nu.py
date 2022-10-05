@@ -6,19 +6,6 @@ import argparse
 import matplotlib.pyplot as plt
 from CGMFtk import histories as fh
 
-import matplotlib as mpl
-
-mpl.rcParams['font.size'] = 12
-mpl.rcParams['font.family'] = 'Helvetica','serif'
-mpl.rcParams['font.weight'] = 'normal'
-mpl.rcParams['axes.labelsize'] = 18.
-mpl.rcParams['xtick.labelsize'] = 18.
-mpl.rcParams['ytick.labelsize'] = 18.
-mpl.rcParams['lines.linewidth'] = 2.
-mpl.rcParams['xtick.major.pad'] = '10'
-mpl.rcParams['ytick.major.pad'] = '10'
-mpl.rcParams['image.cmap'] = 'BuPu'
-
 from .dataset import DataSetUQUncorr
 
 def get_fact_moments(moments : np.array, nu : np.array, pnu : np.array):

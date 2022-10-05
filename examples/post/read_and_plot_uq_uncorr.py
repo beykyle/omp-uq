@@ -3,6 +3,17 @@ import numpy as np
 from pathlib import Path
 from matplotlib import pyplot as plt
 
+matplotlib.rcParams['font.size'] = 12
+matplotlib.rcParams['font.family'] = 'Helvetica','serif'
+matplotlib.rcParams['font.weight'] = 'normal'
+matplotlib.rcParams['axes.labelsize'] = 18.
+matplotlib.rcParams['xtick.labelsize'] = 18.
+matplotlib.rcParams['ytick.labelsize'] = 18.
+matplotlib.rcParams['lines.linewidth'] = 2.
+matplotlib.rcParams['xtick.major.pad'] = '10'
+matplotlib.rcParams['ytick.major.pad'] = '10'
+matplotlib.rcParams['image.cmap'] = 'BuPu'
+
 from omp_uq import DataSetUQUncorr, plot_nubar, plot_pnu, plot_fm, plot_pfns
 
 #cf_252_datapath = Path(sys.argv[1])

@@ -6,18 +6,6 @@ from CGMFtk import histories as fh
 
 import matplotlib as mpl
 
-mpl.rcParams['font.size'] = 12
-mpl.rcParams['font.family'] = 'Helvetica','serif'
-mpl.rcParams['font.weight'] = 'normal'
-mpl.rcParams['axes.labelsize'] = 18.
-mpl.rcParams['xtick.labelsize'] = 18.
-mpl.rcParams['ytick.labelsize'] = 18.
-mpl.rcParams['lines.linewidth'] = 2.
-mpl.rcParams['xtick.major.pad'] = '10'
-mpl.rcParams['ytick.major.pad'] = '10'
-mpl.rcParams['image.cmap'] = 'BuPu'
-
-
 def normalize(arr : np.array):
     return arr / np.sum(arr)
 

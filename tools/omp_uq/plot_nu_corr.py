@@ -11,17 +11,6 @@ import matplotlib as mpl
 from .dataset import DataSetUQUncorr
 
 def plot_nu_corr_dev(d, save=False, rel=False, outfile=""):
-    mpl.rcParams['font.size'] = 22
-    mpl.rcParams['font.family'] = 'Helvetica','serif'
-    mpl.rcParams['font.weight'] = 'normal'
-    mpl.rcParams['axes.labelsize'] = 24.
-    mpl.rcParams['xtick.labelsize'] = 22.
-    mpl.rcParams['ytick.labelsize'] = 22.
-    mpl.rcParams['lines.linewidth'] = 2.
-    mpl.rcParams['xtick.major.pad'] = '10'
-    mpl.rcParams['ytick.major.pad'] = '10'
-    mpl.rcParams['image.cmap'] = 'BuPu'
-
     hist_shape = (21,8)
     bins = [np.arange(0,hist_shape[0],step=1,dtype=int),
             np.arange(0,hist_shape[1],step=1,dtype=int)]

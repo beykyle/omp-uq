@@ -8,8 +8,8 @@ def to_zaid(a,z):
     return 1000*z + a
 
 def from_zaid(zaid):
-    z = zaid/1000
-    a = zaid%1000
+    z = int(zaid//1000)
+    a = int(zaid%1000)
     return a,z
 
 class NucHistories:
@@ -83,6 +83,17 @@ def extract( history_list: list , analysis ):
     return result
 
 if __name__ == "__main__":
+    mpl.rcParams['font.size'] = 12
+    mpl.rcParams['font.family'] = 'Helvetica','serif'
+    mpl.rcParams['font.weight'] = 'normal'
+    mpl.rcParams['axes.labelsize'] = 18.
+    mpl.rcParams['xtick.labelsize'] = 18.
+    mpl.rcParams['ytick.labelsize'] = 18.
+    mpl.rcParams['lines.linewidth'] = 2.
+    mpl.rcParams['xtick.major.pad'] = '10'
+    mpl.rcParams['ytick.major.pad'] = '10'
+    mpl.rcParams['image.cmap'] = 'BuPu'
+
     hist = fh.Histories(sys.argv[1])
     nhist = len(hist.getFissionHistories())
     print("Fragment histories: {}".format(nhist))
@@ -92,12 +103,14 @@ if __name__ == "__main__":
     hist_by_frag = sortHistoriesByFragment(hist)
     A, xe_hists_by_A = selectElement(54, hist_by_frag) # Xe isotopes
 
-    mean_n1_energy_xe = extract( xe_hists_by_A,
-            lambda hists : np.mean( np.array([h[0] for h in hists.ne])) )
+    print(A)
+    mean_nu_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nu)), dtype=float)
+    mean_nug_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nug)), dtype=float)
+
 
     plt.plot(A, mean_n1_energy_xe)
     plt.xlabel("A [u]")
-    plt.ylabel(r"E_{n1} [MeV]")
+    plt.ylabel(r"$\nu$ [particles]")
     plt.show()
 
     hist_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
