@@ -10,4 +10,5 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=BEGIN,END,FAIL
 
-python3 run_def.py
+python3 run_slurm_mpi.py
+
