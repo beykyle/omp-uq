@@ -32,7 +32,16 @@ Next, download and extract the [ENSDF files](https://www.nndc.bnl.gov/ensdfarchi
 pip install -e ./nudel --user
 ```
 
-# update CGMF
+Finally, install all the packages in `./tools`:
+
+```
+pip install -e ./tools --user
+```
+
+Now these packages can be used to run CGMF, analyze the results, and perform UQ! To see how this works, check out the files in `examples/`
+
+
+# to update the dependencies:
 ```
 git submodule update --remote --recursive
 ```
