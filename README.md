@@ -9,6 +9,8 @@ The meat of this code is the python modules in [tools/](https://github.com/beyky
 # dependencies
 Aside from the aforementioned submodules, this workflow is set up to run CGMF with MPI using [mpirun](https://www.open-mpi.org/doc/current/man1/mpirun.1.php). That means it should be compiled with an MPI implementation, as shown below. For heavy UQ, you'll definitely want to use MPI!
 
+Additionally, a fairly standard suite of Python packages is used. A catch-all environment, like [Anaconda](anaconda.com) should cover everything.
+
 # download 
 
 ```
