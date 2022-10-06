@@ -32,7 +32,7 @@ def run_ensemble(param_fname : Path, results_dir : Path,
                   + " --partition=standard"                     \
                   + " --mail-type=BEGIN,END,FAIL"
 
-    mpi_options = ""
+    mpi_options = "--bind-to core" # we want to run a proces on each core
 
     if slurm:
         cmd = "srun "  + slurm_options + " cgmf.mpi.x " + cgmf_options

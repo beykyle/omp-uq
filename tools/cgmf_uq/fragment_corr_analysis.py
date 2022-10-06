@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 from pathlib import Path
 from CGMFtk import histories as fh
@@ -83,16 +84,17 @@ def extract( history_list: list , analysis ):
     return result
 
 if __name__ == "__main__":
-    mpl.rcParams['font.size'] = 12
-    mpl.rcParams['font.family'] = 'Helvetica','serif'
-    mpl.rcParams['font.weight'] = 'normal'
-    mpl.rcParams['axes.labelsize'] = 18.
-    mpl.rcParams['xtick.labelsize'] = 18.
-    mpl.rcParams['ytick.labelsize'] = 18.
-    mpl.rcParams['lines.linewidth'] = 2.
-    mpl.rcParams['xtick.major.pad'] = '10'
-    mpl.rcParams['ytick.major.pad'] = '10'
-    mpl.rcParams['image.cmap'] = 'BuPu'
+
+    matplotlib.rcParams['font.size'] = 12
+    matplotlib.rcParams['font.family'] = 'Helvetica','serif'
+    matplotlib.rcParams['font.weight'] = 'normal'
+    matplotlib.rcParams['axes.labelsize'] = 18.
+    matplotlib.rcParams['xtick.labelsize'] = 18.
+    matplotlib.rcParams['ytick.labelsize'] = 18.
+    matplotlib.rcParams['lines.linewidth'] = 2.
+    matplotlib.rcParams['xtick.major.pad'] = '10'
+    matplotlib.rcParams['ytick.major.pad'] = '10'
+    matplotlib.rcParams['image.cmap'] = 'BuPu'
 
     hist = fh.Histories(sys.argv[1])
     nhist = len(hist.getFissionHistories())
@@ -104,13 +106,15 @@ if __name__ == "__main__":
     A, xe_hists_by_A = selectElement(54, hist_by_frag) # Xe isotopes
 
     print(A)
-    mean_nu_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nu)), dtype=float)
-    mean_nug_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nug)), dtype=float)
+    mean_nu_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nu))), dtype=float)
+    mean_nug_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nug))), dtype=float)
 
-
-    plt.plot(A, mean_n1_energy_xe)
-    plt.xlabel("A [u]")
-    plt.ylabel(r"$\nu$ [particles]")
+    plt.scatter(A, mean_nu_frag, label="n")
+    plt.scatter(A, mean_nug_frag, label=r"$\gamma$")
+    plt.xlabel("Xe-A [u]")
+    plt.ylabel(r"Single Fragment Multiplicity")
+    plt.legend()
+    plt.tight_layout()
     plt.show()
 
     hist_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
