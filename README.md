@@ -6,6 +6,11 @@ This code takes in a covariance matrix or distribution of global optical model p
 
 The meat of this code is the python modules in [tools/](https://github.com/beykyle/omp-uq/tree/main/tools/) that run CGMF and analyze histories.
 
+# dependencies
+Aside from the aforementioned submodules, this workflow is set up to run CGMF with MPI using [mpirun](https://www.open-mpi.org/doc/current/man1/mpirun.1.php). That means it should be compiled with an MPI implementation, as shown below. For heavy UQ, you'll definitely want to use MPI!
+
+Additionally, a fairly standard suite of Python packages is used. A catch-all environment, like [Anaconda](anaconda.com) should cover everything.
+
 # download 
 
 ```
@@ -17,12 +22,13 @@ git clone --recurse-submodules git@github.com:beykyle/omp-uq.git
 First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html#installing-cgmf) the linked submodule verison of CMGF, for example:
 
 ```
-cd CGMF
-mkdir build
-cd build
+mkdir CGMF/build
+cd CGMF/build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
 make
+make test
 sudo make install
+cd ../..
 pip install -e ./tools/ --user
 ```
 
