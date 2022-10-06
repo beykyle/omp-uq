@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from pathlib import Path
 
-from cgmf_post import calculate_ensemble_nubar
+from cgmf_uq import calculate_ensemble_nubar
 
 results_dir = Path(sys.argv[1])
 nubars = []
