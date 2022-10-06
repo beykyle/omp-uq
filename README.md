@@ -22,12 +22,13 @@ git clone --recurse-submodules git@github.com:beykyle/omp-uq.git
 First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html#installing-cgmf) the linked submodule verison of CMGF, for example:
 
 ```
-cd CGMF
-mkdir build
-cd build
+mkdir CGMF/build
+cd CGMF/build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
 make
+make test
 sudo make install
+cd ../..
 pip install -e ./tools/ --user
 ```
 
