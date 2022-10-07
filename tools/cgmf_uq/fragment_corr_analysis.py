@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import matplotlib
+from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 from pathlib import Path
 from CGMFtk import histories as fh
@@ -14,7 +15,8 @@ def from_zaid(zaid):
     return a,z
 
 class NucHistories:
-    def __init__(self):
+    def __init__(self, zaid):
+        self.a, self.z = from_zaid(zaid)
         self.nu  = []
         self.nug = []
         self.ne  = []
@@ -32,7 +34,11 @@ def sortHistoriesByFragment( hist ):
             nuc_histories[zaid].ne.append(ne)
             nuc_histories[zaid].ge.append(ge)
         else:
-            nuc_histories[zaid] = NucHistories()
+            nuc_histories[zaid] = NucHistories(zaid)
+            nuc_histories[zaid].nu.append(nu)
+            nuc_histories[zaid].nug.append(nug)
+            nuc_histories[zaid].ne.append(ne)
+            nuc_histories[zaid].ge.append(ge)
 
     return nuc_histories
 
@@ -50,6 +56,10 @@ def sortHistoriesByFragmentMass( hist , post_emission=False):
             nuc_histories[a].ge.append(ge)
         else:
             nuc_histories[a] = NucHistories()
+            nuc_histories[a].nu.append(nu)
+            nuc_histories[a].nug.append(nug)
+            nuc_histories[a].ne.append(ne)
+            nuc_histories[a].ge.append(ge)
 
     return nuc_histories
 
@@ -65,23 +75,56 @@ def sortHistoriesByFragmentCharge( hist ):
             nuc_histories[z].ge.append(ge)
         else:
             nuc_histories[z] = NucHistories()
+            nuc_histories[a].nu.append(nu)
+            nuc_histories[a].nug.append(nug)
+            nuc_histories[a].ne.append(ne)
+            nuc_histories[a].ge.append(ge)
 
     return nuc_histories
 
-def selectElement(Z, nuc_histories):
+def selectElement(Z, nuc_histories, min_hists=0):
     A = []
     for zaid in nuc_histories.keys():
         a,z  = from_zaid(zaid)
-        if z == Z:
+        if z == Z and len(nuc_histories[zaid].nu) > min_hists:
             A.append(a)
 
-    return A, [ nuc_histories[to_zaid(a,Z)] for a in A ]
+    hists = [ nuc_histories[to_zaid(a,Z)] for a in A ]
+    zipped = zip(A, hists)
+    sz = sorted(zipped)
+    return zip(*sz)
 
 def extract( history_list: list , analysis ):
     result = []
     for h in history_list:
         result.append(analysis(h))
     return result
+
+def plot_element_multiplicity(Z, hist_by_frag, label=None, save=False, min_hists=0):
+    # look at 1st neutron energy isotope by isotope
+    A, Z_hists_by_A = selectElement(Z, hist_by_frag, min_hists=min_hists) # Z isotopes
+    print(A)
+    if len(A) == 0:
+        return
+
+    print(label)
+
+    mean_nu_frag = np.array(extract( Z_hists_by_A,
+        lambda hists : np.mean(np.array(hists.nu))), dtype=float)
+    stdev_nu_frag = np.array(extract( Z_hists_by_A,
+        lambda hists : np.sqrt(np.var(np.array(hists.nu)))), dtype=float)
+
+    alpha = [ (a-2*Z)/a for a in A ]
+
+    plt.errorbar(A, mean_nu_frag, yerr=stdev_nu_frag, linestyle="None")
+    plt.scatter(A, mean_nu_frag, marker=".", label=label)
+
+
+def plot_sf_mult_dist(hist, save=False, title=None):
+    nu_bins = range(0,np.max(hist.nu))
+    nug_bins = range(0,np.max(hist.nug))
+    n, b , _ = plt.hist(hist.nu, bins=nu_bins, label="n")
+
 
 if __name__ == "__main__":
 
@@ -100,22 +143,47 @@ if __name__ == "__main__":
     nhist = len(hist.getFissionHistories())
     print("Fragment histories: {}".format(nhist))
 
+    hist_by_nuc = sortHistoriesByFragment(hist)
 
-    # look at 1st neutron energy isotope by isotope
-    hist_by_frag = sortHistoriesByFragment(hist)
-    A, xe_hists_by_A = selectElement(54, hist_by_frag) # Xe isotopes
+    #xe142 = 54142
+    #xe142_hists = hist_by_nuc[xe142]
+    #plot_sf_mult_dist(xe142_hists, save=True)
+    #print("142Xe Histories: {}".format(len(xe142_hists.nu)))
 
-    print(A)
-    mean_nu_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nu))), dtype=float)
-    mean_nug_frag = np.array(extract( xe_hists_by_A, lambda hists : np.mean(np.array(hists.nug))), dtype=float)
+    #for Z in range(33,63):
+    #   plot_element_multiplicity(Z, hist_by_nuc, save=True, min_hists=500)
+    elements = ["Zr", "Nb", "Mo", "Tc"]
+    for i, Z in enumerate([40, 41, 42, 43]):
+        plot_element_multiplicity(Z, hist_by_nuc, save=False, min_hists=1000, label=elements[i])
 
-    plt.scatter(A, mean_nu_frag, label="n")
-    plt.scatter(A, mean_nug_frag, label=r"$\gamma$")
-    plt.xlabel("Xe-A [u]")
+    plt.xlabel("A [u]")
     plt.ylabel(r"Single Fragment Multiplicity")
-    plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.legend()
+    plt.savefig("AL_mult_sf.png")
+    plt.close()
 
-    hist_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
-    A, hists_by_A = zip(*hist_by_frag_mass.items())
+    elements = ["I", "Xe", "Ce" , "Ba"]
+    for i, Z in enumerate([53, 54, 55, 56]):
+        plot_element_multiplicity(Z, hist_by_nuc, save=False, min_hists=1000, label=elements[i])
+
+    plt.xlabel("A [u]")
+    plt.ylabel(r"Single Fragment Multiplicity")
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig("AH_mult_sf.png")
+    plt.close()
+
+    elements = ["Pd", "Ag", "Sn", "Sb"]
+    for i, Z in enumerate([46, 47, 50, 51]):
+        plot_element_multiplicity(Z, hist_by_nuc, save=False, min_hists=1000, label=elements[i])
+
+    plt.xlabel("A [u]")
+    plt.ylabel(r"Single Fragment Multiplicity")
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig("AMiddle_mult_sf.png")
+    plt.close()
+
+    #hist_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
+    #A, hists_by_A = zip(*hist_by_frag_mass.items())
