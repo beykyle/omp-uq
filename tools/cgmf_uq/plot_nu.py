@@ -11,12 +11,13 @@ from .dataset import DataSetUQUncorr
 def get_fact_moments(moments : np.array, nu : np.array, pnu : np.array):
     assert(nu.shape == pnu.shape)
     assert(np.sum(pnu) - 1.0 < 1E-10)
+    nu = np.array(nu, dtype=int)
     fact_moments = np.zeros(moments.shape)
     fall_fact = np.zeros(nu.shape)
     for i in range(0,len(moments)):
         for j in range(0,len(nu)):
             if moments[i] <= nu[j]:
-                fall_fact[j] = np.math.factorial(nu[j])/np.math.factorial(nu[j] - moments[i])
+                fall_fact[j] = np.math.factorial(int(nu[j]))/np.math.factorial(int(nu[j]) - int(moments[i]))
         fact_moments[i] = np.dot(pnu,fall_fact)
 
     return fact_moments
@@ -96,7 +97,7 @@ def plot_fm(data_sets, save=False, rel=False, outfile=""):
     alphas = np.linspace(0.9,0.5,num=num_plots)
 
     nmoments = 7
-    moments = np.array(range(0,nmoments))
+    moments = np.array(range(0,nmoments), dtype=int)
     zo = 1
 
     for i, d in enumerate(data_sets):
