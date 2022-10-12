@@ -48,6 +48,7 @@ def run_ensemble(param_fname : Path, results_dir : Path,
 
 def process_ensemble(results_dir : Path, out_dir : Path, sample_name : str,  num_hist=None):
     result_fpath = str(results_dir / str("histories_" + sample_name + ".o"))
+    print("Processing {}".format(result_fpath))
     if num_hist != None:
         hist = fh.Histories(result_fpath, nevents=num_hist)
     else:
