@@ -125,33 +125,7 @@ def plot_sf_mult_dist(hist, save=False, title=None):
     nug_bins = range(0,np.max(hist.nug))
     n, b , _ = plt.hist(hist.nu, bins=nu_bins, label="n")
 
-
-if __name__ == "__main__":
-
-    matplotlib.rcParams['font.size'] = 12
-    matplotlib.rcParams['font.family'] = 'Helvetica','serif'
-    matplotlib.rcParams['font.weight'] = 'normal'
-    matplotlib.rcParams['axes.labelsize'] = 18.
-    matplotlib.rcParams['xtick.labelsize'] = 18.
-    matplotlib.rcParams['ytick.labelsize'] = 18.
-    matplotlib.rcParams['lines.linewidth'] = 2.
-    matplotlib.rcParams['xtick.major.pad'] = '10'
-    matplotlib.rcParams['ytick.major.pad'] = '10'
-    matplotlib.rcParams['image.cmap'] = 'BuPu'
-
-    hist = fh.Histories(sys.argv[1])
-    nhist = len(hist.getFissionHistories())
-    print("Fragment histories: {}".format(nhist))
-
-    hist_by_nuc = sortHistoriesByFragment(hist)
-
-    #xe142 = 54142
-    #xe142_hists = hist_by_nuc[xe142]
-    #plot_sf_mult_dist(xe142_hists, save=True)
-    #print("142Xe Histories: {}".format(len(xe142_hists.nu)))
-
-    #for Z in range(33,63):
-    #   plot_element_multiplicity(Z, hist_by_nuc, save=True, min_hists=500)
+def compare_fragment_mult(hist_by_nuc):
     elements = ["Zr", "Nb", "Mo", "Tc"]
     for i, Z in enumerate([40, 41, 42, 43]):
         plot_element_multiplicity(Z, hist_by_nuc, save=False, min_hists=1000, label=elements[i])
@@ -185,5 +159,32 @@ if __name__ == "__main__":
     plt.savefig("AMiddle_mult_sf.png")
     plt.close()
 
+if __name__ == "__main__":
+
+    matplotlib.rcParams['font.size'] = 12
+    matplotlib.rcParams['font.family'] = 'Helvetica','serif'
+    matplotlib.rcParams['font.weight'] = 'normal'
+    matplotlib.rcParams['axes.labelsize'] = 18.
+    matplotlib.rcParams['xtick.labelsize'] = 18.
+    matplotlib.rcParams['ytick.labelsize'] = 18.
+    matplotlib.rcParams['lines.linewidth'] = 2.
+    matplotlib.rcParams['xtick.major.pad'] = '10'
+    matplotlib.rcParams['ytick.major.pad'] = '10'
+    matplotlib.rcParams['image.cmap'] = 'BuPu'
+
+    hist = fh.Histories(sys.argv[1])
+    nhist = len(hist.getFissionHistories())
+    print("Fragment histories: {}".format(nhist))
+
+    hist_by_nuc = sortHistoriesByFragment(hist)
+
+    #xe142 = 54142
+    #xe142_hists = hist_by_nuc[xe142]
+    #plot_sf_mult_dist(xe142_hists, save=True)
+    #print("142Xe Histories: {}".format(len(xe142_hists.nu)))
+
+    #for Z in range(33,63):
+    #   plot_element_multiplicity(Z, hist_by_nuc, save=True, min_hists=500)
+
     #hist_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
-    #A, hists_by_A = zip(*hist_by_frag_mass.items())
+    A, hists_by_A = zip(*hist_by_frag_mass.items())
