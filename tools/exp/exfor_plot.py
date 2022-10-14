@@ -122,4 +122,3 @@ if __name__ == "__main__":
 
     for A in range(87,150):
         plot_comp(A, maxwell_norm=True)
-
