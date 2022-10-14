@@ -8,6 +8,21 @@ from CGMFtk import histories as fh
 from exp import maxwellian
 import pandas as pd
 
+class AMETable:
+    def __init__(self):
+        self.data_path = Path(__file__).parent.parent.parent / "data"
+        self.df = pd.read_csv(  self.data_path / "AME" / "mass_nuc.txt", delim_whitespace=True, index_col=False)
+        self.df['EL'] = self.df['EL'].astype('string')
+
+    def select_row(self, zaid):
+        a,z = from_zaid(zaid)
+        mask = (self.df['A'] == a) & (self.df['Z'] == z)
+        return self.df.loc[ mask ]
+
+    def element_name(self, zaid):
+        row = self.select_row(zaid)
+        return row["EL"].to_string().split()[1]
+
 def to_zaid(a,z):
     return 1000*z + a
 
@@ -222,18 +237,40 @@ def writePFNSA(out_fname, A, hists_by_A, num_ebins=20):
 
     np.save(out_fname, data)
 
-def plotEn1ByNuc(hist, zaids):
+def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
     hists_by_nuc = sortHistoriesByFragment(hist)
+    edges   = np.arange(8.0, step=0.4)
+    centers = (edges[:1] + edges[1:])*0.5
+
+    if zaid_normalize:
+        el_name = str(ame_table.element_name(zaid_normalize))
+        an,zn = from_zaid(zaid_normalize)
+        label_norm=f'$^{ {an} }${el_name}'
+
+        hist_norm, _ = np.histogram(
+                hists_by_nuc[zaid_normalize].getNeutronEnergies(order=0),
+                bins=edges
+                )
 
     for zaid in zaids:
-        hist, edges  = np.histogram(hists_by_nuc[zaid].getNeutronEnergies(order=0), bins=15)
-        centers      = (edges[:1] + edges[1:])*0.5
-        hist         = hist/np.trapz(hist, x=centers)
-        maxwell_spec = maxwellian(centers, 1.)
-        maxwell_spec = maxwell_spec/ np.trapz(maxwell_spec, x=centers)
-        plt.step(centers, hist / maxwell_spec, label=zaid)
+        el_name = str(ame_table.element_name(zaid))
+        a,z = from_zaid(zaid)
+        label=f'$^{ {a} }${el_name}'
+        hist, _  = np.histogram(
+                hists_by_nuc[zaid].getNeutronEnergies(order=0),
+                bins=edges
+                )
+        if zaid_normalize:
+            plt.step(centers, hist / hist_norm, label=label)
+        else:
+            hist = hist/np.trapz(hist, x=centers)
+            plt.step(centers, hist, label=zaid)
 
-    plt.xlabel(r" $E_{n,1}$ [Mev]")
+    y_lab_str = r'$p(E_1 | A,Z)$'
+    if zaid_normalize:
+        y_lab_str = r'$p(E_1 | A,Z)/ p(E_1 | {}, {})$ '.format(an,zn)
+    plt.ylabel(y_lab_str)
+    plt.yscale("log")
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -252,6 +289,7 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.major.pad'] = '10'
     matplotlib.rcParams['image.cmap'] = 'BuPu'
 
+
     hist = fh.Histories(sys.argv[1])
     nhist = len(hist.getFissionHistories())
     print("Fragment histories: {}".format(nhist))
@@ -260,6 +298,9 @@ if __name__ == "__main__":
     A, hists_by_A = zip(*hists_by_frag_mass.items())
     writePFNSA("cgmf_252cf_kddef_pfns_a.npy", A, hists_by_A)
 
+    # read atomic mass and binding energies
+    ame_table = AMETable()
+
     # 1st energy from Xenon isotopes
-    plotEn1ByNuc(hist, [54136, 54138, 54140, 54142])
+    plotEn1ByNuc(hist, [56143, 56144, 56145, 56146], ame_table, zaid_normalize=None)
 
