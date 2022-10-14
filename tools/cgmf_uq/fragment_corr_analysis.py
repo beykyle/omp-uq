@@ -226,13 +226,12 @@ def writePFNSA(out_fname, A, hists_by_A, num_ebins=20):
     i = 0
     for mass, hist in zip(A, hists_by_A):
         energies = hist.getNeutronEnergies()
-        hist, edges = np.histogram(energies, bins=num_ebins)
+        counts, edges = np.histogram(energies, bins=num_ebins)
         centers  = (edges[1:] + edges[:1])*0.5
         data[0,i:i+num_ebins] = int(mass)
         data[1,i:i+num_ebins] = centers
-        data[2,i:i+num_ebins] = hist
+        data[2,i:i+num_ebins] = counts
 
-        #TODO statistical error
         i+= (num_ebins -1)
 
     np.save(out_fname, data)
