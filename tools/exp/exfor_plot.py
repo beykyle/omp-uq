@@ -116,9 +116,9 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.major.pad'] = '10'
     matplotlib.rcParams['image.cmap'] = 'BuPu'
 
-    read_exfor_alt_2npy("CMspectra_vs_mass_U235.txt", "235_U_PFNS_A.npy")
-    read_exfor_alt_2npy("CMspectra_vs_mass_Pu239.txt", "239_Pu_PFNS_A.npy")
-    read_exfor_2npy("CMspectra_vs_mass_Cf252.txt", "252_Cf_PFNS_A.npy")
+    read_exfor_alt_2npy("data/exfor/CMspectra_vs_mass_U235.txt", "235_U_PFNS_A.npy")
+    read_exfor_alt_2npy("data/exfor/CMspectra_vs_mass_Pu239.txt", "239_Pu_PFNS_A.npy")
+    read_exfor_2npy("data/exfor/CMspectra_vs_mass_Cf252.txt", "252_Cf_PFNS_A.npy")
 
     for A in range(87,150):
         plot_comp(A, maxwell_norm=True)
