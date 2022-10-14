@@ -2,8 +2,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+from pathlib import Path
 import matplotlib
 from matplotlib import pyplot as plt
+
+data_path = (Path(__file__).parent.parent.parent / "data").absolute()
+
 
 def maxwellian(ebins : np.array, Eavg : float):
     return 2*np.sqrt(ebins / np.pi) * (1 / Eavg)**(3./2.) * np.exp(- ebins / Eavg )
@@ -32,11 +36,11 @@ def read_exfor_alt_2npy(fname, out):
                 newlines.append(A + " " + l )
 
 
-    with open(fname + ".e" , "w") as f:
+    with open(str(fname) + ".e" , "w") as f:
         f.writelines(newlines)
         f.close()
-    read_exfor_2npy(fname +".e" , out)
-    os.remove(fname + ".e")
+    read_exfor_2npy( str(fname) +".e" , out)
+    os.remove(str(fname) + ".e")
 
 
 class PFNS_A:
@@ -72,28 +76,21 @@ def normalize_spec_err(ebins : np.array, spec : np.array, err : np.array, maxwel
         return spec / maxw_spec , err / maxw_spec
 
 
-def plot_comp(A : int, maxwell_norm=False):
-    cf252_fragments_pfns = PFNS_A("252_Cf_PFNS_A.npy")
-    u235_fragments_pfns = PFNS_A("235_U_PFNS_A.npy")
-    pu239_fragments_pfns = PFNS_A("239_Pu_PFNS_A.npy")
+def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
 
-    ebins_cf = cf252_fragments_pfns.getEbins()
-    ebins_u  = pu239_fragments_pfns.getEbins()
-    ebins_pu = u235_fragments_pfns.getEbins()
+    ebins = [ d.getEbins() for d in datasets]
+    pfns = []
+    err = []
 
-    pfns_cf, err_cf = normalize_spec_err(
-            ebins_cf, *(cf252_fragments_pfns.getPFNS(A)), maxwell_norm=maxwell_norm, kT=1.42)
-    pfns_u , err_u  = normalize_spec_err(
-            ebins_u, *(u235_fragments_pfns.getPFNS(A)), maxwell_norm=maxwell_norm, kT=1.42)
-    pfns_pu, err_pu = normalize_spec_err(
-            ebins_pu, *(pu239_fragments_pfns.getPFNS(A)), maxwell_norm=maxwell_norm, kT=1.42)
+    for i , d in enumerate(datasets):
+        pfns_d, err_d = normalize_spec_err(
+            ebins[i], *(d.getPFNS(A)), maxwell_norm=maxwell_norm, kT=1.42)
+        err.append(err_d)
+        pfns.append(pfns_d)
 
-    plt.errorbar(ebins_cf, pfns_cf, yerr=err_cf, label=r"$^{252}$Cf (sf)")
-    plt.errorbar(ebins_u, pfns_u, yerr=err_u, label=r"$^{235}$U (nth,f)")
-    #plt.errorbar(ebins_pu, pfns_pu, yerr=err_pu, label=r"$^{239}$Pu (nth,f)")
+        plt.errorbar(ebins[i], pfns_d, yerr=err_d, label=labels[i])
 
     plt.xlim([0,7])
-    #plt.ylim([0,2.25])
     plt.yscale("log")
     plt.xlabel("E [MeV]")
     plt.legend()
@@ -104,7 +101,10 @@ def plot_comp(A : int, maxwell_norm=False):
     plt.tight_layout()
     plt.show()
 
+    return ebins, pfns, err
+
 if __name__ == "__main__":
+
     matplotlib.rcParams['font.size'] = 12
     matplotlib.rcParams['font.family'] = 'Helvetica','serif'
     matplotlib.rcParams['font.weight'] = 'normal'
@@ -116,9 +116,28 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.major.pad'] = '10'
     matplotlib.rcParams['image.cmap'] = 'BuPu'
 
-    read_exfor_alt_2npy("data/exfor/CMspectra_vs_mass_U235.txt", "235_U_PFNS_A.npy")
-    read_exfor_alt_2npy("data/exfor/CMspectra_vs_mass_Pu239.txt", "239_Pu_PFNS_A.npy")
-    read_exfor_2npy("data/exfor/CMspectra_vs_mass_Cf252.txt", "252_Cf_PFNS_A.npy")
 
-    for A in range(87,150):
-        plot_comp(A, maxwell_norm=True)
+    read_exfor_alt_2npy(data_path / "exfor/CMspectra_vs_mass_U235.txt", "235_U_PFNS_A.npy")
+    read_exfor_alt_2npy(data_path / "exfor/CMspectra_vs_mass_Pu239.txt", "239_Pu_PFNS_A.npy")
+    read_exfor_2npy(data_path /  "exfor/CMspectra_vs_mass_Cf252.txt", "252_Cf_PFNS_A.npy")
+
+    datasets =  [
+            PFNS_A("252_Cf_PFNS_A.npy") ,
+            PFNS_A("235_U_PFNS_A.npy")   ,
+            PFNS_A("239_Pu_PFNS_A.npy") ,
+    ]
+
+    labels = [
+            r"$^{252}$Cf (sf)",
+            r"$^{235}$U (nth,f)",
+            r"$^{239}$Pu (nth,f)",
+            ]
+
+    # light
+    for A in [105, 107, 110 , 113]:
+        plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+
+    # heavy
+    for A in [134, 137, 140 , 142, 145]:
+        plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+
