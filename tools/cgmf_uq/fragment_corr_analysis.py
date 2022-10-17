@@ -263,7 +263,7 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
             plt.step(centers, hist / hist_norm, label=label)
         else:
             hist = hist/np.trapz(hist, x=centers)
-            plt.step(centers, hist, label=zaid)
+            plt.step(centers, hist, label=label)
 
     y_lab_str = r'$p(E_1 | A,Z)$'
     if zaid_normalize:
@@ -288,7 +288,6 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.major.pad'] = '10'
     matplotlib.rcParams['image.cmap'] = 'BuPu'
 
-
     hist = fh.Histories(sys.argv[1])
     nhist = len(hist.getFissionHistories())
     print("Fragment histories: {}".format(nhist))
@@ -301,5 +300,4 @@ if __name__ == "__main__":
     ame_table = AMETable()
 
     # 1st energy from Xenon isotopes
-    plotEn1ByNuc(hist, [56143, 56144, 56145, 56146], ame_table, zaid_normalize=None)
-
+    plotEn1ByNuc(hist, [56142, 56143, 54144, 54145, 54146], ame_table, zaid_normalize=56141)
