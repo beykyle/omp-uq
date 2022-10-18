@@ -153,7 +153,8 @@ def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
     return ebins, pfns, err
 
 def plotSpecRatio( numerators, denominators, ebins, label_num, label_denom, labels, rel_diff=False):
-    pfns = []
+
+    fig = plt.figure()
 
     for i , numer in enumerate(numerators):
         denom = denominators[i].interp(ebins)
@@ -171,13 +172,11 @@ def plotSpecRatio( numerators, denominators, ebins, label_num, label_denom, labe
     plt.legend()
     if rel_diff:
         plt.ylabel(r"$ \frac{P_{%s}(E|A) - P_{%s}(E|A)}{P_{%s}(E|A)}$"
-                %(label_num, label_num, labels_denom))
+                %(label_num, label_num, label_denom))
     else:
         plt.ylabel(r"$ \frac{P_{%s}(E|A)}{P_{%s}(E|A)}$" %(label_num, label_denom))
-    plt.tight_layout()
-    plt.show()
 
-    return pfns
+    return fig
 
 def plotSpecRatio3D(
         numerators, denominators, ebins, label_num, label_denom, y_vals, y_label, rel_diff=False):
