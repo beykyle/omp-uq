@@ -252,6 +252,7 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
                 hists_by_nuc[zaid_normalize].getNeutronEnergies(order=0),
                 bins=edges
                 )
+        err_norm = np.sqrt(hist_norm - hist_norm**2/np.sum(hist_norm))
 
     for zaid in zaids:
         el_name = str(ame_table.element_name(zaid))
@@ -261,11 +262,15 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
                 hists_by_nuc[zaid].getNeutronEnergies(order=0),
                 bins=edges
                 )
+        err = np.sqrt(hist - hist**2/np.sum(hist))
         if zaid_normalize:
-            plt.step(centers, hist / hist_norm, label=label)
+            yerr= np.sqrt(err*2 / hist_norm**2 + hist**2/hist_norm**4 * err_norm**2 )
+            plt.yerr(centers, hist / hist_norm, yerr=yerr, label=label)
         else:
-            hist = hist/np.trapz(hist, x=centers)
-            plt.step(centers, hist, label=label)
+            norm = np.trapz(hist, x=centers)
+            hist = hist/ norm
+            err = err/norm
+            plt.yerr(centers, hiist, yerr=err, label=label)
 
     y_lab_str = r'$p(E_1 | A,Z)$'
     if zaid_normalize:
