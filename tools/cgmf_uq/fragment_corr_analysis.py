@@ -228,9 +228,11 @@ def writePFNSA(out_fname, A, hists_by_A, num_ebins=20):
         energies = hist.getNeutronEnergies()
         counts, edges = np.histogram(energies, bins=num_ebins)
         centers  = (edges[1:] + edges[:1])*0.5
+        total_counts = np.sum(counts)
         data[0,i:i+num_ebins] = int(mass)
         data[1,i:i+num_ebins] = centers
         data[2,i:i+num_ebins] = counts
+        data[3,i:i+num_ebins] = sqrt(counts - counts**2/total_counts)
 
         i+= (num_ebins -1)
 
