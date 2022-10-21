@@ -160,11 +160,9 @@ def extract( history_list: list , analysis ):
 def plot_element_multiplicity(Z, hists_by_frag, label=None, save=False, min_hists=0):
     # look at 1st neutron energy isotope by isotope
     A, Z_hists_by_A = selectElement(Z, hists_by_frag, min_hists=min_hists) # Z isotopes
-    print(A)
     if len(A) == 0:
         return
 
-    print(label)
 
     mean_nu_frag = np.array(extract( Z_hists_by_A,
         lambda hists : np.mean(np.array(hists.nu))), dtype=float)
@@ -252,7 +250,9 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
                 hists_by_nuc[zaid_normalize].getNeutronEnergies(order=0),
                 bins=edges
                 )
-        err_norm = np.sqrt(hist_norm - hist_norm**2/np.sum(hist_norm))
+        norm = np.sum(hist_norm)
+        err_norm = np.sqrt(hist_norm - hist_norm**2/np.sum(hist_norm)) / norm
+        hist_norm = hist_norm / norm
 
     for zaid in zaids:
         el_name = str(ame_table.element_name(zaid))
@@ -262,7 +262,9 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
                 hists_by_nuc[zaid].getNeutronEnergies(order=0),
                 bins=edges
                 )
-        err = np.sqrt(hist - hist**2/np.sum(hist))
+        norm = np.sum(hist)
+        err = np.sqrt(hist - hist**2/np.sum(hist)) / norm
+        hist = hist / norm
         if zaid_normalize:
             yerr= np.sqrt(err*2 / hist_norm**2 + hist**2/hist_norm**4 * err_norm**2 )
             plt.yerr(centers, hist / hist_norm, yerr=yerr, label=label)
@@ -307,4 +309,4 @@ if __name__ == "__main__":
     ame_table = AMETable()
 
     # 1st energy from Xenon isotopes
-    plotEn1ByNuc(hist, [56142, 56143, 54144, 54145, 54146], ame_table, zaid_normalize=56141)
+    plotEn1ByNuc(hist, [56141, 56142, 56143, 54144, 54145, 54146], ame_table, zaid_normalize=None)
