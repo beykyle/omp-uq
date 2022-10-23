@@ -1,4 +1,4 @@
-from exp import PFNS_A, plotCompPFNS, plotSpecRatio, plotSpecRatio3D, plotSpecRatioColor, Spec, hardness
+from exp import PFNS_A, plotCompPFNS, plotSpecRatio, plotSpecRatio3D, plotSpecRatioColor, Spec, getMeanShiftErr, getHardnessAboveMaxwell
 import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
@@ -70,73 +70,7 @@ def mass_dep_plots(cf252_A_pfns_cgmf, cf252_A_pfns_gook, masses, masses_odd, mas
     plt.savefig("PFNS_A_cgmf_vs_gook.pdf")
     plt.close()
 
-    mean_ratio = np.zeros(masses.shape)
-
-    for i , cgmf in enumerate(specs_cgmf):
-        gook = specs_gook[i]
-        me = hardness(cgmf,gook, ebins, rel=True)
-        mean_ratio[i] = me
-
-    mean_ratio_even = mean_ratio[ np.where( masses % 2 ==0 )]
-    mean_ratio_odd = mean_ratio[ np.where( masses % 2 != 0 )]
-
-    plt.xlabel(r"$A$ [u]")
-    plt.ylabel(r"$\frac{\bar{E}_{CGMF} - \bar{E}_{GOOK}}{\bar{E}_{GOOK}}$ [%]")
-    plt.plot(masses_even, mean_ratio_even, label=r"$A$ even")
-    plt.plot(masses_odd, mean_ratio_odd, label=r"$A$ odd")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig("mean_E_A_cgmf_vs_gook.pdf")
-    plt.close()
-
     interesting_masses(cf252_A_pfns_cgmf, cf252_A_pfns_gook, ebins)
-
-def getMeanShiftErr(masses, pfns, pfns_ref, label, label_ref):
-    ebins = np.arange(0.3, 6., step=0.2)
-
-    # common interpolate and normalize
-    specs  = [ (s.interp(ebins)).normalize() for s in  pfns.getSpecs(masses)     ]
-    specsr = [ (s.interp(ebins)).normalize() for s in  pfns_ref.getSpecs(masses) ]
-
-
-    mean   = np.array([ s.mean() for s in  specs  ])
-    meanr  = np.array([ s.mean() for s in  specsr ])
-
-    var    = np.array([ np.sqrt(s.variance()) for s in  specs  ])
-    varr   = np.array([ np.sqrt(s.variance()) for s in  specsr ])
-
-    dmean  = np.array([ np.sqrt(s.var_in_mean()) for s in  specs])
-    dmeanr = np.array([ np.sqrt(s.var_in_mean()) for s in  specsr ])
-
-    fig = plt.figure()
-
-    #plt.errorbar(masses, mean , yerr=dmean, label=label)
-    #plt.errorbar(masses, meanr, yerr=dmeanr, label=label_ref)
-
-    p1 = plt.plot(masses, mean, label=label)
-    #plt.fill_between( masses, mean - dmean/2, mean + dmean/2, color=p1[0].get_color(), alpha=0.4)
-    p2 = plt.plot(masses, meanr, label=label_ref)
-    #plt.fill_between( masses, meanr - dmeanr/2, meanr + dmeanr/2, color=p2[0].get_color(), alpha=0.4)
-
-    plt.fill_between( masses, mean - var/2, mean + var/2, color=p1[0].get_color(), alpha=0.4)
-    plt.fill_between( masses, meanr - varr/2, meanr + varr/2, color=p2[0].get_color(), alpha=0.4)
-
-    plt.legend()
-    plt.xlabel(r"$A$ [u]")
-    plt.ylabel(r"$\langle E \rangle$ [MeV]")
-    plt.tight_layout()
-
-    return fig, mean, meanr, dmean, dmeanr
-
-def getHardnessAboveMaxwell(masses, pfns):
-    ebins = np.arange(0.4, 5., step=0.2)
-
-    # common interpolate and normalize
-    specs  = [ s.interp(ebins) for s in  pfns.getSpecs(masses)]
-
-    #TODO
-
-
 
 def plotIndividual(masses,cgmf, gooK):
     datasets = [cf252_A_pfns_cgmf_kd, cf252_A_pfns_gook]
@@ -168,13 +102,27 @@ if __name__ == "__main__":
     cf252_A_pfns_gook = PFNS_A("/home/beykyle/umich/omp-uq/data/exfor/252_Cf_PFNS_A.npy")
     cf252_A_pfns_cgmf_kd  = PFNS_A("./cgmf_252cf_kddef_pfns_a.npy")
 
+    #plotIndividual([89, 102, 125, 150],cf252_A_pfns_cgmf_kd, cf252_A_pfns_gook)
+
     masses = np.array(range(85, 165), dtype=int)
     mask = np.array( [ cf252_A_pfns_cgmf_kd.getSpecs([A])[0].norm() > 1000 for A in masses ] )
     masses = masses[np.where(mask)]
-    masses_odd  = np.array(range(86, 164,2), dtype=int)
-    masses_even = np.array(range(85, 165,2), dtype=int)
 
-    fig, _, _, _, _, = getMeanShiftErr(
-            masses, cf252_A_pfns_cgmf_kd, cf252_A_pfns_gook, "CGMF+KD", "GOOK")
-    plt.show()
+    ebins = np.arange(2., 6.0, step=0.2)
+    cgmf_hardness, cgmf_err = getHardnessAboveMaxwell(masses, cf252_A_pfns_cgmf_kd, ebins)
+    gook_hardness, gook_err = getHardnessAboveMaxwell(masses, cf252_A_pfns_gook, ebins)
+
+    plt.errorbar(masses, gook_hardness,
+            yerr=gook_err, xerr=4, linestyle="None", label="Gook")
+    plt.errorbar(masses, cgmf_hardness,
+            yerr=cgmf_err, linestyle="None", label="CGMF+KD", marker=".")
+    plt.xlabel(r"$A$ [u]")
+    plt.ylabel(r"$\int_{2 MeV}^{6 MeV} P(E|A) / M(E,kT) dE$ ")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("hardness.pdf")
+
+
+
+
 
