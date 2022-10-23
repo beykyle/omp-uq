@@ -172,8 +172,9 @@ def integrateOverMaxwell(spec, kT):
     maxwell = maxwellian(ebins, kT)
     nm = np.trapz(maxwell,x=ebins)
     maxwell = maxwell/nm
-    metric     = np.trapz( spec.spec/maxwell ,x=ebins)
-    var_metric = np.trapz( spec.err**2/maxwell**2   ,x=ebins)
+    norm = np.trapz(np.ones(maxwell.shape),x=ebins)
+    metric     = np.trapz( spec.spec/maxwell ,x=ebins)/norm
+    var_metric = np.trapz( spec.err**2/maxwell**2   ,x=ebins) / norm
 
     return metric, np.sqrt(var_metric)
 
