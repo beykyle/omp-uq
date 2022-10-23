@@ -129,22 +129,67 @@ def normalize_spec_err(ebins : np.array, spec : np.array, err : np.array, maxwel
         return spec / maxw_spec , err / maxw_spec
 
 
-def hardness(spec, ref_spec, ebins, rel=False):
-    spec = spec.interp(ebins)
-    ref_spec = ref_spec.interp(ebins)
+def getMeanShiftErr(masses, pfns, pfns_ref, label, label_ref):
+    ebins = np.arange(0.3, 6., step=0.2)
 
+    # common interpolate and normalize
+    specs  = [ (s.interp(ebins)).normalize() for s in  pfns.getSpecs(masses)     ]
+    specsr = [ (s.interp(ebins)).normalize() for s in  pfns_ref.getSpecs(masses) ]
+
+
+    mean   = np.array([ s.mean() for s in  specs  ])
+    meanr  = np.array([ s.mean() for s in  specsr ])
+
+    var    = np.array([ np.sqrt(s.variance()) for s in  specs  ])
+    varr   = np.array([ np.sqrt(s.variance()) for s in  specsr ])
+
+    dmean  = np.array([ np.sqrt(s.var_in_mean()) for s in  specs])
+    dmeanr = np.array([ np.sqrt(s.var_in_mean()) for s in  specsr ])
+
+    fig = plt.figure()
+
+    #plt.errorbar(masses, mean , yerr=dmean, label=label)
+    #plt.errorbar(masses, meanr, yerr=dmeanr, label=label_ref)
+
+    p1 = plt.plot(masses, mean, label=label)
+    #plt.fill_between( masses, mean - dmean/2, mean + dmean/2, color=p1[0].get_color(), alpha=0.4)
+    p2 = plt.plot(masses, meanr, label=label_ref)
+    #plt.fill_between( masses, meanr - dmeanr/2, meanr + dmeanr/2, color=p2[0].get_color(), alpha=0.4)
+
+    plt.fill_between( masses, mean - var/2, mean + var/2, color=p1[0].get_color(), alpha=0.4)
+    plt.fill_between( masses, meanr - varr/2, meanr + varr/2, color=p2[0].get_color(), alpha=0.4)
+
+    plt.legend()
+    plt.xlabel(r"$A$ [u]")
+    plt.ylabel(r"$\langle E \rangle$ [MeV]")
+    plt.tight_layout()
+
+    return fig, mean, meanr, dmean, dmeanr
+
+def integrateOverMaxwell(spec, kT):
     spec = spec.normalize()
-    ref_spec = ref_spec.normalize()
+    ebins = spec.bins
+    maxwell = maxwellian(ebins, kT)
+    nm = np.trapz(maxwell,x=ebins)
+    maxwell = maxwell/nm
+    metric     = np.trapz( spec.spec/maxwell ,x=ebins)
+    var_metric = np.trapz( spec.err**2/maxwell**2   ,x=ebins)
 
-    mean = np.trapz(spec.spec * ebins, x=ebins)
-    ref_mean = np.trapz(ref_spec.spec * ebins, x=ebins)
+    return metric, np.sqrt(var_metric)
 
-    if not rel:
-        mean_ratio = mean / ref_mean
-    else:
-        mean_ratio = 100* (mean - ref_mean) / ref_mean
 
-    return mean_ratio
+def getHardnessAboveMaxwell(masses, pfns, ebins):
+
+    # common interpolate and normalize
+    specs  = [ s.interp(ebins).normalize() for s in  pfns.getSpecs(masses)]
+    hard = np.zeros((len(masses),2))
+    for i in range(0,len(masses)):
+        h,e = integrateOverMaxwell(specs[i], 1.42)
+        hard[i,0] = h
+        hard[i,1] = e
+
+    return hard[:,0], hard[:,1]
+
 
 def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
 
