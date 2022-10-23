@@ -43,6 +43,7 @@ class Spec :
         self.err = err
         self.bins = bins
         self.centers = 0.5*(self.bins[1:] + self.bins[:1])
+        norm = np.trapz(self.spec, x=self.bins)
 
     def interp(self, bins):
         spec = np.interp(bins, self.bins, self.spec)
@@ -56,6 +57,26 @@ class Spec :
     def normalize(self):
         norm = self.norm()
         return Spec(self.spec / norm, self.err / norm, self.bins)
+
+    def mean(self):
+        m0 = np.trapz(self.spec, x=self.bins)
+        m1 = np.trapz(self.spec * self.bins, x=self.bins)
+        e1 = np.trapz(self.spec * self.bins, x=self.bins)
+
+        return m1/m0
+
+    def variance(self):
+        mean   = self.mean()
+        var_un = np.trapz(self.spec * (self.bins - mean)**2, x=self.bins)
+        return var_un
+
+    def var_in_mean(self):
+        # https://stats.stackexchange.com/a/454266
+        var   = self.variance()
+        num   = np.trapz(self.spec / (var + self.err**2), x=self.bins)
+        denom = np.trapz(self.spec / (var + self.err**2)**2, x=self.bins)
+
+        return num/denom
 
 def maxwellian(ebins : np.array, Eavg : float):
     return 2*np.sqrt(ebins / np.pi) * (1 / Eavg)**(3./2.) * np.exp(- ebins / Eavg )
@@ -127,6 +148,8 @@ def hardness(spec, ref_spec, ebins, rel=False):
 
 def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
 
+    fig = plt.figure()
+
     ebins = [ d.getEbins() for d in datasets]
     pfns = []
     err = []
@@ -139,7 +162,6 @@ def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
 
         plt.errorbar(ebins[i], pfns_d, yerr=err_d, label=labels[i])
 
-    plt.xlim([0,7])
     plt.yscale("log")
     plt.xlabel("E [MeV]")
     plt.legend()
@@ -147,10 +169,10 @@ def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
         plt.ylabel(r"$P(E | A = {})$ [A.U.]".format(A))
     else:
         plt.ylabel(r"$P(E | A = {}) / M(E, kT)$".format(A))
-    plt.tight_layout()
-    plt.show()
+        bounds = [min([np.min(e) for e in ebins]), max([np.max(e) for e in ebins])]
+        plt.plot(bounds, [1,1], "--" )
 
-    return ebins, pfns, err
+    return fig, ebins, pfns, err
 
 def plotSpecRatio( numerators, denominators, ebins, label_num, label_denom, labels, rel_diff=False):
 
@@ -280,7 +302,9 @@ def compareExforExample():
     # light
     for A in [105, 107, 110 , 113]:
         plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+        plt.show()
 
     # heavy
     for A in [134, 137, 140 , 142, 145]:
         plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+        plt.show()
