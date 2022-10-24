@@ -1,1 +1,1 @@
-from .sampleMVFromMCMC import sampleMVFromMCMC
+from .sample_omparams import *
