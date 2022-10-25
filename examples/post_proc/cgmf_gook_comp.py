@@ -1,4 +1,4 @@
-from exp import PFNS_A, plotCompPFNS, plotSpecRatio, plotSpecRatio3D, plotSpecRatioColor, Spec, getMeanShiftErr, getHardnessAboveMaxwell
+from exp import PFNS_A, plotCompPFNS, plotSpecRatio, plotSpecRatio3D, plotSpecRatioColor, Spec, getMeanShiftErr, getHardnessAboveMaxwell, read_exfor_2npy
 import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
@@ -73,42 +73,41 @@ def mass_dep_plots(cf252_A_pfns_cgmf, cf252_A_pfns_gook, masses, masses_odd, mas
     interesting_masses(cf252_A_pfns_cgmf, cf252_A_pfns_gook, ebins)
 
 def plotIndividual(masses,cgmf, gooK):
-    datasets = [cf252_A_pfns_cgmf_kd, cf252_A_pfns_gook]
-    labels   = ["CGMF+KD", "Gook"]
+    labels   = ["Gook", "CGMF+KD"]
 
-    ratio=True
-    if not ratio:
-        for A in masses:
-            fig, _, _, _ = plotCompPFNS(A, datasets, labels, maxwell_norm=False)
-            plt.xlim([0,5])
-            plt.ylim([0.5*1E-2, 1E0])
-            #plt.ylim([0.5*1E-1, 0.21*1E1])
-            #plt.yscale("linear")
-            plt.tight_layout()
-            plt.show()
-
-    else:
-        for A in masses:
-            fig, _, _, _ = plotCompPFNS(A, datasets, labels, maxwell_norm=True)
-            plt.xlim([0,5])
-            plt.ylim([0.5*1E-1, 0.21*1E1])
-            plt.yscale("linear")
-            plt.tight_layout()
-            plt.show()
+    for i, A in enumerate(masses):
+        datasets = [gook[i], cgmf[i]]
+        fig, _, _, _ = plotCompPFNS(A, datasets, labels)
+        plt.xlim([0,7.5])
+        plt.ylim([1E-4,2])
+        plt.yscale("log")
+        plt.tight_layout()
+        #plt.show()
+        plt.savefig("cgmf_gook_pfns_a_{}.pdf".format(A))
+        plt.close()
 
 
 if __name__ == "__main__":
-    # read in spectra
-    cf252_A_pfns_gook = PFNS_A("/home/beykyle/umich/omp-uq/data/exfor/252_Cf_PFNS_A.npy")
+
+    # read in Gook spectra as exfor, save as npy
+    read_exfor_2npy(
+            "/home/beykyle/umich/omp-uq/data/exfor/CMspectra_vs_mass_Cf252.txt",
+            "./252_Cf_PFNS_A.npy"
+            )
+
+    # read in CGMF and gook spectra as numpy
+    cf252_A_pfns_gook     = PFNS_A("./252_Cf_PFNS_A.npy")
     cf252_A_pfns_cgmf_kd  = PFNS_A("./cgmf_252cf_kddef_pfns_a.npy")
 
-    #plotIndividual([89, 102, 125, 150],cf252_A_pfns_cgmf_kd, cf252_A_pfns_gook)
 
     masses = np.array(range(85, 165), dtype=int)
-    mask = np.array( [ cf252_A_pfns_cgmf_kd.getSpecs([A])[0].norm() > 1000 for A in masses ] )
-    masses = masses[np.where(mask)]
 
-    ebins = np.arange(2., 6.0, step=0.2)
+    cgmf = [c.normalize() for c in cf252_A_pfns_cgmf_kd.getSpecs(masses)]
+    gook = [g.normalize() for g in cf252_A_pfns_gook.getSpecs(masses)]
+
+    plotIndividual(masses, cgmf, gook)
+
+    ebins = np.arange(2.0, 6.0, step=0.1)
     cgmf_hardness, cgmf_err = getHardnessAboveMaxwell(masses, cf252_A_pfns_cgmf_kd, ebins)
     gook_hardness, gook_err = getHardnessAboveMaxwell(masses, cf252_A_pfns_gook, ebins)
 
@@ -117,12 +116,7 @@ if __name__ == "__main__":
     plt.errorbar(masses, cgmf_hardness,
             yerr=cgmf_err, linestyle="None", label="CGMF+KD", marker=".")
     plt.xlabel(r"$A$ [u]")
-    plt.ylabel(r"$\int_{2 MeV}^{6 MeV} P(E|A) / M(E,kT) dE$ ")
+    plt.ylabel(r"$\int_{2}^{6} P(E|A) / M(E,kT=1.42) dE$ ")
     plt.legend()
     plt.tight_layout()
     plt.savefig("hardness.pdf")
-
-
-
-
-
