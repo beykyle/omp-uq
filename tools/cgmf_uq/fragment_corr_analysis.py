@@ -230,7 +230,7 @@ def writePFNSA(out_fname, A, hists_by_A, num_ebins=20):
         data[0,i:i+num_ebins] = int(mass)
         data[1,i:i+num_ebins] = centers
         data[2,i:i+num_ebins] = counts
-        data[3,i:i+num_ebins] = sqrt(counts - counts**2/total_counts)
+        data[3,i:i+num_ebins] = np.sqrt(counts - counts**2/total_counts)
 
         i+= (num_ebins -1)
 
@@ -267,12 +267,12 @@ def plotEn1ByNuc(hist, zaids, ame_table, zaid_normalize=None):
         hist = hist / norm
         if zaid_normalize:
             yerr= np.sqrt(err*2 / hist_norm**2 + hist**2/hist_norm**4 * err_norm**2 )
-            plt.yerr(centers, hist / hist_norm, yerr=yerr, label=label)
+            plt.errorbar(centers, hist / hist_norm, yerr=yerr, label=label)
         else:
             norm = np.trapz(hist, x=centers)
             hist = hist/ norm
             err = err/norm
-            plt.yerr(centers, hiist, yerr=err, label=label)
+            plt.errorbar(centers, hist, yerr=err, label=label)
 
     y_lab_str = r'$p(E_1 | A,Z)$'
     if zaid_normalize:
