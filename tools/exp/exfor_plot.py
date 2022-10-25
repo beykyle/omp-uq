@@ -42,7 +42,6 @@ class Spec :
         self.spec = spec
         self.err = err
         self.bins = bins
-        self.centers = 0.5*(self.bins[1:] + self.bins[:1])
         norm = np.trapz(self.spec, x=self.bins)
 
     def interp(self, bins):
@@ -54,9 +53,30 @@ class Spec :
     def norm(self):
         return np.trapz(self.spec, x=self.bins)
 
-    def normalize(self):
-        norm = self.norm()
+    def normalize(self, norm=None):
+        if not norm:
+            norm = self.norm()
         return Spec(self.spec / norm, self.err / norm, self.bins)
+
+    def sum_counts(self):
+        return np.sum(self.spec)
+
+    def dX(self):
+        return self.bins[1:] - self.bins[:-1]
+
+    def normalizePxdx(self):
+        # interpolate to centers
+        centers = 0.5*(self.bins[:-1] + self.bins[1:])
+        sp = self.interp(centers)
+
+        # get dX
+        dx    = self.dX()
+        total = sp.sum_counts()
+
+        sp.spec = sp.spec / dx /total
+        sp.err  = sp.err / dx /total
+
+        return sp
 
     def mean(self):
         m0 = np.trapz(self.spec, x=self.bins)
@@ -91,6 +111,7 @@ def read_exfor_2npy(fname, out):
     data[1,:] = np.array(pd.to_numeric(df['E']).to_numpy(), dtype=float)
     data[2,:] = np.array(pd.to_numeric(df['DATA']).to_numpy(), dtype=float)
     data[3,:] = np.array(pd.to_numeric(df['ERR-S']).to_numpy(), dtype=float)
+
     np.save(out, data, allow_pickle=True)
 
 
@@ -114,7 +135,7 @@ def read_exfor_alt_2npy(fname, out):
 
 
 def normalize_spec_err(ebins : np.array, spec : np.array, err : np.array, maxwell_norm=False, kT=None):
-    norm = np.trapz(spec, x=ebins)
+    norm = np.sum(spec, x=ebins)
     mean_e = np.trapz(spec/norm * ebins, x=ebins)
     if not kT:
         kT = mean_e
@@ -174,7 +195,7 @@ def integrateOverMaxwell(spec, kT):
     maxwell = maxwell/nm
     norm = np.trapz(np.ones(maxwell.shape),x=ebins)
     metric     = np.trapz( spec.spec/maxwell ,x=ebins)/norm
-    var_metric = np.trapz( spec.err**2/maxwell**2   ,x=ebins) / norm
+    var_metric = np.trapz( spec.err**2/maxwell**2 , x=ebins) / norm**2
 
     return metric, np.sqrt(var_metric)
 
@@ -192,31 +213,28 @@ def getHardnessAboveMaxwell(masses, pfns, ebins):
     return hard[:,0], hard[:,1]
 
 
-def plotCompPFNS(A : int, datasets , labels, maxwell_norm=False):
+def plotCompPFNS(A : int, datasets , labels, xerr=None):
 
     fig = plt.figure()
 
-    ebins = [ d.getEbins() for d in datasets]
+    ebins = [ d.bins for d in datasets]
     pfns = []
     err = []
 
     for i , d in enumerate(datasets):
-        pfns_d, err_d = normalize_spec_err(
-            ebins[i], *(d.getPFNS(A)), maxwell_norm=maxwell_norm, kT=1.42)
+        err_d  = d.err
+        pfns_d = d.spec
         err.append(err_d)
         pfns.append(pfns_d)
-
-        plt.errorbar(ebins[i], pfns_d, yerr=err_d, label=labels[i])
+        if xerr:
+            plt.errorbar(d.bins, pfns_d, yerr=err_d, xerr=xerr[i], label=labels[i], linestyle="None", marker=".")
+        else:
+            plt.errorbar(d.bins, pfns_d, yerr=err_d, label=labels[i], linestyle="None", marker=".")
 
     plt.yscale("log")
     plt.xlabel("E [MeV]")
     plt.legend()
-    if not maxwell_norm:
-        plt.ylabel(r"$P(E | A = {})$ [A.U.]".format(A))
-    else:
-        plt.ylabel(r"$P(E | A = {}) / M(E, kT)$".format(A))
-        bounds = [min([np.min(e) for e in ebins]), max([np.max(e) for e in ebins])]
-        plt.plot(bounds, [1,1], "--" )
+    plt.ylabel(r"$P(E | A = {})$ [A.U.]".format(A))
 
     return fig, ebins, pfns, err
 
@@ -347,10 +365,10 @@ def compareExforExample():
 
     # light
     for A in [105, 107, 110 , 113]:
-        plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+        plotCompPFNS(A, datasets, labels)
         plt.show()
 
     # heavy
     for A in [134, 137, 140 , 142, 145]:
-        plotCompPFNS(A, datasets, labels, maxwell_norm=False)
+        plotCompPFNS(A, datasets, labels)
         plt.show()
