@@ -214,25 +214,27 @@ def compare_fragment_mult(hists_by_nuc):
     plt.savefig("AMiddle_mult_sf.png")
     plt.close()
 
-def writePFNSA(out_fname, A, hists_by_A, num_ebins=20):
+def writePFNSA(out_fname, A, hists_by_A, ebins):
     # write pfns as npy array
     # A A A ... mass
     # E E E ... energy
     # d d d ... counts [a. u.]
     # e e e ... err    [a. u.]
+    num_ebins = ebins.size -1
     data = np.zeros((4,num_ebins*len(A)))
     i = 0
     for mass, hist in zip(A, hists_by_A):
         energies = hist.getNeutronEnergies()
-        counts, edges = np.histogram(energies, bins=num_ebins)
-        centers  = (edges[1:] + edges[:1])*0.5
+        counts, edges = np.histogram(energies, bins=ebins)
+        centers  = (edges[1:] + edges[:-1])*0.5
+        dE  = (edges[1:] - edges[:-1])
         total_counts = np.sum(counts)
         data[0,i:i+num_ebins] = int(mass)
         data[1,i:i+num_ebins] = centers
-        data[2,i:i+num_ebins] = counts
-        data[3,i:i+num_ebins] = np.sqrt(counts - counts**2/total_counts)
+        data[2,i:i+num_ebins] = counts / dE / total_counts
+        data[3,i:i+num_ebins] = np.sqrt(counts - counts**2/total_counts) / dE / total_counts
 
-        i+= (num_ebins -1)
+        i+= num_ebins
 
     np.save(out_fname, data)
 
@@ -303,10 +305,10 @@ if __name__ == "__main__":
 
     hists_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
     A, hists_by_A = zip(*hists_by_frag_mass.items())
-    writePFNSA("cgmf_252cf_kddef_pfns_a.npy", A, hists_by_A)
+    writePFNSA("cgmf_252cf_kddef_pfns_a.npy", A, hists_by_A, ebins=np.arange(0,7,0.1))
 
     # read atomic mass and binding energies
-    ame_table = AMETable()
+    #ame_table = AMETable()
 
     # 1st energy from Xenon isotopes
-    plotEn1ByNuc(hist, [56141, 56142, 56143, 54144, 54145, 54146], ame_table, zaid_normalize=None)
+    #plotEn1ByNuc(hist, [56141, 56142, 56143, 54144, 54145, 54146], ame_table, zaid_normalize=None)
