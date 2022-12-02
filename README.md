@@ -24,12 +24,12 @@ First, [build and install](https://cgmf.readthedocs.io/en/latest/start.html#inst
 ```
 mkdir CGMF/build
 cd CGMF/build
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/  -Dcgmf.x.MPI=On..
 make
 make test
 sudo make install
 cd ../..
-pip install -e ./tools/ --user
+pip install ./CGMF/tools/ 
 ```
 
 Next, download and extract the [ENSDF files](https://www.nndc.bnl.gov/ensdfarchivals/) to a path pointed to by `$XDG_DATA_HOME/ensdf`, as described in the [Nudel documentation](https://github.com/op3/nudel#ensdf). Then, install:
@@ -45,7 +45,6 @@ pip install -e ./tools --user
 ```
 
 Now these packages can be used to run CGMF, analyze the results, and perform UQ! To see how this works, check out the files in `examples/`
-
 
 # to update the dependencies:
 ```
