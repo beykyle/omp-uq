@@ -299,13 +299,13 @@ if __name__ == "__main__":
     matplotlib.rcParams['ytick.major.pad'] = '10'
     matplotlib.rcParams['image.cmap'] = 'BuPu'
 
-    hist = fh.Histories(sys.argv[1])
+    hist = fh.Histories(sys.argv[1], ang_mom_printed=True)
     nhist = len(hist.getFissionHistories())
     print("Fragment histories: {}".format(nhist))
 
     hists_by_frag_mass = sortHistoriesByFragmentMass(hist, post_emission=True)
     A, hists_by_A = zip(*hists_by_frag_mass.items())
-    writePFNSA("cgmf_252cf_kddef_pfns_a.npy", A, hists_by_A, ebins=np.arange(0,7,0.1))
+    writePFNSA("cgmf_252cf_wlh_mean_pfns_a.npy", A, hists_by_A, ebins=np.arange(0,7,0.1))
 
     # read atomic mass and binding energies
     #ame_table = AMETable()

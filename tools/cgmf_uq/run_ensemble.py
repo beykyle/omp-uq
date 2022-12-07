@@ -52,7 +52,7 @@ def process_ensemble(results_dir : Path, out_dir : Path, sample_name : str,  num
     if num_hist != None:
         hist = fh.Histories(result_fpath, nevents=num_hist)
     else:
-        hist = fh.Histories(result_fpath)
+        hist = fh.Histories(result_fpath, ang_mom_printed=True)
 
     # extract some data from history files for immediate post-processing
     nubins, pnu = hist.Pnu()
