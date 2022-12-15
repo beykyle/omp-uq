@@ -27,24 +27,47 @@ def normalize(arr : np.array):
     return arr / np.sum(arr)
 
 
-def plot_nubar(data_sets, rel=True, save=False, outfile=""):
+def plot_nua(data_sets, save=True, outfile=""):
+    for d in data_sets:
+        a = d.a[0,:]
+        pnu_mean  = np.mean(d.nua, axis=0)
+        pnu_stdev = np.sqrt(np.var(d.nua, axis=0))
+        plt.errorbar(a, pnu_mean, yerr=pnu_stdev, label=d.label)
+    plt.xlabel(r"A [u]")
+    plt.ylabel(r"$\bar{\nu} | A $ [neutrons]")
+    plt.legend()
+    plt.tight_layout()
+    if save:
+        plt.savefig(outfile)
+    else:
+        plt.show()
+
+def plot_nubar(data_sets, rel=True, save=False, outfile="", endf=1):
     max_n = 0
     num_plots = len(data_sets)
-    alphas = np.linspace(0.9,0.5,num=num_plots)
+    alphas = np.linspace(0.9,0.4,num=num_plots)
     orders = np.arange(0,num_plots*100,100)
+    ma = 0
     for i,d in enumerate(data_sets):
         if rel:
             n,b,_ = plt.hist(
-                    100*(d.nubar-d.nubar_default)/d.nubar_default, label=d.label, alpha=alphas[i], zorder=orders[i])
+                    100*(d.nubar-d.nubar_default)/d.nubar_default,
+                    label=d.label, alpha=alphas[i], zorder=orders[i], density=True)
             if np.max(n) > max_n:
                 max_n = np.max(n)
             plt.xlabel(r"$\Delta \bar{\nu} / \bar{\nu}$ [%]")
             plt.xlim(-1,1)
+            plt.plot([0,0], [0,max_n], ":")
         else:
-            plt.hist(d.nubar)
-            plt.xlabel(r"$\bar{\nu}$ [neutrons]", label=d.label)
+            h,e = np.histogram(d.nubar, density=True)
+            de = e[1:] - e[:-1]
+            h = h / de / np.sum(h)
+            plt.fill_between(0.5*(e[:-1] + e[1:]) , 0, h, label=d.label, alpha=alphas[i], zorder=orders[i], step="pre")
+            if np.max(h) > ma:
+                ma = np.max(h)
+            plt.xlabel(r"$\bar{\nu}$ [neutrons]")
 
-    plt.plot([0,0], [0,max_n], ":")
+    plt.plot([endf, endf], [0,ma], label="ENDF/B-VI.8", linestyle="--")
     plt.ylabel(r"frequency")
     plt.legend()
     plt.tight_layout()
@@ -74,7 +97,7 @@ def plot_pnu(data_sets, save=False, rel=False, outfile=""):
                          yerr=pnu_stdev, label=d.label, zorder=zo)
             zo = zo * 10
             plt.plot(bins, pnu_0, marker="." , linestyle="none", markersize=8,
-                    label=d.label + " default", zorder=zo, color=p1[0].get_color())
+                    label=d.label, zorder=zo, color=p1[0].get_color())
         zo = zo* 10
 
     #plt.ylabel(r'$\frac{\Delta P(\nu)}{P(\nu)}$ [%]')
@@ -82,8 +105,9 @@ def plot_pnu(data_sets, save=False, rel=False, outfile=""):
         plt.ylabel(r"$\frac{\Delta P(\nu)}{P(\nu)}$ [%]")
     else:
         plt.ylabel(r"$P(\nu)$")
+        plt.yscale("log")
     plt.xlabel(r"$\nu$")
-    plt.legend(loc=2)
+    plt.legend()
     plt.tight_layout()
 
     if save:

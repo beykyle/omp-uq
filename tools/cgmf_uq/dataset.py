@@ -9,6 +9,7 @@ class DataSetUQUncorr:
         self.label = label
         self.num_ebins   = 99
         self.num_nu_bins = 10
+        self.num_a = 100
         self.num_samples = num_samples
         self.num_hist    = num_hist
 
@@ -18,6 +19,8 @@ class DataSetUQUncorr:
         self.pfns  = np.zeros((num_samples,self.num_ebins))
         self.nu    = np.zeros((num_samples,self.num_nu_bins))
         self.pnu   = np.zeros((num_samples,self.num_nu_bins))
+        self.a     = np.zeros((num_samples,self.num_a))
+        self.nua   = np.zeros((num_samples,self.num_a))
 
         # initialize default data
         self.nubar_default = 0
@@ -25,6 +28,8 @@ class DataSetUQUncorr:
         self.pfns_default  = np.zeros(self.num_ebins)
         self.nu_default    = np.zeros(self.num_nu_bins)
         self.pnu_default   = np.zeros(self.num_nu_bins)
+        self.a_default     = np.zeros(self.num_a)
+        self.nua_default   = np.zeros(self.num_a)
 
         # read in samples
         for i in range(min_sample, min_sample + num_samples):
@@ -36,6 +41,11 @@ class DataSetUQUncorr:
             self.pnu[idx,0:pnu_tmp.shape[0]] = pnu_tmp
             self.ebins[idx,:] = np.load(str(results_dir / ("ebins_"  + sample_name)))
             self.pfns[idx,:]  = np.load(str(results_dir / ("pfns_"   + sample_name)))
+            a    = np.load(str(results_dir / ("A_"  + sample_name)))
+            if len(a) == self.num_a:
+                self.a[idx,:] = np.load(str(results_dir / ("A_"  + sample_name)))
+                self.nua[idx,:]  = np.load(str(results_dir / ("nuA_"   + sample_name)))
+
 
         # handle defaults
         if is_def:
@@ -47,7 +57,10 @@ class DataSetUQUncorr:
             self.pnu_default   = np.mean(self.pnu,axis=0)
         else:
             # read in seperate default sample
-            default_dir = results_dir / "default"
+            #default_dir = results_dir / "default"
+            default_dir = results_dir
+            if default_dir != "":
+                default_sample_name = "_" + default_sample_name
             nu_tmp  = np.load(str(default_dir / ("nu"  + default_sample_name + ".npy")))
             pnu_tmp = np.load(str(default_dir / ("pnu" + default_sample_name + ".npy")))
             self.nu_default[0:nu_tmp.shape[0]]   = nu_tmp

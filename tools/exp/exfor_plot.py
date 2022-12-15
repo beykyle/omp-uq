@@ -91,12 +91,8 @@ class Spec :
         return var_un
 
     def var_in_mean(self):
-        # https://stats.stackexchange.com/a/454266
-        var   = self.variance()
-        num   = np.trapz(self.spec / (var + self.err**2), x=self.bins)
-        denom = np.trapz(self.spec / (var + self.err**2)**2, x=self.bins)
-
-        return num/denom
+        num   = np.trapz( 1/(self.err**2 + self.variance()) , x=self.bins)
+        return 1/np.sqrt(num)
 
 def maxwellian(ebins : np.array, Eavg : float):
     return 2*np.sqrt(ebins / np.pi) * (1 / Eavg)**(3./2.) * np.exp(- ebins / Eavg )
@@ -213,7 +209,7 @@ def getHardnessAboveMaxwell(masses, pfns, ebins):
     return hard[:,0], hard[:,1]
 
 
-def plotCompPFNS(A : int, datasets , labels, xerr=None):
+def plotCompPFNS(A : int, datasets , labels, st=None):
 
     fig = plt.figure()
 
@@ -226,10 +222,11 @@ def plotCompPFNS(A : int, datasets , labels, xerr=None):
         pfns_d = d.spec
         err.append(err_d)
         pfns.append(pfns_d)
-        if xerr:
-            plt.errorbar(d.bins, pfns_d, yerr=err_d, xerr=xerr[i], label=labels[i], linestyle="None", marker=".")
-        else:
-            plt.errorbar(d.bins, pfns_d, yerr=err_d, label=labels[i], linestyle="None", marker=".")
+        if st:
+            if st[i] == "l":
+                plt.errorbar(d.bins, pfns_d, yerr=err_d, label=labels[i])
+            else:
+                plt.errorbar(d.bins, pfns_d, yerr=err_d, label=labels[i], linestyle="None", marker=".")
 
     plt.yscale("log")
     plt.xlabel("E [MeV]")
