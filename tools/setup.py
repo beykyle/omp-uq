@@ -7,5 +7,5 @@ setup(
    author='Kyle Beyer',
    author_email='beykyle@umich.edu',
    packages=['cgmf_uq', 'sample_omparams' , 'exp'],
-   install_requires=['CGMFtk', 'nudel'],
+   install_requires=['CGMFtk'],
 )

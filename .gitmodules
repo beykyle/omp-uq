@@ -2,6 +2,3 @@
 	path = CGMF
 	url = git@github.com:beykyle/CGMF.git
 	branch = master
-[submodule "nudel"]
-	path = nudel
-	url = git@github.com:op3/nudel.git
