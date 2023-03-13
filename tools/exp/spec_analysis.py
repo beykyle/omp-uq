@@ -47,6 +47,8 @@ class Spec :
         else:
             self.dx = dx
 
+        assert(spec.shape == err.shape)
+
     def interp(self, bins):
         spec = np.interp(bins, self.bins, self.spec)
         err = np.interp(bins, self.bins, self.err)
@@ -68,16 +70,26 @@ class Spec :
         return self.bins[1:] - self.bins[:-1]
 
     def normalizePxdx(self):
-        # interpolate to centers
-        centers = 0.5*(self.bins[:-1] + self.bins[1:])
-        sp = self.interp(centers)
+        """
+        Probability density conserving normalization. For spectra in xy form, simply normalizes
+        to trapz integral. For spectra in xmin,xmax,y form (e.g. len(self.bins) == len(self.spec) + 1 ),
+        converts to normalized xy form by interpolating to bin centers
+        """
+        if self.bins.shape is not self.spec.shape:
+            # interpolate to centers
+            centers = 0.5*(self.bins[:-1] + self.bins[1:])
+            sp = self.interp(centers)
 
-        # get dX
-        dx    = self.dX()
-        total = sp.sum_counts()
+            # get dX
+            dx    = self.dX()
+            total = sp.sum_counts()
 
-        sp.spec = sp.spec / dx /total
-        sp.err  = sp.err / dx /total
+            # normalize to bin widths
+            sp.spec = sp.spec / dx / total
+            sp.err  = sp.err / dx / total
+        else:
+            # simple trapz integration
+            sp = self.normalize()
 
         return sp
 
