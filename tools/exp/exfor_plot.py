@@ -91,8 +91,10 @@ class Spec :
         return var_un
 
     def var_in_mean(self):
-        num   = np.trapz( 1/(self.err**2 + self.variance()) , x=self.bins)
-        return 1/np.sqrt(num)
+        sig2    = self.variance()
+        num     = np.trapz( 1/(self.err**2 + sig2) , x=self.bins)
+        denom   = np.trapz( 1/(self.err**2 + sig2) , x=self.bins)
+        return num/denom**2
 
 def maxwellian(ebins : np.array, Eavg : float):
     return 2*np.sqrt(ebins / np.pi) * (1 / Eavg)**(3./2.) * np.exp(- ebins / Eavg )
