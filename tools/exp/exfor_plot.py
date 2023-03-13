@@ -38,11 +38,14 @@ class PFNS_A:
         return specs
 
 class Spec :
-    def __init__(self, spec, err, bins):
+    def __init__(self, spec, err, bins, dx=None):
         self.spec = spec
         self.err = err
         self.bins = bins
-        norm = np.trapz(self.spec, x=self.bins)
+        if dx is None:
+            self.dx = np.zeros_like(self.bins)
+        else:
+            self.dx = dx
 
     def interp(self, bins):
         spec = np.interp(bins, self.bins, self.spec)
