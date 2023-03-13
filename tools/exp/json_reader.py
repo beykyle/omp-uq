@@ -4,6 +4,8 @@ import sys
 import argparse
 import pickle
 
+from exfor_plot import Spec
+
 class Quantity:
     def __init__(self, quantity : str,  fmt : str, data : list, meta : list, units : list):
         self.quantity = quantity
@@ -11,6 +13,10 @@ class Quantity:
         self.fmt = fmt
         self.meta = meta
         self.units = units
+
+    def get_specs(self):
+        assert(self.fmt == "x,dx,y,dy")
+        return [ Spec(d[:,2], d[:,3], d[:,0], dx=d[:,1]) for d in self.data ]
 
 
 def select(df, key):
