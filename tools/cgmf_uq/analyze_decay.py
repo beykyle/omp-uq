@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import sys
 
-# https://matplotlib.org/stable/gallery/lines_bars_and_markers/scatter_hist.html
+#https://matplotlib.org/stable/gallery/lines_bars_and_markers/scatter_hist.html
 def scatter_hist(x, y, ax, ax_histx, ax_histy):
 
     ax_histx.tick_params(axis="x", labelbottom=False)
