@@ -8,12 +8,10 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from scipy.stats import skew
 
-
 data_path = (Path(__file__).parent.parent.parent / "data").absolute()
 
 class PFNS_A:
-    def __init__(self, npy_fname):
-        arr = np.load(npy_fname)
+    def __init__(self, arr : np.array):
         self.Amsk  = np.array(arr[0,:], dtype=int)
         self.E     = arr[1,:]
         self.cnts  = arr[2,:]
@@ -37,15 +35,12 @@ class PFNS_A:
 
         return specs
 
-class Spec :
-    def __init__(self, spec, err, bins, dx=None):
+class Spec:
+    def __init__(self, spec, err, bins, xerr=None):
         self.spec = spec
         self.err = err
         self.bins = bins
-        if dx is None:
-            self.dx = np.zeros_like(self.bins)
-        else:
-            self.dx = dx
+        self.xerr=xerr
 
         assert(spec.shape == err.shape)
 
@@ -61,7 +56,7 @@ class Spec :
     def normalize(self, norm=None):
         if not norm:
             norm = self.norm()
-        return Spec(self.spec / norm, self.err / norm, self.bins)
+        return Spec(self.spec / norm, self.err / norm, self.bins, self.xerr)
 
     def sum_counts(self):
         return np.sum(self.spec)
@@ -75,7 +70,7 @@ class Spec :
         to trapz integral. For spectra in xmin,xmax,y form (e.g. len(self.bins) == len(self.spec) + 1 ),
         converts to normalized xy form by interpolating to bin centers
         """
-        if self.bins.shape is not self.spec.shape:
+        if self.bins.shape != self.spec.shape:
             # interpolate to centers
             centers = 0.5*(self.bins[:-1] + self.bins[1:])
             sp = self.interp(centers)
