@@ -4,7 +4,7 @@ import sys
 import argparse
 import pickle
 
-import spec_analysis
+from .spec_analysis import Spec
 
 class Quantity:
     def __init__(self, quantity : str,  fmt : str, data : list, meta : list, units : list):
@@ -26,7 +26,7 @@ class Quantity:
             # x must be sorted
             assert(np.all(x[:-1] <= x[1:]))
 
-            return spec_analysis.Spec(y, dy, x, xerr=dx).normalize()
+            return Spec(y, dy, x, xerr=dx).normalize()
 
         return [ get_normed_spec(d) for d in self.data ]
 
