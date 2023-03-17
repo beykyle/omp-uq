@@ -187,6 +187,8 @@ def read_json(df : pd.DataFrame, quantity : str):
         return read_scalar(df, "nubar")
     elif q == "nubarA":
         return read_specs(df, "nubarA")
+    elif q == "nubarZ":
+        return read_specs(df, "nubarZ")
     elif q == "nubarTKE":
         return read_specs(df, "nubarTTKE")
     elif q == "nugbar":
@@ -211,8 +213,14 @@ def read_json(df : pd.DataFrame, quantity : str):
         return read_specs(df, "multiplicityRatioA")
     elif q == "enbarA":
         return read_specs(df, "EncomA")
+    elif q == "egbarA":
+        return read_specs(df, "EgTbarA")
     elif q == "enbarTKE":
         return read_specs(df, "EncomTKE")
+    elif q == "egbarTKE":
+        return read_specs(df, "EgTbarTKE")
+    elif q == "egbarnubar":
+        return read_specs(df, "EgTbarnubar")
     elif q == "nubarTKEA":
         return read_3D(df, "nubarTKEA")
     elif q == "pfnsA":
