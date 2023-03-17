@@ -22,37 +22,37 @@ def get_fact_moments(moments : np.array, nu : np.array, pnu : np.array):
 
     return fact_moments
 
-
 def normalize(arr : np.array):
     return arr / np.sum(arr)
 
-
-def plot_nua(data_sets, save=True, outfile=""):
+def plot_nua(data_sets,  outfile=""):
+    plots = []
+    labels = []
     for d in data_sets:
+        labels.append(d.label)
         a = d.a[0,:]
         pnu_mean  = np.mean(d.nua, axis=0)
         pnu_stdev = np.sqrt(np.var(d.nua, axis=0))
-        plt.errorbar(a, pnu_mean, yerr=pnu_stdev, label=d.label)
+        plots.append(plt.errorbar(a, pnu_mean, yerr=pnu_stdev, label=d.label))
     plt.xlabel(r"A [u]")
     plt.ylabel(r"$\bar{\nu} | A $ [neutrons]")
-    plt.legend()
-    plt.tight_layout()
-    if save:
-        plt.savefig(outfile)
-    else:
-        plt.show()
+    plt.legend(plots, labels)
 
-def plot_nubar(data_sets, rel=True, save=False, outfile="", endf=1):
+def plot_nubar(data_sets, rel=True,  outfile="", endf=None):
+    plots = []
+    labels = []
     max_n = 0
     num_plots = len(data_sets)
     alphas = np.linspace(0.9,0.4,num=num_plots)
     orders = np.arange(0,num_plots*100,100)
     ma = 0
     for i,d in enumerate(data_sets):
+        labels.append(d.label)
         if rel:
             n,b,_ = plt.hist(
                     100*(d.nubar-d.nubar_default)/d.nubar_default,
                     label=d.label, alpha=alphas[i], zorder=orders[i], density=True)
+            plots.append(n)
             if np.max(n) > max_n:
                 max_n = np.max(n)
             plt.xlabel(r"$\Delta \bar{\nu} / \bar{\nu}$ [%]")
@@ -61,68 +61,59 @@ def plot_nubar(data_sets, rel=True, save=False, outfile="", endf=1):
         else:
             h,e = np.histogram(d.nubar, density=True)
             de = e[1:] - e[:-1]
-            h = h / de / np.sum(h)
-            plt.fill_between(0.5*(e[:-1] + e[1:]) , 0, h, label=d.label, alpha=alphas[i], zorder=orders[i], step="pre")
+            h = h / np.sum(h)
+            plots.append(plt.fill_between(0.5*(e[:-1] + e[1:]) , 0, 100*h, \
+                                          label=d.label, alpha=alphas[i], zorder=orders[i], step="pre"))
             if np.max(h) > ma:
                 ma = np.max(h)
             plt.xlabel(r"$\bar{\nu}$ [neutrons]")
 
-    plt.plot([endf, endf], [0,ma], label="ENDF/B-VI.8", linestyle="--")
-    plt.ylabel(r"frequency")
-    plt.legend()
-    plt.tight_layout()
+    if endf is not None:
+        plt.plot([endf, endf], [0,ma], label="ENDF/B-VI.8", linestyle="--")
+    plt.ylabel(r"$P(\bar{\nu})$ [%]")
+    plt.legend(plots, labels)
 
-    if save:
-        plt.savefig(outfile)
-    else:
-        plt.show()
+def plot_pnu(data_sets,  rel=False, outfile=""):
 
-def plot_pnu(data_sets, save=False, rel=False, outfile=""):
-
+    plots = []
+    labels = []
     num_plots = len(data_sets)
     alphas = np.linspace(0.9,0.5,num=num_plots)
-    zo = 1
     rel_max = 7
     for i,d in enumerate(data_sets):
         pnu_mean  = np.mean(d.pnu, axis=0)
         pnu_stdev = np.sqrt(np.var(d.pnu, axis=0))
+        print(pnu_stdev/pnu_mean)
         pnu_0     = d.pnu_default
         bins      = np.arange(0,pnu_mean.shape[0],step=1)
         if rel:
-            plt.errorbar(bins[:rel_max], 100*(pnu_mean[:rel_max] - pnu_0[:rel_max])/pnu_0[:rel_max],
+            p1 = plt.errorbar(bins[:rel_max], 100*(pnu_mean[:rel_max] - pnu_0[:rel_max])/pnu_0[:rel_max],
                     yerr=(100*pnu_stdev[:rel_max]/pnu_0[:rel_max]),
                     marker="*" , label=d.label, alpha=alphas[i])
         else:
-            p1 = plt.errorbar(bins, pnu_mean,
-                         yerr=pnu_stdev, label=d.label, zorder=zo)
-            zo = zo * 10
-            plt.plot(bins, pnu_0, marker="." , linestyle="none", markersize=8,
-                    label=d.label, zorder=zo, color=p1[0].get_color())
-        zo = zo* 10
+            p1 = plt.errorbar(bins, pnu_mean, marker="x",
+                         yerr=pnu_stdev, label=d.label)
+        plots.append(p1)
+        labels.append(d.label)
 
     #plt.ylabel(r'$\frac{\Delta P(\nu)}{P(\nu)}$ [%]')
     if rel:
         plt.ylabel(r"$\frac{\Delta P(\nu)}{P(\nu)}$ [%]")
     else:
         plt.ylabel(r"$P(\nu)$")
-        plt.yscale("log")
-    plt.xlabel(r"$\nu$")
-    plt.legend()
-    plt.tight_layout()
+        #plt.yscale("log")
+    plt.xlabel(r"$\nu$ [neutrons]")
+    plt.legend(plots, labels)
 
-    if save:
-        plt.savefig(outfile)
-    else:
-        plt.show()
+def plot_fm(data_sets,  rel=False, outfile=""):
 
-def plot_fm(data_sets, save=False, rel=False, outfile=""):
-
+    plots = []
+    labels = []
     num_plots = len(data_sets)
     alphas = np.linspace(0.9,0.5,num=num_plots)
 
     nmoments = 7
     moments = np.array(range(0,nmoments), dtype=int)
-    zo = 1
 
     for i, d in enumerate(data_sets):
         bins  = d.nu[0,:]
@@ -138,16 +129,14 @@ def plot_fm(data_sets, save=False, rel=False, outfile=""):
         fm_stdev  = np.sqrt(np.var(fm, axis=0))
 
         if rel:
-            plt.errorbar(moments, 100*(fm_mean - fm_0)/fm_0 , yerr=100*fm_stdev/fm_0,
+            p1 = plt.errorbar(moments, 100*(fm_mean - fm_0)/fm_0 , yerr=100*fm_stdev/fm_0,
                     marker="*", label=d.label, alpha=alphas[i])
         else:
             scaling = np.array([np.math.factorial(m) for m in moments])
-            p1 = plt.errorbar(moments, fm_mean/scaling,
-                              yerr=fm_stdev/scaling, label=d.label, zorder=zo)
-            zo = zo * 10
-            plt.plot(moments, fm_0/scaling, marker="." , linestyle="none", markersize=8,
-                    label=d.label + " default", zorder=zo, color=p1[0].get_color())
-            zo = zo * 10
+            p1 = plt.errorbar(moments, fm_mean/scaling, marker=".",
+                              yerr=fm_stdev/scaling, label=d.label)
+        plots.append(p1)
+        labels.append(d.label)
 
     #plt.ylabel(r'$\frac{\Delta P(\nu)}{P(\nu)}$ [%]')
     plt.xlim([0,nmoments])
@@ -156,10 +145,4 @@ def plot_fm(data_sets, save=False, rel=False, outfile=""):
     else :
         plt.ylabel(r"E$\left[ \frac{\nu !}{(\nu -m)!}\right] \frac{1}{m!}$")
     plt.xlabel(r"$m$")
-    plt.legend(loc=2)
-    plt.tight_layout()
-
-    if save:
-        plt.savefig(outfile)
-    else:
-        plt.show()
+    plt.legend(plots, labels)
