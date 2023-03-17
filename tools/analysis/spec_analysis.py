@@ -88,10 +88,12 @@ class Spec:
 
         return sp
 
+    def moment(self, n : int):
+        return np.trapz(self.spec * (self.bins)**n, x=self.bins)
+
     def mean(self):
-        m0 = np.trapz(self.spec, x=self.bins)
-        m1 = np.trapz(self.spec * self.bins, x=self.bins)
-        e1 = np.trapz(self.spec * self.bins, x=self.bins)
+        m0 = self.moment(0)
+        m1 = self.moment(1)
 
         return m1/m0
 

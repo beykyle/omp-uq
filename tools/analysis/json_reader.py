@@ -14,7 +14,7 @@ class Quantity:
         self.meta = meta
         self.units = units
 
-    def get_pfns_specs(self, norm="none"):
+    def get_specs(self, norm="none"):
         assert(self.fmt == "x,dx,y,dy")
 
         def get_normed_spec(data):
@@ -128,7 +128,6 @@ def read_3D(df, quantity):
         entry = dfq.iloc[[i]]
         data    = np.array( list(d)[0] )
         data_fm = np.zeros( (6, data.shape[0]) )
-        print(data_fm.shape)
         if fmt == "xdxyz":
             data_fm[:3,:] = data[:,:3]
             data_fm[4,:]  = data[:,3]
@@ -208,8 +207,12 @@ def read_json(df : pd.DataFrame, quantity : str):
         return read_specs(df, "Pnu")
     elif q == "pnug":
         return read_specs(df, "Pnug")
-    elif q == "nug / nu":
+    elif q == "multiplicityRatioA":
         return read_specs(df, "multiplicityRatioA")
+    elif q == "enbarA":
+        return read_specs(df, "EncomA")
+    elif q == "enbarTKE":
+        return read_specs(df, "EncomTKE")
     elif q == "nubarTKEA":
         return read_3D(df, "nubarTKEA")
     elif q == "pfnsA":
