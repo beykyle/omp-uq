@@ -8,50 +8,36 @@ from cgmf_uq import process_ensemble, calculate_ensemble_nubar
 
 # where are we putting the results
 hist_dir = Path(__file__).parent
-res_dir = hist_dir / "post"
+res_dir     = hist_dir / "post"
 default_dir = hist_dir / "default"
 
-total_hists = 300
+hist_fname_prefix  = "histories"
+hist_fname_postfix = ".o"
 
-def concat_arrays(num_jobs):
-    pfns = []
-    nug = []
-    nubars = []
-    interval = int(total_hists / num_jobs)
-    for i in range(num_jobs):
-        start = interval * i
-        end = start + interval
-        f = "h{}_to_{}".format(start, end)
-        pfns.append(resdir /np.load("pfns_a_{}.npy".format(f)))
-        nug.append(resdir /np.load("nug_a_{}.npy".format(f)))
-        nubars.append(resdir /np.load("nubars_{}.npy".format(f)))
+total_ensembles = 300
 
-    np.save(resdir / "pfns_A.npy", np.concatenate(pfns))
-    np.save(resdir / "nug_A.npy", np.concatenate(nug))
-    np.save(resdir / "nubars.npy", np.concatenate(nug))
+def hist_from_list_of_lists(num, lol, bins, mask_generator=None, out=False):
+    """
+    returns a histogram of values that may occur multiple times per history, e.g.
+    neutron energies, formatted as a list of lists; outer being history, and inner being
+    list of quantities associated with that history.
 
-def concat_dfs(num_jobs):
-    dfs = []
-    interval = int(total_hists / num_jobs)
-    for i in range(num_jobs):
-        start = interval * i
-        end = start + interval
-        f = "h{}_to_{}".format(start, end)
-        dfs.append( pd.read_csv(resdir /"hdf_{}.csv".format(f)) )
+    num  - number of histories
+    lol  - input data in list of lists format
+    bins - bins for histogram
 
 
-    pd.concat(dfs).to_csv(resdir /"hdf_all.csv".format(f))
-
-def hist_from_list_of_lists(num, lol, bins, energies=None, Emin=None, out=False):
+    mask_generator - mask function that takes in a history # and returns
+    a mask over the quantities in the history provided by lol
+    """
 
     v = np.zeros(num)
 
     c = 0
-    if Emin is not None:
-        assert(energies is not None)
+    if mask_generator is not None:
         for i in range(lol.size):
             h = np.array(lol[i])
-            h = h[ np.where(energies[i] >= Emin[i]) ]
+            h = h[ mask_generator(i) ]
             numi = h.size
             v[c: c + numi] = h
             c = c + numi
@@ -62,140 +48,246 @@ def hist_from_list_of_lists(num, lol, bins, energies=None, Emin=None, out=False)
             v[c: c + numi] = h
             c = c + numi
 
+    m = np.mean(v[0:c])
     hist , _ = np.histogram(v[0:c], bins=bins, density=True)
 
     if out:
         out = v[0:c]
 
-        return hist, out
+        return hist, m, out
 
-    return hist
+    return hist, m
 
-def build_df(ensemble_range):
-    min_ensemble = ensemble_range[0]
-    max_ensemble = ensemble_range[1]
-    print("Running ensembles {} to {}".format(start,end))
-    nensemble = max_ensemble - min_ensemble
+class HistData:
+    def __init__(self, ensemble_range):
+        # TODO pass in desired quantities
+        #TODO mc uncertanties
 
-    dfs = []
+        # get ensemble range
+        self.min_ensemble = ensemble_range[0]
+        self.max_ensemble = ensemble_range[1]
+        nensemble = max_ensemble - min_ensemble
 
-    for i in range(0,nensemble):
+        # default processing parameters
+        self.Ethn = 0 # neutron detection lower energy threshold
+        self.Ethg = 0 # gamma detection lower energy threshold
+        self.min_time = 0
+        self.max_time = 1E3
 
-        fname = hist_dir / ("histories_{}.o".format(i))
-        print("Reading {} ...".format(fname))
-        hs = fh.Histories(fname, ang_mom_printed=True)
-        #hs = fh.Histories(fname, ang_mom_printed=True, nevents=100)
-        print("Processing {} histories from {} ...".format( len(hs.getNu()), fname))
+        # set up histogram grids
+        self.nubins  = np.arange(0,11)
+        self.nugbins = np.arange(0,26)
 
-        # extract relevant data as data frame
-        data = [ hs.Ah, hs.Al, hs.KEh, hs.KEl, hs.nuHF, hs.nuLF, hs.nugHF, hs.nugLF, np.ones_like(hs.Ah)*i ]
-        names = [ "AHF", "ALF", "KEHF", "KELF", "nuHF", "nuLF", "nugHF", "nugLF", "ensemble"]
-        dfs.append(pd.DataFrame.from_dict(dict(zip(names, data))))
+        self.zbins = np.arange(38, 61)
+        self.abins = np.arange(70, 185)
 
-    f = "h{}_to_{}".format(min_ensemble, max_ensemble )
-    print("Writing output to *{}.csv".format(f))
-    pd.concat(dfs).to_csv(resdir /"hdf_{}.csv".format(f))
+        nTKE        = 20
+        TKEmin      = 120
+        TKEmax      = 220
+        TKEstep     = (self.TKEmax - self.TKEmin)/self.nTKE
 
-def run_post(ensemble_range):
+        self.TKEbins     = np.linspace(TKEmin, TKEmax, step=TKEstep)
+        self.TKEcenters  = 0.5*(self.TKEbins[0:-1] + self.TKEbins[1:])
 
-    min_ensemble = ensemble_range[0]
-    max_ensemble = ensemble_range[1]
-    print("Running ensembles {} to {}".format(start,end))
-    nensemble = max_ensemble - min_ensemble
+        self.ebins    = np.logspace(-3,2,100)
+        self.ecenters = 0.5*(ebins[0:-1] + ebins[1:])
+        self.de       = (ebins[1:] - ebins[:-1])
 
-    minA  = 84
-    maxA  = 184
-    nA    = maxA - minA + 1
-    abins = np.arange(minA, maxA + 1, 1)
+        # allocate arrays for histogram values
+        self.pfnsA  = np.zeros((nensemble, self.abins.size, self.ecenters.size))
+        self.pfgsA  = np.zeros((nensemble, self.abins.size, self.ecenters.size))
 
-    nebins = 40
-    emin   = 0.01
-    emax   = 10
-    step   = (emax - emin)/nebins
+        self.nuTKEA = np.zeros((nensemble, self.TKEbins.size, self.abins.size))
 
-    jmin   = -10
-    jmax   =  5
-    njbins = jmax + 1 - jmin
-    jbins  = np.arange(jmin, jmax+2)
+        self.scalar_qs = { "nubar" : np.zeros((nensemble)), "nugbar" : np.zeros((nensemble)) }
 
-    nubarg = np.zeros((nensemble,nA))
-    pfnsa  = np.zeros((nensemble,nA,nebins-1))
-    dja    = np.zeros((nensemble,nA,njbins-1))
+        self.vector_qs = {
+                "nubarA"     : np.zeros((nensemble, self.abins.size))      ,
+                "nugbarA"    : np.zeros((nensemble, self.abins.size))      ,
+                "nubarZ"     : np.zeros((nensemble, self.zbins.size))      ,
+                "nugbarZ"    : np.zeros((nensemble, self.zbins.size))      ,
+                "nubarTKE"   : np.zeros((nensemble, self.TKEcenters.size)) ,
+                "nugbarTKE"  : np.zeros((nensemble, self.TKEcenters.size)) ,
+                "pnu"        : np.zeros((nensemble, self.nubins.size))     ,
+                "pnug"       : np.zeros((nensemble, self.nugbins.size))    ,
+                "egtbarnu"   : np.zeros((nensemble, self.nubins.size))     ,
+                "pfns"       : np.zeros((nensemble, self.ecenters.size))   ,
+                "pfgs"       : np.zeros((nensemble, self.ecenters.size))   ,
+                "multratioA" : np.zeros((nensemble, self.abins.size))
+                }
 
-    ebins    = np.arange(emin,emax,step)
-    ecenters = 0.5*(ebins[0:-1] + ebins[1:])
-    de       = (ebins[1:] - ebins[:-1])
+        self.tensor_qs = {
+                "pfnsTKE" : np.zeros((nensemble, self.TKEcenters.size, self.ecenters.size))  ,
+                "pfgsTKE" : np.zeros((nensemble, self.TKEcenters.size, self.ecenters.size))  ,
+                "pfnsA"   : np.zeros((nensemble, self.abins.size, self.ecenters.size))  ,
+                "pfgsA"   : np.zeros((nensemble, self.abins.size, self.ecenters.size))  ,
+                "nuTKEA"  : np.zeros((nensemble, self.TKEcenters.size, self.abins.size))
+                }
 
-    nubars = []
+    def concat_from_array_job(num_jobs):
+        interval = int(total_ensembles / num_jobs)
+        for i in range(num_jobs):
+            start = interval * i
+            end = start + interval
+            f = "ensembles_{}_to_{}".format(start, end)
+            for k in scalar_qs:
+                tmp = np.load(resdir /"{}_{}.npy".format(key,f))
+                self.scalar_qs[key][start:end] = tmp
+            for k in vector_qs:
+                tmp = np.load(resdir /"{}_{}.npy".format(key,f))
+                self.scalar_qs[key][start:end,:] = tmp
+            for k in tensor_qs:
+                tmp = np.load(resdir /"{}_{}.npy".format(key,f))
+                self.scalar_qs[key][start:end,:,:] = tmp
 
-    for i in range(0,nensemble):
 
-        fname = hist_dir / ("histories_{}.o".format(i))
-        print("Reading {} ...".format(fname))
-        hs = fh.Histories(fname, ang_mom_printed=True)
-        #hs = fh.Histories(fname, ang_mom_printed=True, nevents=10000)
-        print("Processing {} histories from {} ...".format( len(hs.getNu()), fname))
+    def write():
+        f = "ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble )
 
-        process_ensemble(hs)
-        nubars.append( calculate_ensemble_nubar(str(i),res_dir) )
+        for k,v in scalar_qs.items():
+            np.save(resdir /"{}_{}.npy".format(key,f), v)
 
-        A  = np.unique(hs.getA())
-        for a in A:
-            j = int(a - minA)
-            if j >= nA:
-                break
+        for k,v in vector_qs.items():
+            np.save(resdir /"{}_{}.npy".format(key,f), v)
 
-            mask = np.where(hs.getA() == a, True, False)
-            num_neutrons = np.sum( hs.getNu()[mask] )
-            KE_pre = hs.getKEpre()[mask]
-            ne = hs.getNeutronEcm()[mask]
-            nelab = hs.getNeutronElab()[mask]
+        for k,v in tensor_qs.items():
+            np.save(resdir /"{}_{}.npy".format(key,f), v)
 
-            nug = hs.getNug()[mask]
-            nubarg[i,j] = np.mean(nug)
+    def read():
+        concat_from_array_job(1)
 
-            if num_neutrons > 100:
-                pfnsa[i,j,:], energies = hist_from_list_of_lists(
-                        num_neutrons, ne, ebins, energies=nelab, Emin=(KE_pre/float(a)), out=True)
-                # ignore the last bin for integer binning - it's max inclusive
-                #dja[i,j,:]   = hist_from_list_of_lists(num_neutrons, nj[mask], jbins )[:-1]
+    def process_ensemble(hs : CGMFtk.Histories, n : int):
 
-        if i < nensemble -1:
-            print("Done! onto the the next file...\n")
-        else:
-            print("Done with all files!\n")
+        # scalars
+        scalar_qs[ "nubar"][n]  = hs.nubar()
+        scalar_qs["nugbar"][n] = hs.nubarg(timeWindow=None, Eth=Ethg)
 
-    f = "h{}_to_{}".format(min_ensemble, max_ensemble )
-    print("Writing output to *{}.npy".format(f))
-    np.save(resdir /"pfns_a_{}.npy".format(f), pfnsa)
-    np.save(resdir /"nug_a_{}.npy".format(f), nubarg)
-    #np.save("dj_a_{}.npy".format(f), dja)
-    np.save( resdir / "ebins_pfns_a_{}.npy".format(f), ecenters)
-    np.save( resdir / "jbins_pj_a_{}.npy".format(f), np.arange(jmin, jmax))
-    np.save( resdir / "abins_{}.npy".format(f), abins)
-    np.save( resdir / "nubars_{}".format(f), np.array(nubars))
+        # multiplicity dependent vector quantities
+        vector_qs[ "pnu"][n] = hs.Pnu(Eth=self.Ethn)
+        vector_qs["pnug"][n] = hs.Pnug(Eth=self.Ethg)
+
+        # energy dependent vector quantities
+        vector_qs["pfns"][n]  = hs.pfns(egrid=self.ebins, Eth=self.Ethn)
+        vector_qs["pfgs"][n]  = hs.pfgs(egrid=self.ebins, Eth=self.Ethg,
+                                        minTime=self.min_time, maxTime=self.max_time)
+
+        # nu dependent
+        for l, nu in enumerate(self.nubins):
+            mask        = np.where(hs.getNu() == nu)
+            num_gammas  = np.sum( hs.getNug() [mask] )
+            nglab       = hs.getGamElab() [mask]
+            _ , vector_qs["egtbarnu"][n,l] = hist_from_list_of_lists(
+                        num_gammas, nglab, bins=self.ebins)
+
+        # Z dependent
+        for l, z in enumerate(self.zbins):
+            mask  = np.where(hs.Z == z)
+            vector_qs[ "nubarZ"][n,l] = np.mean( hs.getNu()  [mask] )
+            vector_qs["nugbarZ"][n,l] = np.mean( hs.getNug() [mask] )
+
+        # TKE dependent
+        for l in range(self.TKEbins.size):
+            TKE_min = self.TKEbins[l]
+            TKE_max = self.TKEbins[l+1]
+            TKE     = hs.getTKEpost()
+            mask    = np.logical_and( TKE >= TKE_min , TKE < TKE_max)
+            num_ns  = np.sum( hs.getNu()  [mask] )
+            num_gs  = np.sum( hs.getNug() [mask] )
+
+            # < nu | TKE >
+            vector_qs[ "nubarTKE"][n,l] = np.mean( hs.getNutot()[mask] )
+            vector_qs["nugbarTKE"][n,l] = np.mean( hs.getNugtot()[mask] )
+
+            # < nu | E_n, TKE >
+            nelab  = hs.getNeutronElab()[mask]
+            necm   = hs.getNeutronEcm()[mask]
+            KE_pre = hs.getKEpre()[mask] / hs.getA()[mask]
+
+            def kinematic_cut(hist : int):
+                return np.where( np.array(necm[hist]) > KE_pre[hist] / float(a) )
+
+            tensor_qs["pfnsTKE"][n,l,:], _ = hist_from_list_of_lists(
+                    num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut)
+
+            # < nu_g | E_g, TKE >
+            nglab      = hs.getGammaElab()[mask]
+            tensor_qs["pfgsTKE"][n,l,:], _ = hist_from_list_of_lists(
+                        num_gammas, nglab, bins=self.ebins)
+
+        # A dependent
+        for l, a in enumerate(self.abins):
+            mask   = np.where(hs.getA() == a)
+            num_ns = np.sum( hs.getNu()  [mask] )
+            num_gs = np.sum( hs.getNug() [mask] )
+
+            # < * | A >
+            vector_qs[ "nubarA"][n,l] = np.mean( hs.nubar()   [mask] )
+            vector_qs["nugbarA"][n,l] = np.mean( hs.nugbarg() [mask] )
+
+            mult_ratio =  hs.getNug() [mask] / hs.gteNu() [mask]
+            vector_qs["multratioA"] = np.mean( mult_ratio )
+
+            # < nu | E_n, A >
+            nelab  = hs.getNeutronElab()[mask]
+            necm   = hs.getNeutronEcm()[mask]
+            KE_pre = hs.getKEpre()[mask] / float(a)
+
+            def kinematic_cut(hist : int):
+                return np.where( np.array(necm[hist]) > KE_pre[hist] / float(a) )
+
+            tensor_qs["pfnsA"][n,l,:], _ = hist_from_list_of_lists(
+                    num_ns, nelab, bins=self.ebins, mask_generator=kinematic_cut)
+
+            # < nu_g | E_g, A >
+            nglab      = hs.getGammaElab()[mask]
+            tensor_qs["pfgsA"][n,l,:], _ = hist_from_list_of_lists(
+                        num_gs, nglab, bins=self.ebins)
+
+            # < nu | TKE, A >
+            for m in range(self.TKEbins.size):
+                TKE_min = self.TKEbins[l]
+                TKE_max = self.TKEbins[l+1]
+                TKE     = hs.getTKEpost()
+                mask    = np.logical_and(
+                            np.logical_and( TKE >= TKE_min , TKE < TKE_max),
+                            np.logical_or( hs.getAHF() == a , hs.getALF() == a )
+                        )
+                tensor_qs["nuTKEA"][n,l,m] = np.mean( hs.getNutot()[mask] )
+
+
+
+    def post_process():
+        print("Running ensembles {} to {}".format(self.min_ensemble, self.max_ensemble))
+
+        for i in range(0,self.max_ensemble - self.min_ensemble):
+
+            fname = hist_dir / ("{}_{}{}".format(hist_fname_prefix, hist_fname_postfix, n))
+
+            print("Reading {} ...".format(fname))
+            #hs = fh.Histories(fname, ang_mom_printed=True)
+            hs = fh.Histories(fname, ang_mom_printed=True, nevents=100)
+
+            print("Processing {} histories from {} ...".format( hs.getNu().size, fname))
+            hd.process_ensemble(hs,i)
+
+            if i < nensemble -1:
+                print("Done! onto the the next ensemble...\n")
+            else:
+                print("Done with all ensembles!\n")
+
+        f = "ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
+        print("Writing output to *_{}.npy".format(f))
+        hd.write()
 
 if __name__ == "__main__":
     if sys.argv[1] == "--concat":
-        concat_arrays(int(sys.argv[2]))
-    elif sys.argv[1] == "--concat-df":
-        concat_dfs(int(sys.argv[2]))
-    elif sys.argv[1] == "--df":
-        num_jobs = int(sys.argv[2])
-        job_num  = int(sys.argv[3])
-        interval = int(total_hists / num_jobs)
-        start = interval * job_num
-        end = start + interval
-        build_df(( start, end))
+        hd = HistData((0,total_ensembles-1))
+        hd.concat_from_array_job(int(sys.argv[2]))
     else:
-        nubars = []
-        process_ensemble(default_dir, res_dir, "default")
-        nubars.append( calculate_ensemble_nubar("default", res_dir) )
-        np.save(str(res_dir/ "nubars_default"), np.array(nubars))
-
         num_jobs = int(sys.argv[1])
         job_num  = int(sys.argv[2])
         interval = int(total_hists / num_jobs)
         start = interval * job_num
         end = start + interval
-        run_pp(( start, end))
+        hd = HistData((start, end))
+        hd.post_process()
