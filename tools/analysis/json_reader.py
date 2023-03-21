@@ -181,6 +181,23 @@ def read(fname : str, quantity : str):
     df = pd.DataFrame.from_records(pd.read_json(fname)['entries'])
     return read_json(df, quantity)
 
+def read_nubarATKE(df):
+    """
+    convert all <nu | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
+    """
+    nubarTKEA = read_3D(df, "nubarTKEA") # in TKE, dTKE, nu, dnu, u, u
+    nubarATKE = read_3D(df, "nubarATKE")
+
+    for i, d in enumerate(nubarTKEA.data):
+        nubarATKE.meta.append(nubarTKEA.meta[i])
+        nubarATKE.units.append(nubarTKEA.units[i])
+        dt = np.zeros_like(d)
+        dt[0,:]     = d[4,:]
+        dt[2:4,:]   = d[2:4,:]
+        dt[4,:]     = d[0,:]
+        dt[5,:]     = d[0,:]
+        nubarATKE.data.append(dt)
+
 def read_json(df : pd.DataFrame, quantity : str):
     q = quantity.replace("HF", "").replace("LF", "")
     if q == "nubar":
@@ -221,8 +238,8 @@ def read_json(df : pd.DataFrame, quantity : str):
         return read_specs(df, "EgTbarTKE")
     elif q == "egbarnubar":
         return read_specs(df, "EgTbarnubar")
-    elif q == "nubarTKEA":
-        return read_3D(df, "nubarTKEA")
+    elif q == "nubarATKE":
+        return read_nubarATKE(df)
     elif q == "pfnsA":
         return read_3D(df, "PFNSA")
     else:
