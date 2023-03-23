@@ -182,11 +182,16 @@ class HistData:
 
 
     def write_bins(self):
-        #TODO
-        print("Not impl")
-        exit(1)
+        print("Writing bins to \"{}/*_bins.npy\" ".format(str(res_dir)))
+        np.save( res_dir / "nu_bins.npy"    , self.nubins  )
+        np.save( res_dir / "nug_bins.npy"   , self.nugbins )
+        np.save( res_dir / "Z_bins.npy"     , self.zbins   )
+        np.save( res_dir / "A_bins.npy"     , self.abins   )
+        np.save( res_dir / "TKE_bins.npy"   , self.TKEbins )
+        np.save( res_dir / "E_bins.npy"     , self.ebins   )
 
-    def write(self, with_ensemble_idx=False):
+
+    def write(self, with_ensemble_idx=True):
 
         if with_ensemble_idx:
             f = "_ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble )
@@ -207,7 +212,7 @@ class HistData:
 
     def process_ensemble(self, hs : fh.Histories, n : int):
 
-        # self.scalars
+        # scalar quantities
         if "nubar" in self.scalar_qs:
             self.scalar_qs[ "nubar"][n] = hs.nubar()
         if "nugbar" in self.scalar_qs:
@@ -222,7 +227,7 @@ class HistData:
         if "pnug" in self.vector_qs:
             self.vector_qs["pnug"][n] = first_from( *hs.Pnug(Eth=self.Ethg, nug=self.nugbins))
 
-        # energy dependent self.vector quantities
+        # energy dependent vector quantities
         if "pfns" in self.vector_qs:
             self.vector_qs["pfns"][n]  = first_from(*hs.pfns(egrid=self.ebins, Eth=self.Ethn))
         if "pfgs" in self.vector_qs:
@@ -267,7 +272,7 @@ class HistData:
             # for PFNS and PFGS, data is fragment by fragment, rather than event by event
             mask = np.hstack( zip(mask,mask) )
 
-            # < nu | E_n, TKE >
+            # < d nu / dE | TKE >
             if "pfnsTKE" in self.tensor_qs:
                 nelab  = hs.getNeutronElab()[mask]
                 necm   = hs.getNeutronEcm()[mask]
@@ -279,7 +284,7 @@ class HistData:
                 self.tensor_qs["pfnsTKE"][n,l,:], _ = hist_from_list_of_lists(
                         num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut)
 
-            # < nu_g | E_g, TKE >
+            # < d nu_g / dE_g | TKE >
             if "pfgsTKE" in self.tensor_qs:
                 nglab      = hs.getGammaElab()[mask]
                 self.tensor_qs["pfgsTKE"][n,l,:], _ = hist_from_list_of_lists(
@@ -302,7 +307,7 @@ class HistData:
                 mult_ratio =  hs.getNug() [mask] / hs.getNu() [mask]
                 self.vector_qs["multratioA"] = np.mean( mult_ratio )
 
-            # < nu | E_n, A >
+            # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs:
                 nelab  = hs.getNeutronElab()[mask]
                 necm   = hs.getNeutronEcm()[mask]
@@ -314,7 +319,7 @@ class HistData:
                 self.tensor_qs["pfnsA"][n,l,:], _ = hist_from_list_of_lists(
                         num_ns, nelab, bins=self.ebins, mask_generator=kinematic_cut)
 
-            # < nu_g | E_g, A >
+            # < d nu_g / d E_g | A >
             if "pfgsA" in self.tensor_qs:
                 nglab      = hs.getGammaElab()[mask]
                 self.tensor_qs["pfgsA"][n,l,:], _ = hist_from_list_of_lists(
@@ -354,13 +359,14 @@ class HistData:
                 print("Done with all ensembles!\n")
 
         f = "ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
-        print("Writing output to *_{}.npy".format(f))
+        print("Writing output to \"{}/*_{}.npy\"".format(str(res_dir), f))
         hd.write()
 
 if __name__ == "__main__":
     if sys.argv[1] == "--concat":
         hd = HistData((0,total_ensembles-1))
         hd.concat_from_array_job(int(sys.argv[2]))
+        print("Writing concatenated output to \"{}/*.npy\"".format(str(res_dir), f))
         hd.write(with_ensemble_idx=False)
         hd.write_bins(with_ensemble_idx=False)
     else:
@@ -371,4 +377,3 @@ if __name__ == "__main__":
         end = start + interval
         hd = HistData((start, end), all_quantities)
         hd.post_process()
-        hd.write()
