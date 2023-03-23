@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=0-1
+#SBATCH --array=0-20
 #SBATCH --job-name mppkdcf
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
