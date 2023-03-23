@@ -11,4 +11,4 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=BEGIN,END,FAIL
 
-python3 run_mass_pp.py --df 2 ${SLURM_ARRAY_TASK_ID}
+python3 run_post_proc.py 20 ${SLURM_ARRAY_TASK_ID}

@@ -65,7 +65,7 @@ def hist_from_list_of_lists(num, lol, bins, mask_generator=None, out=False):
             c = c + numi
     else:
         for i in range(lol.size):
-            h = lol[i]
+            h = np.array(lol[i])
             numi = h.size
             v[c: c + numi] = h
             c = c + numi
@@ -182,20 +182,25 @@ class HistData:
 
 
     def write_bins(self):
+        #TODO
         print("Not impl")
         exit(1)
 
-    def write(self):
-        f = "ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble )
+    def write(self, with_ensemble_idx=False):
+
+        if with_ensemble_idx:
+            f = "_ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble )
+        else:
+            f = ""
 
         for k,v in self.scalar_qs.items():
-            np.save(res_dir /"{}_{}.npy".format(k,f), v)
+            np.save(res_dir /"{}{}.npy".format(k,f), v)
 
         for k,v in self.vector_qs.items():
-            np.save(res_dir /"{}_{}.npy".format(k,f), v)
+            np.save(res_dir /"{}{}.npy".format(k,f), v)
 
         for k,v in self.tensor_qs.items():
-            np.save(res_dir /"{}_{}.npy".format(k,f), v)
+            np.save(res_dir /"{}{}.npy".format(k,f), v)
 
     def read(self):
         concat_from_array_job(1)
@@ -209,25 +214,29 @@ class HistData:
             self.scalar_qs["nugbar"][n] = hs.nubarg(timeWindow=None, Eth=self.Ethg)
 
         # multiplicity dependent vector quantities
+        def first_from(x, y):
+            return y
+
         if "pnu" in self.vector_qs:
-            self.vector_qs[ "pnu"][n] = hs.Pnu(Eth=self.Ethn)
+            self.vector_qs[ "pnu"][n] = first_from( *hs.Pnu(Eth=self.Ethn ,  nu=self.nubins ))
         if "pnug" in self.vector_qs:
-            self.vector_qs["pnug"][n] = hs.Pnug(Eth=self.Ethg)
+            self.vector_qs["pnug"][n] = first_from( *hs.Pnug(Eth=self.Ethg, nug=self.nugbins))
 
         # energy dependent self.vector quantities
         if "pfns" in self.vector_qs:
-            self.vector_qs["pfns"][n]  = hs.pfns(egrid=self.ebins, Eth=self.Ethn)
+            self.vector_qs["pfns"][n]  = first_from(*hs.pfns(egrid=self.ebins, Eth=self.Ethn))
         if "pfgs" in self.vector_qs:
-            self.vector_qs["pfgs"][n]  = hs.pfgs(
-                    egrid=self.ebins, Eth=self.Ethg,
-                    minTime=self.min_time, maxTime=self.max_time)
+            self.vector_qs["pfgs"][n]  = first_from(
+                    *hs.pfgs(egrid=self.ebins, Eth=self.Ethg,
+                             minTime=self.min_time, maxTime=self.max_time)
+                    )
 
         # nu dependent
         if "egtbarnu" in self.vector_qs:
             for l, nu in enumerate(self.nubins):
                 mask        = np.where(hs.getNu() == nu)
                 num_gammas  = np.sum( hs.getNug() [mask] )
-                nglab       = hs.getGamElab() [mask]
+                nglab       = hs.getGammaElab() [mask]
                 _ , self.vector_qs["egtbarnu"][n,l] = hist_from_list_of_lists(
                             num_gammas, nglab, bins=self.ebins)
 
@@ -255,6 +264,9 @@ class HistData:
             if "nugbarTKE" in self.vector_qs:
                 self.vector_qs["nugbarTKE"][n,l] = np.mean( hs.getNugtot()[mask] )
 
+            # for PFNS and PFGS, data is fragment by fragment, rather than event by event
+            mask = np.hstack( zip(mask,mask) )
+
             # < nu | E_n, TKE >
             if "pfnsTKE" in self.tensor_qs:
                 nelab  = hs.getNeutronElab()[mask]
@@ -262,7 +274,7 @@ class HistData:
                 KE_pre = hs.getKEpre()[mask] / hs.getA()[mask]
 
                 def kinematic_cut(hist : int):
-                    return np.where( np.array(necm[hist]) > KE_pre[hist] / float(a) )
+                    return np.where( np.array(necm[hist]) > KE_pre[hist] )
 
                 self.tensor_qs["pfnsTKE"][n,l,:], _ = hist_from_list_of_lists(
                         num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut)
@@ -280,10 +292,11 @@ class HistData:
             num_gs = np.sum( hs.getNug() [mask] )
 
             # < * | A >
+            # TODO add back energy and time cutoff masks
             if "nubarA" in self.vector_qs:
-                self.vector_qs[ "nubarA"][n,l] = np.mean( hs.nubar()   [mask] )
+                self.vector_qs[ "nubarA"][n,l] = np.mean( hs.nu[mask] )
             if "nugbarA" in self.vector_qs:
-                self.vector_qs["nugbarA"][n,l] = np.mean( hs.nugbarg() [mask] )
+                self.vector_qs["nugbarA"][n,l] = np.mean( hs.nug[mask] )
 
             if "multratioA" in self.vector_qs:
                 mult_ratio =  hs.getNug() [mask] / hs.getNu() [mask]
@@ -309,9 +322,9 @@ class HistData:
 
             # < nu | TKE, A >
             if "nuATKE" in self.tensor_qs:
-                for m in range(self.TKEbins.size):
-                    TKE_min = self.TKEbins[l]
-                    TKE_max = self.TKEbins[l+1]
+                for m in range(self.TKEcenters.size):
+                    TKE_min = self.TKEbins[m]
+                    TKE_max = self.TKEbins[m+1]
                     TKE     = hs.getTKEpost()
                     mask    = np.logical_and(
                                 np.logical_and( TKE >= TKE_min , TKE < TKE_max),
@@ -329,8 +342,8 @@ class HistData:
             fname = hist_dir / ("{}_{}{}".format(hist_fname_prefix, n, hist_fname_postfix))
 
             print("Reading {} ...".format(fname))
-            #hs = fh.Histories(fname, ang_mom_printed=True)
-            hs = fh.Histories(fname, ang_mom_printed=True, nevents=100)
+            hs = fh.Histories(fname, ang_mom_printed=True)
+            #hs = fh.Histories(fname, ang_mom_printed=True, nevents=100)
 
             print("Processing {} histories from {} ...".format( hs.getNu().size, fname))
             hd.process_ensemble(hs,n)
@@ -348,8 +361,8 @@ if __name__ == "__main__":
     if sys.argv[1] == "--concat":
         hd = HistData((0,total_ensembles-1))
         hd.concat_from_array_job(int(sys.argv[2]))
-        hd.write()
-        hd.write_bins()
+        hd.write(with_ensemble_idx=False)
+        hd.write_bins(with_ensemble_idx=False)
     else:
         num_jobs = int(sys.argv[1])
         job_num  = int(sys.argv[2])
