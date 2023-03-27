@@ -343,8 +343,9 @@ class HistData:
         nensemble = self.max_ensemble - self.min_ensemble
 
         for n in range(0,nensemble):
+            ensemble_idx = self.min_ensemble + n
 
-            fname = hist_dir / ("{}_{}{}".format(hist_fname_prefix, n, hist_fname_postfix))
+            fname = hist_dir / ("{}_{}{}".format(hist_fname_prefix, ensemble_idx, hist_fname_postfix))
 
             print("Reading {} ...".format(fname))
             hs = fh.Histories(fname, ang_mom_printed=True)
