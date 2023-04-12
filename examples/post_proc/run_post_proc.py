@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import numpy as np
+from matplotlib import pyplot as plt
 
 from mpi4py import MPI
 
@@ -57,44 +58,6 @@ def balance_load(num_jobs, rank, size):
     return start, end
 
 
-def hist_from_list_of_lists(num, lol, bins, mask_generator=None):
-    """
-    returns a histogram of values that may occur multiple times per history,
-    e.g. neutron energies, formatted as a list of lists; outer being history,
-    and inner bein list of quantities associated with that history.
-
-    num  - number of histories
-    lol  - input data in list of lists format
-    bins - bins for histogram
-
-
-    mask_generator - mask function that takes in a history # and returns
-    a mask over the quantities in the history provided by lol
-    """
-
-    v = np.zeros(num)
-
-    c = 0
-    if mask_generator is not None:
-        for i in range(lol.size):
-            h = np.asarray(lol[i])
-            h = h[mask_generator(i)]
-            numi = h.size
-            v[c : c + numi] = h
-            c = c + numi
-    else:
-        for i in range(lol.size):
-            h = np.asarray(lol[i])
-            numi = h.size
-            v[c : c + numi] = h
-            c = c + numi
-
-    m = np.mean(v[0:c])
-    hist, _ = np.histogram(v[0:c], bins=bins, density=True)
-
-    return hist, m
-
-
 class HistData:
     def __init__(
         self,
@@ -124,7 +87,7 @@ class HistData:
         self.Ethn = 0  # neutron detection lower energy threshold
         self.Ethg = 0  # gamma detection lower energy threshold
         self.min_time = 0
-        self.max_time = 1e3
+        self.max_time = np.inf
 
         # set up histogram grids
         self.nubins = np.arange(0, 11)
@@ -204,13 +167,13 @@ class HistData:
                 exit(1)
 
         for k in list(self.scalar_qs):
-            key = k + "_variance"
+            key = k + "_stddev"
             self.scalar_qs[key] = np.zeros_like(self.scalar_qs[k])
         for k in list(self.vector_qs):
-            key = k + "_variance"
+            key = k + "_stddev"
             self.vector_qs[key] = np.zeros_like(self.vector_qs[k])
         for k in list(self.tensor_qs):
-            key = k + "_variance"
+            key = k + "_stddev"
             self.tensor_qs[key] = np.zeros_like(self.tensor_qs[k])
 
     def write_bins(self, with_ensemble_idx=False, mpi_comm=None):
@@ -256,36 +219,168 @@ class HistData:
         for k in self.tensor_qs:
             self.tensor_qs[k] = np.load(self.res_dir / "{}{}.npy".format(k, f))
 
-    def estimate(histories):
+    def hist_from_list_of_lists(self, num, lol, bins, mask_generator=None):
+        """
+        returns a histogram of values that may occur multiple times per history,
+        e.g. neutron energies, formatted as a list of lists; outer being history,
+        and inner bein list of quantities associated with that history.
+
+        num  - number of histories
+        lol  - input data in list of lists format
+        bins - bins for histogram
+
+
+        mask_generator - mask function that takes in a history # and returns
+        a mask over the quantities in the history provided by lol
+        """
+
+        v = np.zeros(num)
+
+        c = 0
+        if mask_generator is not None:
+            for i in range(lol.size):
+                h = np.asarray(lol[i])
+                h = h[mask_generator(i)]
+                numi = h.size
+                v[c : c + numi] = h
+                c = c + numi
+        else:
+            for i in range(lol.size):
+                h = np.asarray(lol[i])
+                numi = h.size
+                v[c : c + numi] = h
+                c = c + numi
+
+        mean, sem = self.estimate_mean(v[0:c])
+        hist, stdev = self.histogram_with_poisson_uncertainty(v[0:c], bins=bins)
+
+        return hist, stdev, mean, sem
+
+    def histogram_with_poisson_uncertainty(self, histories, bins, int_bins=False):
+        """
+        For a set of scalar quantities organized by history along axis 0,
+        returns a histogram of values over bins, along with uncertainty
+        """
+        nhist = histories.shape[0]
+        if nhist == 0:
+            num_bins = bins.size - 1
+            if int_bins:
+                num_bins = bins.size
+            return np.zeros(num_bins), np.zeros(num_bins)
+
+        if int_bins:
+            bins = bins - 0.5
+            bins = np.append(bins, [bins[-1] + 0.5])
+
+        h, _ = np.histogram(histories, bins=bins, density=False)
+        stdev = np.sqrt(h)
+        dbins = bins[1:] - bins[:-1]
+        norm = nhist * dbins
+        return h / norm, stdev / norm
+
+    def estimate_mean(self, histories):
+        """
+        For a set of scalar quantities organized by history along axis 0,
+        return the mean, and the standard error in the mean sqrt(stddev/N)
+        """
+        if histories.size == 0:
+            return 0, 0
         h2 = histories**2
-        hbar = np.mean(histories)
-        hvar = 1 / histories.size * (np.mean(h2) - hbar**2)
-        return hbar, hvar
+        hbar = np.mean(histories, axis=0)
+        sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
+        return hbar, sem
+
+    def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
+        """
+        Given list of lists representing gamma energies and ages for each fragment,
+        returns a callable that takes in a fragment index and returns a mask selecting
+        the gammas within the time and energy cuts
+        """
+        def cut(i: int):
+            return np.where(
+                np.logical_and(
+                    np.logical_and(
+                        np.asarray(ages_lol[i]) >= self.min_time,
+                        np.asarray(ages_lol[i]) < self.max_time,
+                    ),
+                    np.asarray(energy_lol[i]) > self.Ethg,
+                )
+            )
+
+        return cut
+
+    def neutron_cut(self, energy_lol: np.array):
+        """
+        Given list of lists representing neutron energies for each fragment, returns
+        a callable that takes in a fragment index and returns a mask selecting the
+        neutrons  within the energy cut
+        """
+
+        def cut(i: int):
+            return np.where(np.asarray(energy_lol[i]) > self.Ethn)
+
+        return cut
 
     def process_ensemble(self, hs: fh.Histories, n: int):
+        # TODO enforce cutoffs in energy and time for gammas
         # scalar quantities
         if "nubar" in self.scalar_qs:
-            self.scalar_qs["nubar"][n], self.scalar_qs["nubar_variance"][n] = estimate(
-                hs.nuLF + hs.nuHF + hs.preFissionNu
-            )
+            (
+                self.scalar_qs["nubar"][n],
+                self.scalar_qs["nubar_stddev"][n],
+            ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
         if "nugbar" in self.scalar_qs:
-            self.scalar_qs["nugbar"][n] = hs.nubargtot(timeWindow=None, Eth=self.Ethg)
+            (
+                self.scalar_qs["nugbar"][n],
+                self.scalar_qs["nugbar_stddev"][n],
+            ) = self.estimate_mean(hs.nugLF + hs.nugHF)
 
         if "pnu" in self.vector_qs:
-            _, self.vector_qs["pnu"][n] = hs.Pnu(Eth=self.Ethn, nu=self.nubins)
+            nutot = (
+                hs.getNuEnergyCut(self.Ethn).reshape((hs.numberEvents, 2)).sum(axis=1)
+            )
+            (
+                self.vector_qs["pnu"][n],
+                self.vector_qs["pnu_stddev"][n],
+            ) = self.histogram_with_poisson_uncertainty(
+                nutot, self.nubins, int_bins=True
+            )
+
         if "pnug" in self.vector_qs:
-            _, self.vector_qs["pnug"][n] = hs.Pnug(Eth=self.Ethg, nug=self.nugbins)
+            nugtot = (
+                hs.getNugEnergyCut(self.Ethg).reshape((hs.numberEvents, 2)).sum(axis=1)
+            )
+            (
+                self.vector_qs["pnug"][n],
+                self.vector_qs["pnug_stddev"][n],
+            ) = self.histogram_with_poisson_uncertainty(
+                nugtot, self.nugbins, int_bins=True
+            )
 
         # energy dependent vector quantities
         if "pfns" in self.vector_qs:
-            _, self.vector_qs["pfns"][n] = hs.pfns(egrid=self.ebins, Eth=self.Ethn)
+            nelab = hs.getNeutronElab()
+            num_neutrons = np.sum(hs.getNutot())
+            (
+                self.vector_qs["pfns"][n],
+                self.vector_qs["pfns_stddev"][n],
+                _,
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_neutrons, nelab, self.ebins, self.neutron_cut(nelab)
+            )
 
         if "pfgs" in self.vector_qs:
-            _, self.vector_qs["pfgs"][n] = hs.pfgs(
-                egrid=self.ebins,
-                Eth=self.Ethg,
-                minTime=self.min_time,
-                maxTime=self.max_time,
+            gelab = hs.getGammaElab()
+            ages = hs.getGammaAges()
+            num_gammas = np.sum(hs.getNugtot())
+            (
+                self.vector_qs["pfgs"][n],
+                self.vector_qs["pfgs_stddev"][n],
+                _,
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_gammas, gelab, self.ebins, self.gamma_cut(gelab, ages)
             )
 
         # nu dependent
@@ -294,17 +389,28 @@ class HistData:
                 mask = np.where(hs.getNu() == nu)
                 num_gammas = np.sum(hs.getNug()[mask])
                 nglab = hs.getGammaElab()[mask]
-                _, self.vector_qs["egtbarnu"][n, l] = hist_from_list_of_lists(
-                    num_gammas, nglab, bins=self.ebins
-                )
+
+                (
+                    _,
+                    _,
+                    self.vector_qs["egtbarnu"][n, l],
+                    self.vector_qs["egtbarnu_stddev"][n, l],
+                ) = self.hist_from_list_of_lists(num_gammas, nglab, bins=self.ebins)
 
         # Z dependent
         for l, z in enumerate(self.zbins):
             mask = np.where(hs.Z == z)
             if "nubarZ" in self.vector_qs:
-                self.vector_qs["nubarZ"][n, l] = np.mean(hs.getNu()[mask])
+                (
+                    self.vector_qs["nubarZ"][n, l],
+                    self.vector_qs["nubarZ_stddev"][n, l],
+                ) = self.estimate_mean(hs.getNu()[mask])
+
             if "nugbarZ" in self.vector_qs:
-                self.vector_qs["nugbarZ"][n, l] = np.mean(hs.getNug()[mask])
+                (
+                    self.vector_qs["nugbarZ"][n, l],
+                    self.vector_qs["nugbarZ_stddev"][n, l],
+                ) = self.estimate_mean(hs.getNug()[mask])
 
         # TKE dependent
         for l in range(self.TKEcenters.size):
@@ -318,9 +424,16 @@ class HistData:
 
             # < nu | TKE >
             if "nubarTKE" in self.vector_qs:
-                self.vector_qs["nubarTKE"][n, l] = np.mean(hs.getNutot()[mask])
+                (
+                    self.vector_qs["nubarTKE"][n, l],
+                    self.vector_qs["nubarTKE_stddev"][n, l],
+                ) = self.estimate_mean(hs.getNutot()[mask])
+
             if "nugbarTKE" in self.vector_qs:
-                self.vector_qs["nugbarTKE"][n, l] = np.mean(hs.getNugtot()[mask])
+                (
+                    self.vector_qs["nugbarTKE"][n, l],
+                    self.vector_qs["nugbarTKE_stddev"][n, l],
+                ) = self.estimate_mean(hs.getNugtot()[mask])
 
             # for PFNS and PFGS, data is fragment by fragment, rather than event by event
             mask = mask.repeat(2, axis=0)
@@ -334,15 +447,30 @@ class HistData:
                 def kinematic_cut(hist: int):
                     return np.where(np.asarray(necm[hist]) > KE_pre[hist])
 
-                self.tensor_qs["pfnsTKE"][n, l, :], _ = hist_from_list_of_lists(
+                (
+                    self.tensor_qs["pfnsTKE"][n, l, :],
+                    self.tensor_qs["pfnsTKE_stddev"][n, l, :],
+                    _,
+                    _,
+                ) = self.hist_from_list_of_lists(
                     num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / dE_g | TKE >
             if "pfgsTKE" in self.tensor_qs:
-                nglab = hs.getGammaElab()[mask]
-                self.tensor_qs["pfgsTKE"][n, l, :], _ = hist_from_list_of_lists(
-                    num_gammas, nglab, bins=self.ebins
+                gelab = hs.getGammaElab()[mask]
+                ages = hs.getGammaAges()[mask]
+
+                (
+                    self.tensor_qs["pfgsTKE"][n, l, :],
+                    self.tensor_qs["pfgsTKE_stddev"][n, l, :],
+                    _,
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_gammas,
+                    gelab,
+                    bins=self.ebins,
+                    mask_generator=self.gamma_cut(gelab, ages),
                 )
 
         # A dependent
@@ -353,14 +481,31 @@ class HistData:
 
             # < * | A >
             # TODO add back energy and time cutoff masks
-            if "nubarA" in self.vector_qs:
-                self.vector_qs["nubarA"][n, l] = np.mean(hs.nu[mask])
-            if "nugbarA" in self.vector_qs:
-                self.vector_qs["nugbarA"][n, l] = np.mean(hs.nug[mask])
+            if "nubarA" in self.vector_qs or "multratioA" in self.vector_qs:
+                (
+                    self.vector_qs["nubarA"][n, l],
+                    self.vector_qs["nubarA_stddev"][n, l],
+                ) = self.estimate_mean(hs.nu[mask])
+
+            if "nugbarA" in self.vector_qs or "multratioA" in self.vector_qs:
+                (
+                    self.vector_qs["nugbarA"][n, l],
+                    self.vector_qs["nugbarA_stddev"][n, l],
+                ) = self.estimate_mean(hs.nug[mask])
 
             if "multratioA" in self.vector_qs:
-                mult_ratio = np.mean(hs.getNug()[mask]) / np.mean(hs.getNu()[mask])
-                self.vector_qs["multratioA"][n, l] = mult_ratio
+                nu, nug = (
+                    self.vector_qs["nubarA"][n, l],
+                    self.vector_qs["nugbarA"][n, l],
+                )
+                dnu, dnug = (
+                    self.vector_qs["nubarA_stddev"][n, l],
+                    self.vector_qs["nugbarA_stddev"][n, l],
+                )
+                self.vector_qs["multratioA"][n, l] = nug / nu
+                self.vector_qs["multratioA_stddev"][n, l] = np.sqrt(
+                    dnug**2 / nu**2 + dnu**2 * (dnug / dnu) ** 2
+                )
 
             # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs:
@@ -372,15 +517,30 @@ class HistData:
                     min_energy = KE_pre[hist] / float(a)
                     return np.where(np.asarray(necm[hist]) > min_energy)
 
-                self.tensor_qs["pfnsA"][n, l, :], _ = hist_from_list_of_lists(
+                (
+                    self.tensor_qs["pfnsA"][n, l, :],
+                    self.tensor_qs["pfnsA_stddev"][n, l, :],
+                    _,
+                    _,
+                ) = self.hist_from_list_of_lists(
                     num_ns, nelab, bins=self.ebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / d E_g | A >
             if "pfgsA" in self.tensor_qs:
-                nglab = hs.getGammaElab()[mask]
-                self.tensor_qs["pfgsA"][n, l, :], _ = hist_from_list_of_lists(
-                    num_gs, nglab, bins=self.ebins
+                gelab = hs.getGammaElab()[mask]
+                ages = hs.getGammaAges()[mask]
+
+                (
+                    self.tensor_qs["pfgsA"][n, l, :],
+                    self.tensor_qs["pfgsA_stddev"][n, l, :],
+                    _,
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_gs,
+                    nglab,
+                    bins=self.ebins,
+                    mask_generator=self.gamma_cut(gelab, ages),
                 )
 
             # < nu | TKE, A >
@@ -393,7 +553,11 @@ class HistData:
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         np.logical_or(hs.getAHF() == a, hs.getALF() == a),
                     )
-                    self.tensor_qs["nuATKE"][n, l, m] = np.mean(hs.getNutot()[mask])
+
+                    (
+                        self.tensor_qs["nuATKE"][n, l, m],
+                        self.tensor_qs["nuATKE_stddev"][n, l, m],
+                    ) = self.estimate_mean(hs.getNutot()[mask])
 
     def gather(self, mpi_comm, rank, size):
         if mpi_comm is None:
