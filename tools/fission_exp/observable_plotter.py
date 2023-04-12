@@ -58,7 +58,7 @@ class Plotter:
                 x, pfns, pfns - pfns_err, pfns + pfns_err, alpha=0.5, zorder=100
             )
 
-        def plt_spec(self, s, l):
+        def plt_spec(s, l):
             x = s.bins
             m = maxwellian(x, 1.32)
             k = np.trapz(m, x)
@@ -119,7 +119,7 @@ class Plotter:
     def pfgs(
         self,
     ):
-        def plt_spec(self, s, l):
+        def plt_spec(s, l):
             x = s.bins
             y = s.spec
             yerr = s.err
