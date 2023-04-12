@@ -6,6 +6,6 @@ setup(
    description='UQ for fission MCHF fragment de-excitation using optical model potentials',
    author='Kyle Beyer',
    author_email='beykyle@umich.edu',
-   packages=['analysis'],
+   packages=['cgmf_analysis'],
    install_requires=['CGMFtk'],
 )
