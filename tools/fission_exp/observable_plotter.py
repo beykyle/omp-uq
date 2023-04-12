@@ -116,9 +116,7 @@ class Plotter:
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFNS ratio to Maxwellian ($kT = 1.32$ MeV)")
 
-    def pfgs(
-        self,
-    ):
+    def pfgs(self):
         def plt_spec(s, l):
             x = s.bins
             y = s.spec
@@ -271,9 +269,7 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
-    def nubarTKE(
-        self,
-    ):
+    def nubarTKE(self):
         nubarTKE = read(self.exp_data_path, "nubarTKE")
 
         plts = []
@@ -459,9 +455,7 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \bar{E^{%d}} $ [MeV]" % n)
 
-    def multratA(
-        self,
-    ):
+    def multratA(self):
         mr = read(self.exp_data_path, "multiplicityRatioA")
 
         labels = [m["label"] for m in mr.meta]
@@ -486,9 +480,7 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
-    def enbarA(
-        self,
-    ):
+    def enbarA(self):
         enbar = read(self.exp_data_path, "enbarA")
 
         labels = [m["label"] for m in enbar.meta]
@@ -514,9 +506,7 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \bar{E}_n $ [MeV]")
 
-    def enbarTKE(
-        self,
-    ):
+    def enbarTKE(self):
         enbar = read(self.exp_data_path, "enbarTKE")
 
         labels = [m["label"] for m in enbar.meta]

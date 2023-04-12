@@ -54,6 +54,8 @@ class Spec:
             # simple trapz integration
             sp = self.normalize()
 
+        return sp
+
 
 class PFNSA:
     def __init__(self, arr: np.array):
