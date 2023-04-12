@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 import numpy as np
-from matplotlib import pyplot as plt
 
 from mpi4py import MPI
 
@@ -254,7 +253,7 @@ class HistData:
         mean, sem = self.estimate_mean(v[0:c])
         hist, stdev = self.histogram_with_poisson_uncertainty(v[0:c], bins=bins)
 
-        return hist, stdev, mean, sem
+        return hist, stdev, mean, sem, c
 
     def histogram_with_poisson_uncertainty(self, histories, bins, int_bins=False):
         """
@@ -296,6 +295,7 @@ class HistData:
         returns a callable that takes in a fragment index and returns a mask selecting
         the gammas within the time and energy cuts
         """
+
         def cut(i: int):
             return np.where(
                 np.logical_and(
@@ -366,6 +366,7 @@ class HistData:
                 self.vector_qs["pfns_stddev"][n],
                 _,
                 _,
+                _,
             ) = self.hist_from_list_of_lists(
                 num_neutrons, nelab, self.ebins, self.neutron_cut(nelab)
             )
@@ -379,6 +380,7 @@ class HistData:
                 self.vector_qs["pfgs_stddev"][n],
                 _,
                 _,
+                _,
             ) = self.hist_from_list_of_lists(
                 num_gammas, gelab, self.ebins, self.gamma_cut(gelab, ages)
             )
@@ -388,17 +390,22 @@ class HistData:
             for l, nu in enumerate(self.nubins):
                 mask = np.where(hs.getNu() == nu)
                 num_gammas = np.sum(hs.getNug()[mask])
-                nglab = hs.getGammaElab()[mask]
+                gelab = hs.getGammaElab()[mask]
+                ages = hs.getGammaElab()[mask]
 
                 (
                     _,
                     _,
                     self.vector_qs["egtbarnu"][n, l],
                     self.vector_qs["egtbarnu_stddev"][n, l],
-                ) = self.hist_from_list_of_lists(num_gammas, nglab, bins=self.ebins)
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_gammas, gelab, bins=self.ebins, cut=self.gamma_cut(gelab, ages)
+                )
 
         # Z dependent
         for l, z in enumerate(self.zbins):
+            # TODO add cuts for energy and time
             mask = np.where(hs.Z == z)
             if "nubarZ" in self.vector_qs:
                 (
@@ -414,6 +421,7 @@ class HistData:
 
         # TKE dependent
         for l in range(self.TKEcenters.size):
+            # TODO add cuts for energy and time
             TKE_min = self.TKEbins[l]
             TKE_max = self.TKEbins[l + 1]
             TKE = hs.getTKEpost()
@@ -452,6 +460,7 @@ class HistData:
                     self.tensor_qs["pfnsTKE_stddev"][n, l, :],
                     _,
                     _,
+                    _,
                 ) = self.hist_from_list_of_lists(
                     num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut
                 )
@@ -466,6 +475,7 @@ class HistData:
                     self.tensor_qs["pfgsTKE_stddev"][n, l, :],
                     _,
                     _,
+                    _,
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
@@ -475,11 +485,12 @@ class HistData:
 
         # A dependent
         for l, a in enumerate(self.abins):
+            # TODO add cuts for energy and time
             mask = np.where(hs.getA() == a)
             num_ns = np.sum(hs.getNu()[mask])
             num_gs = np.sum(hs.getNug()[mask])
 
-            # < * | A >
+            # < * | A n>
             # TODO add back energy and time cutoff masks
             if "nubarA" in self.vector_qs or "multratioA" in self.vector_qs:
                 (
@@ -522,6 +533,7 @@ class HistData:
                     self.tensor_qs["pfnsA_stddev"][n, l, :],
                     _,
                     _,
+                    _,
                 ) = self.hist_from_list_of_lists(
                     num_ns, nelab, bins=self.ebins, mask_generator=kinematic_cut
                 )
@@ -536,9 +548,10 @@ class HistData:
                     self.tensor_qs["pfgsA_stddev"][n, l, :],
                     _,
                     _,
+                    _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
-                    nglab,
+                    gelab,
                     bins=self.ebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                 )
