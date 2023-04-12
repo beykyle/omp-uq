@@ -6,8 +6,9 @@ import pickle
 
 from .spec_analysis import Spec
 
+
 class Quantity:
-    def __init__(self, quantity : str,  fmt : str, data : list, meta : list, units : list):
+    def __init__(self, quantity: str, fmt: str, data: list, meta: list, units: list):
         self.quantity = quantity
         self.data = data
         self.fmt = fmt
@@ -15,108 +16,125 @@ class Quantity:
         self.units = units
 
     def get_specs(self, norm="none"):
-        assert(self.fmt == "x,dx,y,dy")
+        assert self.fmt == "x,dx,y,dy"
 
         def get_normed_spec(data):
-            x  = data[0,:]
-            dx = data[1,:]
-            y  = data[2,:]
-            dy = data[3,:]
+            x = data[0, :]
+            dx = data[1, :]
+            y = data[2, :]
+            dy = data[3, :]
 
             # x must be sorted
-            assert(np.all(x[:-1] <= x[1:]))
+            assert np.all(x[:-1] <= x[1:])
 
             return Spec(y, dy, x, xerr=dx).normalize()
 
-        return [ get_normed_spec(d) for d in self.data ]
+        return [get_normed_spec(d) for d in self.data]
 
 
 def select(df, key):
-    dfq = df[ df["quantity"] == key ]
+    dfq = df[df["quantity"] == key]
 
     if dfq.empty:
         print("No data found for quantity " + key)
 
-    meta = dfq[["quantity", "authors", "label", "reference", "web",
-                "title", "exfor", "year", "comments"]].to_dict('records')
+    meta = dfq[
+        [
+            "quantity",
+            "authors",
+            "label",
+            "reference",
+            "web",
+            "title",
+            "exfor",
+            "year",
+            "comments",
+        ]
+    ].to_dict("records")
 
     print("Found {} results for quantity {}".format(len(meta), key))
 
     return dfq, meta
 
-def extract_units( row, fmt : list ):
+
+def extract_units(row, fmt: list):
     units = []
     for f in fmt:
         if f is None:
             units.append(None)
         else:
-            units.append( row[f].to_string(index=None).strip() )
+            units.append(row[f].to_string(index=None).strip())
 
     return units
 
-def read_scalar(df, quantity):
 
+def read_scalar(df, quantity):
     dfq, meta = select(df, quantity)
 
-    data  = []
-    units= []
+    data = []
+    units = []
 
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
         if fmt == "xy":
-            y  = d[0][0][1]
+            y = d[0][0][1]
             dy = 0
-            units.append(extract_units( entry, ["units-y", None] ) )
+            units.append(extract_units(entry, ["units-y", None]))
         elif fmt == "xydy":
-            y  = d[0][0][1]
+            y = d[0][0][1]
             dy = d[0][0][2]
-            units.append(extract_units( entry, ["units-y", "units-dy"] ) )
+            units.append(extract_units(entry, ["units-y", "units-dy"]))
         elif fmt == "xdxydy":
-            y  = d[0][0][2]
+            y = d[0][0][2]
             dy = d[0][0][3]
-            units.append(extract_units( entry, ["units-y", "units-dy"] ) )
+            units.append(extract_units(entry, ["units-y", "units-dy"]))
         else:
             print("Invalid format specifier for quantity " + quantity + ": " + fmt)
             exit(1)
-        data.append(np.array([y,dy]))
+        data.append(np.array([y, dy]))
 
     return Quantity(quantity, "y,dy", data, meta, units)
 
-def read_specs(df, quantity):
 
+def read_specs(df, quantity):
     dfq, meta = select(df, quantity)
 
-    specs  = []
-    units  = []
+    specs = []
+    units = []
 
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
-        data        = np.array( list(d)[0] )
-        data_xdxydy = np.zeros( (4, data.shape[0]) )
+        data = np.array(list(d)[0])
+        data_xdxydy = np.zeros((4, data.shape[0]))
         if fmt == "xy":
-            data_xdxydy[0,:] = data[:,0]
-            data_xdxydy[2,:] = data[:,1]
-            units.append(extract_units( entry, ["units-x", None, "units-y", None] ) )
+            data_xdxydy[0, :] = data[:, 0]
+            data_xdxydy[2, :] = data[:, 1]
+            units.append(extract_units(entry, ["units-x", None, "units-y", None]))
         elif fmt == "xydy":
-            data_xdxydy[0,:] = data[:,0]
-            data_xdxydy[2,:] = data[:,1]
-            data_xdxydy[3,:] = data[:,2]
-            units.append(extract_units( entry, ["units-x", None, "units-y", "units-dy"] ) )
+            data_xdxydy[0, :] = data[:, 0]
+            data_xdxydy[2, :] = data[:, 1]
+            data_xdxydy[3, :] = data[:, 2]
+            units.append(extract_units(entry, ["units-x", None, "units-y", "units-dy"]))
         elif fmt == "xdxldxuydy":
-            data_xdxydy[0,:] = data[:,0]
-            data_xdxydy[1,:] = data[:,1]
-            data_xdxydy[2,:] = data[:,3]
-            data_xdxydy[3,:] = data[:,4]
-            units.append(extract_units( entry, ["units-x", "units-dxl", "units-y", "units-dy"] ) )
+            data_xdxydy[0, :] = data[:, 0]
+            data_xdxydy[1, :] = data[:, 1]
+            data_xdxydy[2, :] = data[:, 3]
+            data_xdxydy[3, :] = data[:, 4]
+            units.append(
+                extract_units(entry, ["units-x", "units-dxl", "units-y", "units-dy"])
+            )
         elif fmt == "xdxydy":
             data_xdxydy = data.T
-            units.append(extract_units( entry, ["units-x", "units-dx", "units-y", "units-dy"] ) )
+            units.append(
+                extract_units(entry, ["units-x", "units-dx", "units-y", "units-dy"])
+            )
         else:
             print("Invalid format specifier for quantity " + quantity + ": " + fmt)
             exit(1)
         specs.append(data_xdxydy)
 
     return Quantity(quantity, "x,dx,y,dy", specs, meta, units)
+
 
 def read_3D(df, quantity):
     dfq, meta = select(df, quantity)
@@ -126,46 +144,77 @@ def read_3D(df, quantity):
 
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
-        data    = np.array( list(d)[0] )
-        data_fm = np.zeros( (6, data.shape[0]) )
+        data = np.array(list(d)[0])
+        data_fm = np.zeros((6, data.shape[0]))
         if fmt == "xdxyz":
-            data_fm[:3,:] = data[:,:3]
-            data_fm[4,:]  = data[:,3]
-            units.append(extract_units( entry,
-                                       ["units-x", "units-dx",
-                                        "units-y", None,
-                                        "units-z", "units-z"] ) )
+            data_fm[:3, :] = data[:, :3]
+            data_fm[4, :] = data[:, 3]
+            units.append(
+                extract_units(
+                    entry,
+                    ["units-x", "units-dx", "units-y", None, "units-z", "units-z"],
+                )
+            )
         elif fmt == "xdxydyz":
             data_fm[:5] = data
-            data_fm[5]  = data[:,4]
-            units.append(extract_units( entry,
-                                       ["units-x", "units-dx",
-                                        "units-y", "units-dy",
-                                        "units-z", "units-z"] ) )
+            data_fm[5] = data[:, 4]
+            units.append(
+                extract_units(
+                    entry,
+                    [
+                        "units-x",
+                        "units-dx",
+                        "units-y",
+                        "units-dy",
+                        "units-z",
+                        "units-z",
+                    ],
+                )
+            )
         elif fmt == "xydyz":
-            data_fm[0,:]    = data[:,0]
-            data_fm[2:5,:]  = data[:,1:].T
-            data_fm[5]      = data[:,3]
+            data_fm[0, :] = data[:, 0]
+            data_fm[2:5, :] = data[:, 1:].T
+            data_fm[5] = data[:, 3]
 
-            units.append(extract_units( entry,
-                                       ["units-x", None,
-                                        "units-y", "units-dy",
-                                        "units-z", "units-z"] ) )
+            units.append(
+                extract_units(
+                    entry,
+                    ["units-x", None, "units-y", "units-dy", "units-z", "units-z"],
+                )
+            )
         elif fmt == "xydyzminzmax":
-            data_fm[0,:]    = data[:,0]
-            data_fm[2:5,:]  = data[:,1:].T
-            data_fm[5]      = data[:,3]
+            data_fm[0, :] = data[:, 0]
+            data_fm[2:5, :] = data[:, 1:].T
+            data_fm[5] = data[:, 3]
 
-            units.append(extract_units( entry,
-                                       ["units-x"   , None,
-                                        "units-y"   , "units-dy",
-                                        "units-zmin", "units-zmax"] ) )
+            units.append(
+                extract_units(
+                    entry,
+                    [
+                        "units-x",
+                        None,
+                        "units-y",
+                        "units-dy",
+                        "units-zmin",
+                        "units-zmax",
+                    ],
+                )
+            )
         elif fmt == "xdxydyzminzmax":
             data_fm = data.T
-            units.append(extract_units( entry,
-                                       ["units-x "  , "units-dx",
-                                        "units-y"   , "units-dy",
-                                        "units-zmin", "units-zmax"] ) )
+            units.append(
+                extract_units(
+                    entry,
+                    [
+                        "units-x ",
+                        "units-dx",
+                        "units-y",
+                        "units-dy",
+                        "units-zmin",
+                        "units-zmax",
+                    ],
+                )
+            )
         else:
             print("Invalid format specifier for quantity " + quantity + ": " + fmt)
             exit(1)
@@ -173,32 +222,40 @@ def read_3D(df, quantity):
 
     return Quantity(quantity, "x,dx,y,dy,zmin,zmax", specs, meta, units)
 
-def read_pfns(df):
-    return [ read_specs(df, "PFNS"), read_specs(df, "PFNS_sqrtE"), read_specs(df, "PFNS_max") ]
 
-def read(fname : str, quantity : str):
+def read_pfns(df):
+    return [
+        read_specs(df, "PFNS"),
+        read_specs(df, "PFNS_sqrtE"),
+        read_specs(df, "PFNS_max"),
+    ]
+
+
+def read(fname: str, quantity: str):
     print("parsing {}".format(fname))
-    df = pd.DataFrame.from_records(pd.read_json(fname)['entries'])
+    df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
     return read_json(df, quantity)
+
 
 def read_nubarATKE(df):
     """
     convert all <nu | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubarTKEA = read_3D(df, "nubarTKEA") # in TKE, dTKE, nu, dnu, u, u
+    nubarTKEA = read_3D(df, "nubarTKEA")  # in TKE, dTKE, nu, dnu, u, u
     nubarATKE = read_3D(df, "nubarATKE")
 
     for i, d in enumerate(nubarTKEA.data):
         nubarATKE.meta.append(nubarTKEA.meta[i])
         nubarATKE.units.append(nubarTKEA.units[i])
         dt = np.zeros_like(d)
-        dt[0,:]     = d[4,:]
-        dt[2:4,:]   = d[2:4,:]
-        dt[4,:]     = d[0,:]
-        dt[5,:]     = d[0,:]
+        dt[0, :] = d[4, :]
+        dt[2:4, :] = d[2:4, :]
+        dt[4, :] = d[0, :]
+        dt[5, :] = d[0, :]
         nubarATKE.data.append(dt)
 
-def read_json(df : pd.DataFrame, quantity : str):
+
+def read_json(df: pd.DataFrame, quantity: str):
     q = quantity.replace("HF", "").replace("LF", "")
     if q == "nubar":
         return read_scalar(df, "nubar")
@@ -246,23 +303,56 @@ def read_json(df : pd.DataFrame, quantity : str):
         print("Unkown quantity: " + quantity)
         exit(1)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Read fission quantities from JSON experimental compendium.')
-    parser.add_argument("-p", "--path", type=str, dest='fpath', required=True,
-                        help='path to JSON experimental compendium')
-    parser.add_argument("-q", "--quantity", dest='quantity', type=str, required=True,
-                        choices=["nubar", "nugbar", "pfns", "pfgs", "pnu", "pnug", "nug / nu"],
-                        help='quantity to read')
-    parser.add_argument("-d", "--diff", dest='diff', default=None,
-                        choices=["A", "TKE"], type=str,
-                        help='variable upon which quantity should be differentiated, (default=None)')
-    parser.add_argument('--HF', action=argparse.BooleanOptionalAction,
-                        help='find quantity associated only with heavy fragment')
-    parser.add_argument('--LF', action=argparse.BooleanOptionalAction,
-                        help='find quantity associated only with light fragment')
-    parser.add_argument("-o", "--out-path", type=str, dest='opath', required=False,
-                        help='path to dump pickled output', default="default_out.pickle")
+        description="Read fission quantities from JSON experimental compendium."
+    )
+    parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        dest="fpath",
+        required=True,
+        help="path to JSON experimental compendium",
+    )
+    parser.add_argument(
+        "-q",
+        "--quantity",
+        dest="quantity",
+        type=str,
+        required=True,
+        choices=["nubar", "nugbar", "pfns", "pfgs", "pnu", "pnug", "nug / nu"],
+        help="quantity to read",
+    )
+    parser.add_argument(
+        "-d",
+        "--diff",
+        dest="diff",
+        default=None,
+        choices=["A", "TKE"],
+        type=str,
+        help="variable upon which quantity should be differentiated, (default=None)",
+    )
+    parser.add_argument(
+        "--HF",
+        action=argparse.BooleanOptionalAction,
+        help="find quantity associated only with heavy fragment",
+    )
+    parser.add_argument(
+        "--LF",
+        action=argparse.BooleanOptionalAction,
+        help="find quantity associated only with light fragment",
+    )
+    parser.add_argument(
+        "-o",
+        "--out-path",
+        type=str,
+        dest="opath",
+        required=False,
+        help="path to dump pickled output",
+        default="default_out.pickle",
+    )
 
     args = parser.parse_args()
 
@@ -293,6 +383,6 @@ if __name__ == "__main__":
         args.opath = args.quantity + diff_str + ".pickle"
 
     print("Writing " + args.quantity + " to " + args.opath)
-    ofile = open(args.opath, 'wb')
+    ofile = open(args.opath, "wb")
     pickle.dump(quantity, ofile)
     ofile.close()

@@ -2,6 +2,7 @@ from mpi4py import MPI
 from omp_uq import HistData, all_quantities
 import sys
 
+
 def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -14,6 +15,7 @@ def main():
         sys.stdout.flush()
         data.write()
         data.write_bins()
+
 
 if __name__ == "__main__":
     main()

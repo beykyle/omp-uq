@@ -8,9 +8,9 @@ class Spec:
         self.spec = spec
         self.err = err
         self.bins = bins
-        self.xerr=xerr
+        self.xerr = xerr
 
-        assert(spec.shape == err.shape)
+        assert spec.shape == err.shape
 
     def interp(self, bins):
         spec = np.interp(bins, self.bins, self.spec)
@@ -40,34 +40,34 @@ class Spec:
         """
         if self.bins.shape != self.spec.shape:
             # interpolate to centers
-            centers = 0.5*(self.bins[:-1] + self.bins[1:])
+            centers = 0.5 * (self.bins[:-1] + self.bins[1:])
             sp = self.interp(centers)
 
             # get dX
-            dx    = self.dX()
+            dx = self.dX()
             total = sp.sum_counts()
 
             # normalize to bin widths
             sp.spec = sp.spec / dx / total
-            sp.err  = sp.err / dx / total
+            sp.err = sp.err / dx / total
         else:
             # simple trapz integration
             sp = self.normalize()
 
 
 class PFNSA:
-    def __init__(self, arr : np.array):
-        self.Amsk  = np.array(arr[0,:], dtype=int)
-        self.E     = arr[1,:]
-        self.cnts  = arr[2,:]
-        self.sterr = arr[3,:]
-        self.mass  = np.unique(self.Amsk)
+    def __init__(self, arr: np.array):
+        self.Amsk = np.array(arr[0, :], dtype=int)
+        self.E = arr[1, :]
+        self.cnts = arr[2, :]
+        self.sterr = arr[3, :]
+        self.mass = np.unique(self.Amsk)
 
     def getEbins(self):
         a = self.Amsk[0]
         return self.E[np.where(self.Amsk == a)]
 
-    def getPFNS(self, A : int):
+    def getPFNS(self, A: int):
         mask = np.where(self.Amsk == A)
         return self.cnts[mask], self.sterr[mask]
 
@@ -75,25 +75,27 @@ class PFNSA:
         specs = []
         ebins = self.getEbins()
         for mass in masses:
-            spec, err  = self.getPFNS(mass)
+            spec, err = self.getPFNS(mass)
             specs.append(Spec(spec, err, ebins))
 
         return specs
 
 
-def maxwellian(ebins : np.array, Eavg : float):
-    return 2*np.sqrt(ebins / np.pi) * (1 / Eavg)**(3./2.) * np.exp(- ebins / Eavg )
+def maxwellian(ebins: np.array, Eavg: float):
+    return (
+        2 * np.sqrt(ebins / np.pi) * (1 / Eavg) ** (3.0 / 2.0) * np.exp(-ebins / Eavg)
+    )
 
 
 def read_exfor_2npy(fname, out):
     df = pd.read_csv(fname, delim_whitespace=True)
 
-    mass = np.array(pd.to_numeric(df['MASS']).to_numpy(), dtype=int)
-    data = np.zeros((4,mass.shape[0]))
-    data[0,:] = mass
-    data[1,:] = np.array(pd.to_numeric(df['E']).to_numpy(), dtype=float)
-    data[2,:] = np.array(pd.to_numeric(df['DATA']).to_numpy(), dtype=float)
-    data[3,:] = np.array(pd.to_numeric(df['ERR-S']).to_numpy(), dtype=float)
+    mass = np.array(pd.to_numeric(df["MASS"]).to_numpy(), dtype=int)
+    data = np.zeros((4, mass.shape[0]))
+    data[0, :] = mass
+    data[1, :] = np.array(pd.to_numeric(df["E"]).to_numpy(), dtype=float)
+    data[2, :] = np.array(pd.to_numeric(df["DATA"]).to_numpy(), dtype=float)
+    data[3, :] = np.array(pd.to_numeric(df["ERR-S"]).to_numpy(), dtype=float)
 
     np.save(out, data, allow_pickle=True)
 
@@ -106,12 +108,10 @@ def read_exfor_alt_2npy(fname, out):
             if l.__contains__("A_pre"):
                 A = l.split("=")[1].strip()
             elif l[0].isnumeric():
-                newlines.append(A + " " + l )
+                newlines.append(A + " " + l)
 
-
-    with open(str(fname) + ".e" , "w") as f:
+    with open(str(fname) + ".e", "w") as f:
         f.writelines(newlines)
         f.close()
-    read_exfor_2npy( str(fname) +".e" , out)
+    read_exfor_2npy(str(fname) + ".e", out)
     os.remove(str(fname) + ".e")
-
