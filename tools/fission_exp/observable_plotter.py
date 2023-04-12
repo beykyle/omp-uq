@@ -19,7 +19,7 @@ from fission_exp import Quantity, maxwellian, PFNSA, read
 
 
 class Plotter:
-    def __init__(self, self, exp_data_path: Path):
+    def __init__(self, exp_data_path: Path):
         self.exp_data_path = exp_data_path
 
     def get_fact_moments(self, moments: np.array, nu: np.array, pnu: np.array):
