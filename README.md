@@ -17,9 +17,8 @@ git clone --recurse-submodules git@github.com:beykyle/omp-uq.git
 First, [build and install](https://github.com/beykyle/CGMF/#quickstart) the linked submodule verison of CMGF, for example:
 
 ```
-py CGMF/setupt.py build -j{nproc}
-pip install -e CGMF/ --user
-
+py CGMF/setup.py build -j{nproc}
+pip install -e CGMF --user
 ```
 
 Then install the packages in `./tools`:
