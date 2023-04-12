@@ -1,5 +1,6 @@
 from mpi4py import MPI
-from omp_uq import HistData
+from omp_uq import HistData, all_quantities
+import sys
 
 def main():
     comm = MPI.COMM_WORLD
