@@ -204,6 +204,7 @@ class HistData:
             np.save(self.res_dir / "{}{}.npy".format(k, f), v)
 
     def read(self, with_ensemble_idx=True):
+        self.res_dir = Path(self.res_dir)
         if with_ensemble_idx:
             f = "_ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
         else:
