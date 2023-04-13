@@ -45,17 +45,32 @@ class Plotter:
         # exp
         plts_sim = []
         for d in cgmf_datasets:
-            x = d.ebins[0, :]
+
+            pfns_all = d.vector_qs["pfns"]
+            pfns_stddev_all = d.vector_qs["pfns_stddev"]
+
+            x = d.ecenters
             m = maxwellian(x, 1.32)
             k = np.trapz(m, x)
 
-            pfns_err = np.sqrt(np.var(d.pfns, axis=0)) * k / m
-            pfns = np.mean(d.pfns, axis=0) * k / m
+            pfns_err = np.sqrt(np.var(pfns_all, axis=0)) * k / m
+            mean_mc_err = np.mean(pfns_stddev_all, axis=0) * k / m
+            pfns = np.mean(pfns_all, axis=0) * k / m
 
-            p1 = plt.step(x, pfns, label=d.label, zorder=100, linewidth=2)
+            p1 = plt.step(x, pfns, label=d.label, zorder=100, linewidth=2, where="mid")
             plts_sim.append(p1[0])
             plt.fill_between(
-                x, pfns, pfns - pfns_err, pfns + pfns_err, alpha=0.5, zorder=100
+                x, pfns, pfns - pfns_err, pfns + pfns_err, alpha=0.5, zorder=100, step="mid"
+            )
+            plt.fill_between(
+                x,
+                pfns,
+                pfns - pfns_err - mean_mc_err,
+                pfns + pfns_err + mean_mc_err,
+                alpha=0.5,
+                zorder=100,
+                step="mid",
+                color="k"
             )
 
         def plt_spec(s, l):
@@ -175,9 +190,7 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu_\gamma}$ [gammas]")
 
-    def nugbarTKE(
-        self,
-    ):
+    def nugbarTKE(self):
         nugbarTKE = read(self.exp_data_path, "nugbarTKE")
 
         plts = []
@@ -233,12 +246,14 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            a = d.a[0, :]
-            nubarA_mean = np.mean(d.nua, axis=0)
-            nubarA_stdev = np.sqrt(np.var(d.nua, axis=0))
+            a = d.abins
+            nubarA = d.vector_qs["nubarA"]
+            nubarA_mean = np.mean(nubarA, axis=0)
+            nubarA_stdev = np.sqrt(np.var(nubarA, axis=0))
             plts_sim.append(
-                plt.errorbar(a, nubarA_mean, yerr=nubarA_stdev, label=d.label, zorder=1)
+                plt.plot(a, nubarA_mean, label=d.label, zorder=1)
             )
+            plt.fill_between(a, nubarA_mean + nubarA_stdev, nubarA_mean - nubarA_stdev, alpha=0.5, zorder=1)
 
         # experiment
         nubarA = read(self.exp_data_path, "nubarA")
@@ -293,7 +308,7 @@ class Plotter:
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
     def pnug(self, cgmf_datasets=[]):
-        # sim
+        # exp
         pnug = read(self.exp_data_path, "pnug")
         labels = [m["label"] for m in pnug.meta]
         plts = []
@@ -319,7 +334,7 @@ class Plotter:
         plt.tight_layout()
 
     def pnu(self, cgmf_datasets=[]):
-        # sim
+        # exp
         plts_sim = []
         for d in cgmf_datasets:
             nu = np.arange(0, d.num_nu_bins)
@@ -392,7 +407,8 @@ class Plotter:
         orders = np.arange(0, num_plots * 100, 100)
         ma = 0
         for i, d in enumerate(cgmf_datasets):
-            h, e = np.histogram(d.nubar, density=True)
+            nubar = d.scalar_qs["nubar"]
+            h, e = np.histogram(nubar, density=True)
             de = e[1:] - e[:-1]
             h = h / np.sum(h)
             p = plt.fill_between(
