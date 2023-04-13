@@ -188,7 +188,7 @@ class Plotter:
 
         plt.xlim([70, 180])
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$\bar{\nu_\gamma}$ [gammas]")
+        plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
     def nugbarTKE(self):
         nugbarTKE = read(self.exp_data_path, "nugbarTKE")
@@ -211,7 +211,7 @@ class Plotter:
 
         plt.legend(plts, labels, fontsize=10)
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$\bar{\nu_\gamma}$ [gammas]")
+        plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
     def nubarZ(self, cgmf_datasets=[]):
         # sim
@@ -395,8 +395,8 @@ class Plotter:
         plt.gca().add_artist(lexp)
 
         plt.grid(visible=True, axis="x", which="major")
-        plt.xlabel(r"$\bar{\nu_\gamma}$ [gammas]")
-        plt.ylabel(r"$p(\bar{\nu_\gamma})$ [%]")
+        plt.xlabel(r"$\bar{\nu}_\gamma$ [gammas]")
+        plt.ylabel(r"$p(\bar{\nu}_\gamma)$ [%]")
 
     def nubar(self, cgmf_datasets=[], endf=None):
         # simulation
@@ -469,7 +469,7 @@ class Plotter:
 
         plt.legend(fontsize=10, ncol=1)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \bar{E^{%d}} $ [MeV]" % n)
+        plt.ylabel(r"$ \bar{E}^{%d} $ [MeV]" % n)
 
     def multratA(self):
         mr = read(self.exp_data_path, "multiplicityRatioA")
@@ -520,7 +520,7 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \bar{E}_n $ [MeV]")
+        plt.ylabel(r"$ \langle{E}\rangle_n $ [MeV]")
 
     def enbarTKE(self):
         enbar = read(self.exp_data_path, "enbarTKE")
@@ -571,7 +571,7 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$ \bar{E_\gamma} $ [MeV]")
+        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
 
     def egbarA(self, cgmf_datasets=[]):
         egbar = read(self.exp_data_path, "egbarA")
@@ -596,7 +596,7 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \bar{E_\gamma} $ [MeV]")
+        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
 
     def egbarnubar(self, cgmf_datasets=[]):
         egbar = read(self.exp_data_path, "egbarnubar")
@@ -621,4 +621,4 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
-        plt.ylabel(r"$ \bar{E_\gamma} $ [MeV]")
+        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
