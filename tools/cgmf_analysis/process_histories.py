@@ -43,9 +43,8 @@ def balance_load(num_jobs, rank, size):
             if rank == ranks_wout_extra_job:
                 end = end + 1
         else:
-            start = (
-                   ranks_wout_extra_job * stride
-                 + (rank - ranks_wout_extra_job) * (stride + 1)
+            start = ranks_wout_extra_job * stride + (rank - ranks_wout_extra_job) * (
+                stride + 1
             )
             end = start + stride + 1
     else:
