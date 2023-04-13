@@ -56,6 +56,20 @@ class Spec:
 
         return sp
 
+    def moment(self, n : int):
+        return np.trapz(self.spec * (self.bins)**n, x=self.bins)
+
+    def mean(self):
+        m0 = self.moment(0)
+        m1 = self.moment(1)
+
+        return m1/m0
+
+    def variance(self):
+        mean   = self.mean()
+        var_un = np.trapz(self.spec * (self.bins - mean)**2, x=self.bins)
+        return var_un
+
 
 class PFNSA:
     def __init__(self, arr: np.array):
@@ -88,32 +102,3 @@ def maxwellian(ebins: np.array, Eavg: float):
         2 * np.sqrt(ebins / np.pi) * (1 / Eavg) ** (3.0 / 2.0) * np.exp(-ebins / Eavg)
     )
 
-
-def read_exfor_2npy(fname, out):
-    df = pd.read_csv(fname, delim_whitespace=True)
-
-    mass = np.array(pd.to_numeric(df["MASS"]).to_numpy(), dtype=int)
-    data = np.zeros((4, mass.shape[0]))
-    data[0, :] = mass
-    data[1, :] = np.array(pd.to_numeric(df["E"]).to_numpy(), dtype=float)
-    data[2, :] = np.array(pd.to_numeric(df["DATA"]).to_numpy(), dtype=float)
-    data[3, :] = np.array(pd.to_numeric(df["ERR-S"]).to_numpy(), dtype=float)
-
-    np.save(out, data, allow_pickle=True)
-
-
-def read_exfor_alt_2npy(fname, out):
-    with open(fname, "r") as f:
-        lines = f.readlines()
-        newlines = [lines[4]]
-        for i, l in enumerate(lines[5:]):
-            if l.__contains__("A_pre"):
-                A = l.split("=")[1].strip()
-            elif l[0].isnumeric():
-                newlines.append(A + " " + l)
-
-    with open(str(fname) + ".e", "w") as f:
-        f.writelines(newlines)
-        f.close()
-    read_exfor_2npy(str(fname) + ".e", out)
-    os.remove(str(fname) + ".e")
