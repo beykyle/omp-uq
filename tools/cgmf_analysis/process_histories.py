@@ -43,8 +43,9 @@ def balance_load(num_jobs, rank, size):
             if rank == ranks_wout_extra_job:
                 end = end + 1
         else:
-            start = ranks_wout_extra_job * stride + (rank - ranks_wout_extra_job) * (
-                stride + 1
+            start = (
+                   ranks_wout_extra_job * stride
+                 + (rank - ranks_wout_extra_job) * (stride + 1)
             )
             end = start + stride + 1
     else:
@@ -66,8 +67,8 @@ class HistData:
         res_dir=post_dir,
     ):
         # filesystem dealings
-        self.hist_dir = hist_dir
-        self.res_dir = res_dir
+        self.hist_dir = Path(hist_dir)
+        self.res_dir = Path(res_dir)
         self.hist_fname_prefix = "histories"
         self.hist_fname_postfix = ".npy"
 
