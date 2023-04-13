@@ -402,7 +402,10 @@ class HistData:
                     self.vector_qs["egtbarnu_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_gammas, gelab, bins=self.ebins, cut=self.gamma_cut(gelab, ages)
+                    num_gammas,
+                    gelab,
+                    bins=self.ebins,
+                    mask_generator=self.gamma_cut(gelab, ages),
                 )
 
         # Z dependent
