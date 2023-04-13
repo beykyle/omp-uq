@@ -330,6 +330,7 @@ class HistData:
                 self.scalar_qs["nubar"][n],
                 self.scalar_qs["nubar_stddev"][n],
             ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
+
         if "nugbar" in self.scalar_qs:
             (
                 self.scalar_qs["nugbar"][n],
@@ -573,19 +574,21 @@ class HistData:
                         self.tensor_qs["nuATKE_stddev"][n, l, m],
                     ) = self.estimate_mean(hs.getNutot()[mask])
 
-    def gather(self, mpi_comm, rank, size):
+    def gather(self, mpi_comm, rank, size, rank_slice):
         if mpi_comm is None:
             return
+
+        (s, f) = rank_slice
         for k, v in self.scalar_qs.items():
-            result = mpi_comm.gather(v, root=0)
+            result = mpi_comm.gather(v[s:f, ...], root=0)
             if rank == 0:
                 self.scalar_qs[k] = np.concatenate(result)
         for k, v in self.vector_qs.items():
-            result = mpi_comm.gather(v, root=0)
+            result = mpi_comm.gather(v[s:f, ...], root=0)
             if rank == 0:
                 self.vector_qs[k] = np.concatenate(result)
         for k, v in self.tensor_qs.items():
-            result = mpi_comm.gather(v, root=0)
+            result = mpi_comm.gather(v[s:f, ...], root=0)
             if rank == 0:
                 self.tensor_qs[k] = np.concatenate(result)
 
@@ -646,3 +649,6 @@ class HistData:
                 sys.stdout.flush()
 
             self.process_ensemble(hs, n)
+
+        if mpi_comm is not None:
+            return start, end
