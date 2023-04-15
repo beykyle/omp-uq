@@ -19,6 +19,12 @@ all_quantities = [
     "nugbarZ",
     "nubarTKE",
     "nugbarTKE",
+    "enbarA",
+    "egbarA",
+    "enbarZ",
+    "egbarZ",
+    "enbarTKE",
+    "egbarTKE",
     "pnu",
     "pnug",
     "egbarnu",
@@ -125,9 +131,13 @@ class HistData:
             elif q == "nugbarA":
                 self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "enbarA":
-                self.vector_qs["nubarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["enbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "egbarA":
-                self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["egbarA"] = np.zeros((nensemble, self.abins.size))
+            elif q == "enbarZ":
+                self.vector_qs["enbarZ"] = np.zeros((nensemble, self.zbins.size))
+            elif q == "egbarZ":
+                self.vector_qs["egbarZ"] = np.zeros((nensemble, self.zbins.size))
             elif q == "nubarZ":
                 self.vector_qs["nubarZ"] = np.zeros((nensemble, self.zbins.size))
             elif q == "nugbarZ":
@@ -139,9 +149,9 @@ class HistData:
                     (nensemble, self.TKEcenters.size)
                 )
             elif q == "enbarTKE":
-                self.vector_qs["nubarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "egbarTKE":
-                self.vector_qs["nugbarTKE"] = np.zeros(
+                self.vector_qs["egbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
             elif q == "pnu":
