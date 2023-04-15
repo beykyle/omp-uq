@@ -35,6 +35,8 @@ all_quantities = [
     "pfgsTKE",
     "pfnsA",
     "pfgsA",
+    "pfnsZ",
+    "pfgsZ",
     "nuATKE",
 ]
 
@@ -70,7 +72,7 @@ def check_pairs(quantities, pairs):
             quantities.append(pair[1])
         if pair[1] in quantities and pair[0] not in quantities:
             quantities.append(pair[0])
-    return list(set(quantities))  # remove duplicates
+    return list(dict.fromkeys(quantities))  # remove duplicates preserving order
 
 
 class HistData:
@@ -121,11 +123,11 @@ class HistData:
         self.nugbins = np.arange(0, 26)
 
         self.zbins = np.arange(38, 61)
-        self.abins = np.arange(70, 185)
+        self.abins = np.arange(74, 180)
 
-        nTKE = 20
+        nTKE = 60
         TKEmin = 120
-        TKEmax = 220
+        TKEmax = 240
         TKEstep = (TKEmax - TKEmin) / nTKE
 
         self.TKEbins = np.arange(TKEmin, TKEmax, TKEstep)
@@ -135,10 +137,19 @@ class HistData:
         self.ecenters = 0.5 * (self.ebins[0:-1] + self.ebins[1:])
         self.de = self.ebins[1:] - self.ebins[:-1]
 
+        # ebins for gammas
+        self.gebins = np.logspace(-2, 1, 200)
+        self.gecenters = 0.5 * (self.gebins[0:-1] + self.gebins[1:])
+        self.gde = self.gebins[1:] - self.gebins[:-1]
+
         # ebins for tensor q's q/ lower statistics
         self.tebins = np.logspace(-3, 2, 30)
         self.tecenters = 0.5 * (self.tebins[0:-1] + self.tebins[1:])
         self.tde = self.tebins[1:] - self.tebins[:-1]
+
+        self.tgebins = np.logspace(-1, 1, 60)
+        self.tgecenters = 0.5 * (self.tgebins[0:-1] + self.tgebins[1:])
+        self.tde = self.tgebins[1:] - self.tgebins[:-1]
 
         # allocate arrays for histogram values
         # all arrays have as their first axis the ensemble
@@ -182,7 +193,7 @@ class HistData:
             elif q == "pfns":
                 self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
             elif q == "pfgs":
-                self.vector_qs["pfgs"] = np.zeros((nensemble, self.ecenters.size))
+                self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
             elif q == "multratioA":
                 self.vector_qs["multratioA"] = np.zeros((nensemble, self.abins.size))
             elif q == "pfnsTKE":
@@ -191,7 +202,15 @@ class HistData:
                 )
             elif q == "pfgsTKE":
                 self.tensor_qs["pfgsTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.tecenters.size)
+                    (nensemble, self.TKEcenters.size, self.tgecenters.size)
+                )
+            elif q == "pfnsZ":
+                self.tensor_qs["pfnsZ"] = np.zeros(
+                    (nensemble, self.zbins.size, self.tecenters.size)
+                )
+            elif q == "pfgsZ":
+                self.tensor_qs["pfgsZ"] = np.zeros(
+                    (nensemble, self.zbins.size, self.tgecenters.size)
                 )
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
@@ -199,7 +218,7 @@ class HistData:
                 )
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
-                    (nensemble, self.abins.size, self.tecenters.size)
+                    (nensemble, self.abins.size, self.tgecenters.size)
                 )
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
@@ -256,6 +275,9 @@ class HistData:
         np.save(self.res_dir / "A_bins.npy", self.abins)
         np.save(self.res_dir / "TKE_bins.npy", self.TKEbins)
         np.save(self.res_dir / "E_bins.npy", self.ebins)
+        np.save(self.res_dir / "TE_bins.npy", self.tebins)
+        np.save(self.res_dir / "TGE_bins.npy", self.tgebins)
+        np.save(self.res_dir / "GE_bins.npy", self.gebins)
 
     def write(self, with_ensemble_idx=True):
         if with_ensemble_idx:
@@ -287,6 +309,18 @@ class HistData:
 
         for k in self.tensor_qs:
             self.tensor_qs[k] = np.load(self.res_dir / "{}{}.npy".format(k, f))
+
+        self.nubins = np.load(self.res_dir / "nu_bins.npy")
+        self.nugbins = np.load(self.res_dir / "nug_bins.npy")
+        self.zbins = np.load(self.res_dir / "Z_bins.npy")
+        self.abins = np.load(self.res_dir / "A_bins.npy")
+        self.TKEbins = np.load(self.res_dir / "TKE_bins.npy")
+        self.ebins = np.load(self.res_dir / "E_bins.npy")
+        self.tebins = np.load(self.res_dir / "TE_bins.npy")
+        self.tgebins = np.load(
+            self.res_dir / "TGE_bins.npy",
+        )
+        self.gebins = np.load(self.res_dir / "GE_bins.npy")
 
     def hist_from_list_of_lists(self, num, lol, bins, mask_generator=None):
         """
@@ -453,7 +487,7 @@ class HistData:
                 _,
                 _,
             ) = self.hist_from_list_of_lists(
-                num_gammas, gelab, self.ebins, self.gamma_cut(gelab, ages)
+                num_gammas, gelab, self.gebins, self.gamma_cut(gelab, ages)
             )
 
         # nu dependent
@@ -481,6 +515,8 @@ class HistData:
         for l, z in enumerate(self.zbins):
             # TODO add cuts for energy and time
             mask = np.where(hs.Z == z)
+            num_ns = np.sum(hs.getNu()[mask])
+            num_gs = np.sum(hs.getNug()[mask])
             if "nubarZ" in self.vector_qs:
                 (
                     self.vector_qs["nubarZ"][n, l],
@@ -492,6 +528,41 @@ class HistData:
                     self.vector_qs["nugbarZ"][n, l],
                     self.vector_qs["nugbarZ_stddev"][n, l],
                 ) = self.estimate_mean(hs.getNug()[mask])
+            # < d nu / d E_n | A >
+            if "pfnsZ" in self.tensor_qs or "enbarZ" in self.vector_qs:
+                nelab = hs.getNeutronElab()[mask]
+                necm = hs.getNeutronEcm()[mask]
+
+                def kinematic_cut(hist: int):
+                    return np.where(np.asarray(necm[hist]) > self.Ethn)
+
+                (
+                    self.tensor_qs["pfnsZ"][n, l, :],
+                    self.tensor_qs["pfnsZ_stddev"][n, l, :],
+                    self.vector_qs["enbarZ"][n, l],
+                    self.vector_qs["enbarZ_stddev"][n, l],
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_ns, nelab, bins=self.tebins, mask_generator=kinematic_cut
+                )
+
+            # < d nu_g / d E_g | A >
+            if "pfgsZ" in self.tensor_qs or "egbarZ" in self.vector_qs:
+                gelab = hs.getGammaElab()[mask]
+                ages = hs.getGammaAges()[mask]
+
+                (
+                    self.tensor_qs["pfgsZ"][n, l, :],
+                    self.tensor_qs["pfgsZ_stddev"][n, l, :],
+                    self.vector_qs["egbarZ"][n, l],
+                    self.vector_qs["egbarZ_stddev"][n, l],
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_gs,
+                    gelab,
+                    bins=self.tgebins,
+                    mask_generator=self.gamma_cut(gelab, ages),
+                )
 
         # TKE dependent
         for l in range(self.TKEcenters.size):
@@ -553,7 +624,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
-                    bins=self.tebins,
+                    bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                 )
 
@@ -626,7 +697,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
-                    bins=self.tebins,
+                    bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                 )
 
@@ -657,7 +728,12 @@ class HistData:
                 self.scalar_qs[k] = np.concatenate(result)
         for k, v in self.vector_qs.items():
             result = mpi_comm.gather(v[s:f, ...], root=0)
+            if rank == 1:
+                print("rank 1: {}: {}".format(k, v[s:f, ...].shape))
+                sys.stdout.flush()
             if rank == 0:
+                print("rank 0: {}: {}".format(k, v[s:f, ...].shape))
+                sys.stdout.flush()
                 self.vector_qs[k] = np.concatenate(result)
         for k, v in self.tensor_qs.items():
             result = mpi_comm.gather(v[s:f, ...], root=0)
