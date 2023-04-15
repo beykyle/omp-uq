@@ -21,7 +21,7 @@ all_quantities = [
     "nugbarTKE",
     "pnu",
     "pnug",
-    "egtbarnu",
+    "egbarnu",
     "pfns",
     "pfgs",
     "multratioA",
@@ -124,6 +124,10 @@ class HistData:
                 self.vector_qs["nubarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "nugbarA":
                 self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
+            elif q == "enbarA":
+                self.vector_qs["nubarA"] = np.zeros((nensemble, self.abins.size))
+            elif q == "egbarA":
+                self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "nubarZ":
                 self.vector_qs["nubarZ"] = np.zeros((nensemble, self.zbins.size))
             elif q == "nugbarZ":
@@ -134,12 +138,18 @@ class HistData:
                 self.vector_qs["nugbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
+            elif q == "enbarTKE":
+                self.vector_qs["nubarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+            elif q == "egbarTKE":
+                self.vector_qs["nugbarTKE"] = np.zeros(
+                    (nensemble, self.TKEcenters.size)
+                )
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pnug":
                 self.vector_qs["pnug"] = np.zeros((nensemble, self.nugbins.size))
-            elif q == "egtbarnu":
-                self.vector_qs["egtbarnu"] = np.zeros((nensemble, self.nubins.size))
+            elif q == "egbarnu":
+                self.vector_qs["egbarnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pfns":
                 self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
             elif q == "pfgs":
@@ -413,7 +423,7 @@ class HistData:
             )
 
         # nu dependent
-        if "egtbarnu" in self.vector_qs:
+        if "egbarnu" in self.vector_qs:
             for l, nu in enumerate(self.nubins):
                 mask = np.where(hs.getNu() == nu)
                 num_gammas = np.sum(hs.getNug()[mask])
@@ -423,8 +433,8 @@ class HistData:
                 (
                     _,
                     _,
-                    self.vector_qs["egtbarnu"][n, l],
-                    self.vector_qs["egtbarnu_stddev"][n, l],
+                    self.vector_qs["egbarnu"][n, l],
+                    self.vector_qs["egbarnu_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
