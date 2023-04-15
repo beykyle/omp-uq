@@ -60,18 +60,27 @@ class Plotter:
             p1 = plt.step(x, pfns, label=d.label, zorder=100, linewidth=2, where="mid")
             plts_sim.append(p1[0])
             plt.fill_between(
-                x, pfns, pfns - pfns_err, pfns + pfns_err, alpha=0.5, zorder=100, step="mid"
+                x, pfns + pfns_err, pfns - pfns_err, alpha=0.5, zorder=100, step="mid"
             )
             plt.fill_between(
                 x,
-                pfns,
-                pfns - pfns_err - mean_mc_err,
+                pfns + pfns_err,
                 pfns + pfns_err + mean_mc_err,
                 alpha=0.5,
                 zorder=100,
                 step="mid",
                 color="k"
             )
+            plt.fill_between(
+                x,
+                pfns - pfns_err,
+                pfns - pfns_err - mean_mc_err,
+                alpha=0.3,
+                zorder=100,
+                step="mid",
+                color="k"
+            )
+
 
         def plt_spec(s, l):
             x = s.bins
@@ -322,7 +331,7 @@ class Plotter:
 
             plts.append(
                 plt.errorbar(
-                    d[0, :], y, yerr, d[1, :], label=l, linestyle="none", marker="."
+                    d[0, :], y*100, yerr*100, d[1, :], label=l, linestyle="none", marker="."
                 )
             )
 
@@ -330,16 +339,16 @@ class Plotter:
         plt.gca().add_artist(lexp)
 
         plt.xlabel(r"$\nu_\gamma$ [gammas]")
-        plt.ylabel(r"$p(\nu_\gamma)$ ")
+        plt.ylabel(r"$p(\nu_\gamma)$ [\%]")
         plt.tight_layout()
 
     def pnu(self, cgmf_datasets=[]):
         # exp
         plts_sim = []
         for d in cgmf_datasets:
-            nu = np.arange(0, d.num_nu_bins)
-            pnu_mean = np.mean(d.pnu, axis=0)
-            pnu_stdev = np.sqrt(np.var(d.pnu, axis=0))
+            nu = d.nubins
+            pnu_mean = 100*np.mean(d.vector_qs["pnu"], axis=0)
+            pnu_stdev = 100*np.sqrt(np.var(d.vector_qs["pnu"], axis=0))
             plts_sim.append(
                 plt.errorbar(nu, pnu_mean, yerr=pnu_stdev, label=d.label, zorder=1)
             )
@@ -359,7 +368,7 @@ class Plotter:
 
             plts.append(
                 plt.errorbar(
-                    d[0, :], y, yerr, d[1, :], label=l, linestyle="none", marker="."
+                    d[0, :], y*100, yerr*100, d[1, :], label=l, linestyle="none", marker="."
                 )
             )
 
@@ -368,7 +377,7 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu$ [neutrons]")
-        plt.ylabel(r"$p(\nu)$ ")
+        plt.ylabel(r"$p(\nu)$ [\%] ")
         plt.tight_layout()
 
     def nugbar(self, cgmf_datasets=[], endf=None):
@@ -409,12 +418,12 @@ class Plotter:
         for i, d in enumerate(cgmf_datasets):
             nubar = d.scalar_qs["nubar"]
             h, e = np.histogram(nubar, density=True)
+            h = h/np.sum(h)
             de = e[1:] - e[:-1]
-            h = h / np.sum(h)
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
                 0,
-                100 * h,
+                h,
                 label=d.label,
                 alpha=alphas[i],
                 zorder=orders[i],
@@ -433,7 +442,7 @@ class Plotter:
         labels = [m["label"] for m in nubar.meta]
         plts = []
 
-        y = 0.8 * ma * 100
+        y = 0.8 * ma
         i = 0
         for d, l in zip(nubar.data, labels):
             if d[1] < 0.1 and d[0] > 3.7 and d[0] < 3.85:
@@ -441,7 +450,7 @@ class Plotter:
                     [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
                 )
                 plts.append(p)
-                y += 5 * ma
+                y += 0.05 * ma
                 i += 1
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
@@ -453,7 +462,7 @@ class Plotter:
         plt.xticks(np.arange(3.7, 3.84, 0.02))
         plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
-        plt.ylabel(r"$p(\bar{\nu})$ [%]")
+        plt.ylabel(r"$p(\bar{\nu})$")
 
     def pfns_A_moments(self, n: int):
         pfnsa = read(self.exp_data_path, "pfnsA")
