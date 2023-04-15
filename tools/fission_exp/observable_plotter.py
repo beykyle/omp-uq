@@ -41,48 +41,84 @@ class Plotter:
     def normalize(self, arr: np.array):
         return arr / np.sum(arr)
 
-    def pfns(self, cgmf_datasets=[]):
-        # exp
+    def plot_cgmf_vec(self, d, quantity, x):
+        spec_all = d.vector_qs[quantity]
+        spec_stddev_all = d.vector_qs[quantity + "_stddev"]
+
+        spec_err = np.sqrt(np.var(spec_all, axis=0))
+        mean_mc_err = np.mean(spec_stddev_all, axis=0)
+        spec = np.mean(spec_all, axis=0)
+
+        p1 = plt.plot(x, spec, label=d.label, zorder=100, linewidth=2)
+        plt.fill_between(
+            x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100)
+        plt.fill_between(
+            x,
+            spec + spec_err,
+            spec + spec_err + mean_mc_err,
+            alpha=0.3,
+            zorder=100,
+            color="k")
+        plt.fill_between(
+            x,
+            spec - spec_err,
+            spec - spec_err - mean_mc_err,
+            alpha=0.3,
+            zorder=100,
+            color="k")
+        return p1[0]
+
+    def plot_cgmf_spec(self, d, quantity, x):
+        spec_all = d.vector_qs[quantity]
+        spec_stddev_all = d.vector_qs[quantity + "_stddev"]
+
+        spec_err = np.sqrt(np.var(spec_all, axis=0))
+        mean_mc_err = np.mean(spec_stddev_all, axis=0)
+        spec = np.mean(spec_all, axis=0)
+
+        p1 = plt.step(x, spec, label=d.label, zorder=100, linewidth=2, where="mid")
+        plt.fill_between(
+            x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100, step="mid"
+        )
+        plt.fill_between(
+            x,
+            spec + spec_err,
+            spec + spec_err + mean_mc_err,
+            alpha=0.3,
+            zorder=100,
+            step="mid",
+            color="k"
+        )
+        plt.fill_between(
+            x,
+            spec - spec_err,
+            spec - spec_err - mean_mc_err,
+            alpha=0.3,
+            zorder=100,
+            step="mid",
+            color="k"
+        )
+        return p1[0]
+
+
+    def pfns(self, cgmf_datasets=None):
+        # sim
         plts_sim = []
         for d in cgmf_datasets:
 
-            pfns_all = d.vector_qs["pfns"]
-            pfns_stddev_all = d.vector_qs["pfns_stddev"]
-
+            # normalization
             x = d.ecenters
             m = maxwellian(x, 1.32)
             k = np.trapz(m, x)
+            for i in range(d.vector_qs["pfns"].shape[0]):
+                d.vector_qs["pfns"][i,:] *= (k/m)
+                d.vector_qs["pfns_stddev"][i,:] *= (k/m)
 
-            pfns_err = np.sqrt(np.var(pfns_all, axis=0)) * k / m
-            mean_mc_err = np.mean(pfns_stddev_all, axis=0) * k / m
-            pfns = np.mean(pfns_all, axis=0) * k / m
-
-            p1 = plt.step(x, pfns, label=d.label, zorder=100, linewidth=2, where="mid")
-            plts_sim.append(p1[0])
-            plt.fill_between(
-                x, pfns + pfns_err, pfns - pfns_err, alpha=0.5, zorder=100, step="mid"
-            )
-            plt.fill_between(
-                x,
-                pfns + pfns_err,
-                pfns + pfns_err + mean_mc_err,
-                alpha=0.5,
-                zorder=100,
-                step="mid",
-                color="k"
-            )
-            plt.fill_between(
-                x,
-                pfns - pfns_err,
-                pfns - pfns_err - mean_mc_err,
-                alpha=0.3,
-                zorder=100,
-                step="mid",
-                color="k"
-            )
+            # plotting
+            plts_sim.append( self.plot_cgmf_spec(d, "pfns", x) )
 
 
-        def plt_spec(s, l):
+        def plt_exp_spec(s, l):
             x = s.bins
             m = maxwellian(x, 1.32)
             k = np.trapz(m, x)
@@ -127,7 +163,7 @@ class Plotter:
 
         for s, l, u in zip(specs, labels, units):
             if l in la:
-                p = plt_spec(s.normalizePxdx(), l)
+                p = plt_exp_spec(s.normalizePxdx(), l)
                 plts.append(p)
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=3)
@@ -140,15 +176,14 @@ class Plotter:
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFNS ratio to Maxwellian ($kT = 1.32$ MeV)")
 
-    def pfgs(self):
-        def plt_spec(s, l):
-            x = s.bins
-            y = s.spec
-            yerr = s.err
-            return plt.errorbar(
-                x, y, yerr=yerr, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
-            )
+    def pfgs(self, cgmf_datasets=None):
+        plts_sim = []
 
+        for d in cgmf_datasets:
+            x = d.ecenters
+            plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
+
+        # experimental data
         pfgs = read(self.exp_data_path, "pfgs")
 
         specs = pfgs.get_specs()
@@ -157,12 +192,21 @@ class Plotter:
 
         plts = []
 
+        def plt_exp_spec(s, l):
+            x = s.bins
+            y = s.spec
+            yerr = s.err
+            return plt.errorbar(
+                x, y, yerr=yerr, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
+            )
+
         for s, l, u in zip(specs, labels, units):
-            p = plt_spec(s.normalizePxdx(), l)
+            p= plt_exp_spec(s.normalizePxdx(), l)
             plts.append(p)
 
         lexp = plt.legend(handles=plts, fontsize=9, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
         plt.xscale("log")
         plt.ylim([0.0, 2.0])
@@ -170,8 +214,11 @@ class Plotter:
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFGS [MeV$^{-1}$]")
 
-    def nugbarA(self, cgmf_datasets=[]):
+    def nugbarA(self, cgmf_datasets=None):
         # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.abins ))
 
         # experiment
         nugbarA = read(self.exp_data_path, "nugbarA")
@@ -194,12 +241,46 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
         plt.xlim([70, 180])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
-    def nugbarTKE(self):
+    def nubarTKE(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.TKEcenters ))
+
+        nubarTKE = read(self.exp_data_path, "nubarTKE")
+
+        plts = []
+        labels = [m["label"] for m in nubarTKE.meta]
+
+        for d, l in zip(nubarTKE.data, labels):
+            plts.append(
+                plt.errorbar(
+                    d[0, :],
+                    d[2, :],
+                    d[3, :],
+                    d[1, :],
+                    label=l,
+                    linestyle="none",
+                    marker=".",
+                )
+            )
+
+        plt.legend(plts, labels, fontsize=10)
+        plt.xlabel(r"TKE [MeV]")
+        plt.ylabel(r"$\bar{\nu}$ [neutrons]")
+
+    def nugbarTKE(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_spec(d, "nugbarTKE", d.TKEcenters ))
+
         nugbarTKE = read(self.exp_data_path, "nugbarTKE")
 
         plts = []
@@ -222,8 +303,11 @@ class Plotter:
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
-    def nubarZ(self, cgmf_datasets=[]):
+    def nubarZ(self, cgmf_datasets=None):
         # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.zbins ))
 
         # experiment
         nubarZ = read(self.exp_data_path, "nubarZ")
@@ -251,18 +335,11 @@ class Plotter:
         plt.xlabel(r"$Z$ [protons]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
-    def nubarA(self, cgmf_datasets=[]):
+    def nubarA(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            a = d.abins
-            nubarA = d.vector_qs["nubarA"]
-            nubarA_mean = np.mean(nubarA, axis=0)
-            nubarA_stdev = np.sqrt(np.var(nubarA, axis=0))
-            plts_sim.append(
-                plt.plot(a, nubarA_mean, label=d.label, zorder=1)
-            )
-            plt.fill_between(a, nubarA_mean + nubarA_stdev, nubarA_mean - nubarA_stdev, alpha=0.5, zorder=1)
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.abins ))
 
         # experiment
         nubarA = read(self.exp_data_path, "nubarA")
@@ -284,39 +361,22 @@ class Plotter:
                 )
                 plts.append(p)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=2, loc="upper left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
 
         plt.xlim([70, 180])
-        plt.ylim([0, 5])
+        plt.ylim([0, 6])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
-    def nubarTKE(self):
-        nubarTKE = read(self.exp_data_path, "nubarTKE")
 
-        plts = []
-        labels = [m["label"] for m in nubarTKE.meta]
+    def pnug(self, cgmf_datasets=None):
+        plts_sim = []
+        for d in cgmf_datasets:
+            nu = d.nugbins
+            plts_sim.append(self.plot_cgmf_vec(d, "pnug", nu))
 
-        for d, l in zip(nubarTKE.data, labels):
-            plts.append(
-                plt.errorbar(
-                    d[0, :],
-                    d[2, :],
-                    d[3, :],
-                    d[1, :],
-                    label=l,
-                    linestyle="none",
-                    marker=".",
-                )
-            )
-
-        plt.legend(plts, labels, fontsize=10)
-        plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$\bar{\nu}$ [neutrons]")
-
-    def pnug(self, cgmf_datasets=[]):
         # exp
         pnug = read(self.exp_data_path, "pnug")
         labels = [m["label"] for m in pnug.meta]
@@ -331,7 +391,7 @@ class Plotter:
 
             plts.append(
                 plt.errorbar(
-                    d[0, :], y*100, yerr*100, d[1, :], label=l, linestyle="none", marker="."
+                    d[0, :], y, yerr, d[1, :], label=l, linestyle="none", marker="."
                 )
             )
 
@@ -342,17 +402,12 @@ class Plotter:
         plt.ylabel(r"$p(\nu_\gamma)$ [\%]")
         plt.tight_layout()
 
-    def pnu(self, cgmf_datasets=[]):
+    def pnu(self, cgmf_datasets=None):
         # exp
         plts_sim = []
         for d in cgmf_datasets:
             nu = d.nubins
-            pnu_mean = 100*np.mean(d.vector_qs["pnu"], axis=0)
-            pnu_stdev = 100*np.sqrt(np.var(d.vector_qs["pnu"], axis=0))
-            plts_sim.append(
-                plt.errorbar(nu, pnu_mean, yerr=pnu_stdev, label=d.label, zorder=1)
-            )
-            plt.fill_between(nu, pnu_mean - pnu_stdev, pnu_mean + pnu_stdev, alpha=0.4)
+            plts_sim.append(self.plot_cgmf_vec(d, "pnu", nu))
 
         pnu = read(self.exp_data_path, "pnu")
 
@@ -368,7 +423,7 @@ class Plotter:
 
             plts.append(
                 plt.errorbar(
-                    d[0, :], y*100, yerr*100, d[1, :], label=l, linestyle="none", marker="."
+                    d[0, :], y, yerr, d[1, :], label=l, linestyle="none", marker="."
                 )
             )
 
@@ -377,12 +432,34 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu$ [neutrons]")
-        plt.ylabel(r"$p(\nu)$ [\%] ")
+        plt.ylabel(r"$p(\nu)$  ")
         plt.tight_layout()
 
-    def nugbar(self, cgmf_datasets=[], endf=None):
+    def nugbar(self, cgmf_datasets=None, endf=None):
         # simulation
-        ma = 0.3
+        plts_sim = []
+        max_n = 0
+        num_plots = len(cgmf_datasets)
+        alphas = np.linspace(0.9, 0.4, num=num_plots)
+        orders = np.arange(0, num_plots * 100, 100)
+        ma = 0
+        for i, d in enumerate(cgmf_datasets):
+            nugbar = d.scalar_qs["nugbar"]
+            h, e = np.histogram(nugbar, density=True)
+            h = h/np.sum(h)
+            de = e[1:] - e[:-1]
+            p = plt.fill_between(
+                0.5 * (e[:-1] + e[1:]),
+                h,
+                0.0,
+                label=d.label,
+                alpha=alphas[i],
+                zorder=orders[i],
+                step="pre",
+            )
+            plts_sim.append(p)
+            if np.max(h) > ma:
+                ma = np.max(h)
 
         # experiment
         nugbar = read(self.exp_data_path, "nugbar")
@@ -390,24 +467,24 @@ class Plotter:
         labels = [m["label"] for m in nugbar.meta]
         plts = []
 
-        y = 0.8 * ma * 100
+        y = 0.8 * ma
         i = 0
         for d, l in zip(nugbar.data, labels):
             p = plt.errorbar(
                 [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
             )
             plts.append(p)
-            y += 5 * ma
+            y += 0.05 * ma
             i += 1
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=3)
         plt.gca().add_artist(lexp)
 
         plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}_\gamma$ [gammas]")
-        plt.ylabel(r"$p(\bar{\nu}_\gamma)$ [%]")
+        plt.ylabel(r"$p(\bar{\nu}_\gamma)$")
 
-    def nubar(self, cgmf_datasets=[], endf=None):
+    def nubar(self, cgmf_datasets=None, endf=None):
         # simulation
         plts_sim = []
         max_n = 0
@@ -422,8 +499,8 @@ class Plotter:
             de = e[1:] - e[:-1]
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
-                0,
                 h,
+                0.0,
                 label=d.label,
                 alpha=alphas[i],
                 zorder=orders[i],
@@ -478,9 +555,14 @@ class Plotter:
 
         plt.legend(fontsize=10, ncol=1)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \bar{E}^{%d} $ [MeV]" % n)
+        plt.ylabel(r"$ \langle{E}^{%d}\rangle $ [MeV]" % n)
 
-    def multratA(self):
+    def multratA(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.abins ))
+
         mr = read(self.exp_data_path, "multiplicityRatioA")
 
         labels = [m["label"] for m in mr.meta]
@@ -505,7 +587,12 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
-    def enbarA(self):
+    def enbarA(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_vec(d, "enbarA", d.abins ))
+
         enbar = read(self.exp_data_path, "enbarA")
 
         labels = [m["label"] for m in enbar.meta]
@@ -529,9 +616,14 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \langle{E}\rangle_n $ [MeV]")
+        plt.ylabel(r"$ \langle {E}_n \rangle$ [MeV]")
 
-    def enbarTKE(self):
+    def enbarTKE(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_spec(d, "enbarTKE", d.TKEcenters ))
+
         enbar = read(self.exp_data_path, "enbarTKE")
 
         labels = [m["label"] for m in enbar.meta]
@@ -555,9 +647,14 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$ \bar{E}_n $ [MeV]")
+        plt.ylabel(r"$ \langle{E}_n\rangle $ [MeV]")
 
-    def egbarTKE(self, cgmf_datasets=[]):
+    def egbarTKE(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_spec(d, "egbarTKE", d.TKEcenters ))
+
         egbar = read(self.exp_data_path, "egbarTKE")
 
         labels = [m["label"] for m in egbar.meta]
@@ -580,9 +677,14 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
+        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
 
-    def egbarA(self, cgmf_datasets=[]):
+    def egbarA(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_vec(d, "enbarA", d.abins ))
+
         egbar = read(self.exp_data_path, "egbarA")
 
         labels = [m["label"] for m in egbar.meta]
@@ -605,9 +707,14 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
+        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
 
-    def egbarnubar(self, cgmf_datasets=[]):
+    def egbarnubar(self, cgmf_datasets=None):
+        # sim
+        plts_sim = []
+        for d in cgmf_datasets:
+            plts_sim.append(self.plot_cgmf_spec(d, "egbarnubar", d.nubins ))
+
         egbar = read(self.exp_data_path, "egbarnubar")
 
         labels = [m["label"] for m in egbar.meta]
@@ -630,4 +737,4 @@ class Plotter:
         plt.gca().add_artist(lexp)
         # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
-        plt.ylabel(r"$ \bar{E}_\gamma $ [MeV]")
+        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
