@@ -373,7 +373,7 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
 
         plt.xlim([70, 180])
-        plt.ylim([-1, 6])
+        plt.ylim([0, 6])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
@@ -487,7 +487,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower right")
 
         plt.xlim([7.5, 11])
         plt.ylim([0, y * 1.2])
