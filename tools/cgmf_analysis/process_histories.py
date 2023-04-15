@@ -728,12 +728,7 @@ class HistData:
                 self.scalar_qs[k] = np.concatenate(result)
         for k, v in self.vector_qs.items():
             result = mpi_comm.gather(v[s:f, ...], root=0)
-            if rank == 1:
-                print("rank 1: {}: {}".format(k, v[s:f, ...].shape))
-                sys.stdout.flush()
             if rank == 0:
-                print("rank 0: {}: {}".format(k, v[s:f, ...].shape))
-                sys.stdout.flush()
                 self.vector_qs[k] = np.concatenate(result)
         for k, v in self.tensor_qs.items():
             result = mpi_comm.gather(v[s:f, ...], root=0)
