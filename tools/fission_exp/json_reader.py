@@ -293,7 +293,7 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_specs(df, "EncomTKE")
     elif q == "egbarTKE":
         return read_specs(df, "EgTbarTKE")
-    elif q == "egbarnubar":
+    elif q == "egbarnu":
         return read_specs(df, "EgTbarnubar")
     elif q == "nubarATKE":
         return read_nubarATKE(df)
