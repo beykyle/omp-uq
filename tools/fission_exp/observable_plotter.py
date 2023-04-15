@@ -180,7 +180,7 @@ class Plotter:
         plts_sim = []
 
         for d in cgmf_datasets:
-            x = d.ecenters
+            x = d.gecenters
             plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
 
         # experimental data
@@ -243,7 +243,8 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
-        plt.xlim([70, 180])
+        plt.xlim([76, 174])
+        plt.ylim([1, 8])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
@@ -271,7 +272,10 @@ class Plotter:
                 )
             )
 
-        plt.legend(plts, labels, fontsize=10)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
@@ -299,7 +303,10 @@ class Plotter:
                 )
             )
 
-        plt.legend(plts, labels, fontsize=10)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower right")
+
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
@@ -330,7 +337,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc='lower right')
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc='lower right')
 
         plt.xlabel(r"$Z$ [protons]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -366,7 +373,7 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
 
         plt.xlim([70, 180])
-        plt.ylim([0, 6])
+        plt.ylim([-1, 6])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
@@ -397,6 +404,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu_\gamma$ [gammas]")
         plt.ylabel(r"$p(\nu_\gamma)$ [\%]")
@@ -477,8 +485,14 @@ class Plotter:
             y += 0.05 * ma
             i += 1
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=3)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+
+        plt.xlim([7.5, 11])
+        plt.ylim([0, y * 1.2])
+        plt.xticks(np.arange(7.5, 10, 0.5))
+        plt.grid(visible=True, axis="x", which="major")
 
         plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}_\gamma$ [gammas]")
@@ -583,7 +597,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
@@ -614,7 +628,7 @@ class Plotter:
         plt.ylim([1, 3.0])
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_n \rangle$ [MeV]")
 
@@ -645,7 +659,7 @@ class Plotter:
         plt.ylim([1, 2.0])
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}_n\rangle $ [MeV]")
 
@@ -675,7 +689,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
 
@@ -705,17 +719,17 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
 
-    def egbarnubar(self, cgmf_datasets=None):
+    def egbarnu(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egbarnubar", d.nubins ))
+            plts_sim.append(self.plot_cgmf_spec(d, "egbarnu", d.nubins ))
 
-        egbar = read(self.exp_data_path, "egbarnubar")
+        egbar = read(self.exp_data_path, "egbarnu")
 
         labels = [m["label"] for m in egbar.meta]
         plts = []
@@ -735,6 +749,6 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        # plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
