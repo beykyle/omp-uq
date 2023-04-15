@@ -64,6 +64,15 @@ def balance_load(num_jobs, rank, size):
     return start, end
 
 
+def check_pairs(quantities, pairs):
+    for pair in pairs:
+        if pair[0] in quantities and pair[1] not in quantities:
+            quantities.append(pair[1])
+        if pair[1] in quantities and pair[0] not in quantities:
+            quantities.append(pair[0])
+    return list(set(quantities))  # remove duplicates
+
+
 class HistData:
     def __init__(
         self,
@@ -84,7 +93,19 @@ class HistData:
         nensemble = self.max_ensemble - self.min_ensemble + 1
 
         # aset up dictionaries which hold all our data
-        self.quantities = quantities
+        self.quantities = check_pairs(
+            quantities,
+            [
+                ("enbarA", "pfnsA"),
+                ("egbarA", "pfgsA"),
+                ("enbarTKE", "pfnsTKE"),
+                ("egbarTKE", "pfgsTKE"),
+                ("enbarZ", "pfnsZ"),
+                ("egbarZ", "pfgsZ"),
+                ("multratioA", "nubarA"),
+                ("multratioA", "nugbarA"),
+            ],
+        )
         self.scalar_qs = {}
         self.vector_qs = {}
         self.tensor_qs = {}
@@ -151,9 +172,7 @@ class HistData:
             elif q == "enbarTKE":
                 self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "egbarTKE":
-                self.vector_qs["egbarTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size)
-                )
+                self.vector_qs["egbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pnug":
@@ -218,7 +237,12 @@ class HistData:
         vals_unc = self.vector_qs[quantity + "_stddev"]
         for i in range(self.min_ensemble, self.max_ensemble):
             plt.fill_between(
-                x, vals[i, :] + vals_unc[i, :], vals - vals_unc[i, :], alpha=0.05, color='k')
+                x,
+                vals[i, :] + vals_unc[i, :],
+                vals - vals_unc[i, :],
+                alpha=0.05,
+                color="k",
+            )
 
     def write_bins(self, with_ensemble_idx=False, mpi_comm=None):
         f = ""
@@ -569,7 +593,7 @@ class HistData:
                 )
 
             # < d nu / d E_n | A >
-            if "pfnsA" in self.tensor_qs:
+            if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
                 nelab = hs.getNeutronElab()[mask]
                 necm = hs.getNeutronEcm()[mask]
                 KE_pre = hs.getKEpre()[mask] / float(a)
@@ -581,23 +605,23 @@ class HistData:
                 (
                     self.tensor_qs["pfnsA"][n, l, :],
                     self.tensor_qs["pfnsA_stddev"][n, l, :],
-                    _,
-                    _,
+                    self.vector_qs["enbarA"][n, l],
+                    self.vector_qs["enbarA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_ns, nelab, bins=self.tebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / d E_g | A >
-            if "pfgsA" in self.tensor_qs:
+            if "pfgsA" in self.tensor_qs or "egbarA" in self.vector_qs:
                 gelab = hs.getGammaElab()[mask]
                 ages = hs.getGammaAges()[mask]
 
                 (
                     self.tensor_qs["pfgsA"][n, l, :],
                     self.tensor_qs["pfgsA_stddev"][n, l, :],
-                    _,
-                    _,
+                    self.vector_qs["egbarA"][n, l],
+                    self.vector_qs["egbarA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
