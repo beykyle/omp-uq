@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import numpy as np
+from matplotlib import pyplot as plt
 
 from mpi4py import MPI
 
@@ -103,9 +104,14 @@ class HistData:
         self.TKEbins = np.arange(TKEmin, TKEmax, TKEstep)
         self.TKEcenters = 0.5 * (self.TKEbins[0:-1] + self.TKEbins[1:])
 
-        self.ebins = np.logspace(-3, 2, 100)
+        self.ebins = np.logspace(-3, 2, 60)
         self.ecenters = 0.5 * (self.ebins[0:-1] + self.ebins[1:])
         self.de = self.ebins[1:] - self.ebins[:-1]
+
+        # ebins for tensor q's q/ lower statistics
+        self.tebins = np.logspace(-3, 2, 30)
+        self.tecenters = 0.5 * (self.tebins[0:-1] + self.tebins[1:])
+        self.tde = self.tebins[1:] - self.tebins[:-1]
 
         # allocate arrays for histogram values
         # all arrays have as their first axis the ensemble
@@ -142,19 +148,19 @@ class HistData:
                 self.vector_qs["multratioA"] = np.zeros((nensemble, self.abins.size))
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.ecenters.size)
+                    (nensemble, self.TKEcenters.size, self.tecenters.size)
                 )
             elif q == "pfgsTKE":
                 self.tensor_qs["pfgsTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.ecenters.size)
+                    (nensemble, self.TKEcenters.size, self.tecenters.size)
                 )
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
-                    (nensemble, self.abins.size, self.ecenters.size)
+                    (nensemble, self.abins.size, self.tecenters.size)
                 )
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
-                    (nensemble, self.abins.size, self.ecenters.size)
+                    (nensemble, self.abins.size, self.tecenters.size)
                 )
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
@@ -174,6 +180,25 @@ class HistData:
         for k in list(self.tensor_qs):
             key = k + "_stddev"
             self.tensor_qs[key] = np.zeros_like(self.tensor_qs[k])
+
+    def plot_scalar(self, quantity):
+        if quantity not in self.scalar_qs:
+            print("invalid key: {}".format(quantity))
+
+        vals = self.scalar_qs[quantity]
+        x, y = np.histogram(vals)
+        x = x[1:] - x[:-1]
+        plt.fill_between(x, y, 0)
+
+    def plot_vector(self, quantity, x):
+        if quantity not in self.vector_qs:
+            print("invalid key: {}".format(quantity))
+
+        vals = self.vector_qs[quantity]
+        vals_unc = self.vector_qs[quantity + "_stddev"]
+        for i in range(self.min_ensemble, self.max_ensemble):
+            plt.fill_between(
+                x, vals[i, :] + vals_unc[i, :], vals - vals_unc[i, :], alpha=0.05, color='k')
 
     def write_bins(self, with_ensemble_idx=False, mpi_comm=None):
         f = ""
@@ -252,11 +277,11 @@ class HistData:
                 c = c + numi
 
         mean, sem = self.estimate_mean(v[0:c])
-        hist, stdev = self.histogram_with_poisson_uncertainty(v[0:c], bins=bins)
+        hist, stdev = self.histogram_with_binomial_uncertainty(v[0:c], bins=bins)
 
         return hist, stdev, mean, sem, c
 
-    def histogram_with_poisson_uncertainty(self, histories, bins, int_bins=False):
+    def histogram_with_binomial_uncertainty(self, histories, bins, int_bins=False):
         """
         For a set of scalar quantities organized by history along axis 0,
         returns a histogram of values over bins, along with uncertainty
@@ -273,9 +298,9 @@ class HistData:
             bins = np.append(bins, [bins[-1] + 0.5])
 
         h, _ = np.histogram(histories, bins=bins, density=False)
-        stdev = np.sqrt(h)
+        stdev = np.sqrt(h * (1 - h / nhist))
         dbins = bins[1:] - bins[:-1]
-        norm = nhist * dbins
+        norm = np.sum(h) * dbins
         return h / norm, stdev / norm
 
     def estimate_mean(self, histories):
@@ -344,7 +369,7 @@ class HistData:
             (
                 self.vector_qs["pnu"][n],
                 self.vector_qs["pnu_stddev"][n],
-            ) = self.histogram_with_poisson_uncertainty(
+            ) = self.histogram_with_binomial_uncertainty(
                 nutot, self.nubins, int_bins=True
             )
 
@@ -355,7 +380,7 @@ class HistData:
             (
                 self.vector_qs["pnug"][n],
                 self.vector_qs["pnug_stddev"][n],
-            ) = self.histogram_with_poisson_uncertainty(
+            ) = self.histogram_with_binomial_uncertainty(
                 nugtot, self.nugbins, int_bins=True
             )
 
@@ -467,7 +492,7 @@ class HistData:
                     _,
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons, nelab, bins=self.ebins, mask_generator=kinematic_cut
+                    num_neutrons, nelab, bins=self.tebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / dE_g | TKE >
@@ -484,7 +509,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
-                    bins=self.ebins,
+                    bins=self.tebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                 )
 
@@ -540,7 +565,7 @@ class HistData:
                     _,
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, nelab, bins=self.ebins, mask_generator=kinematic_cut
+                    num_ns, nelab, bins=self.tebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / d E_g | A >
@@ -557,7 +582,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
-                    bins=self.ebins,
+                    bins=self.tebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                 )
 
