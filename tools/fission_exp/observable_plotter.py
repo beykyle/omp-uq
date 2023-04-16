@@ -601,13 +601,13 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
-    def enbarA(self, cgmf_datasets=None):
+    def encomA(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "enbarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.abins ))
 
-        enbar = read(self.exp_data_path, "enbarA")
+        enbar = read(self.exp_data_path, "encomA")
 
         labels = [m["label"] for m in enbar.meta]
         plts = []
@@ -632,13 +632,13 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_n \rangle$ [MeV]")
 
-    def enbarTKE(self, cgmf_datasets=None):
+    def encomTKE(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "enbarTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.TKEcenters ))
 
-        enbar = read(self.exp_data_path, "enbarTKE")
+        enbar = read(self.exp_data_path, "encomTKE")
 
         labels = [m["label"] for m in enbar.meta]
         plts = []
@@ -697,7 +697,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "enbarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "egbarA", d.abins ))
 
         egbar = read(self.exp_data_path, "egbarA")
 

@@ -285,11 +285,11 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_specs(df, "Pnug")
     elif q == "multiplicityRatioA":
         return read_specs(df, "multiplicityRatioA")
-    elif q == "enbarA":
+    elif q == "encomA":
         return read_specs(df, "EncomA")
     elif q == "egbarA":
         return read_specs(df, "EgTbarA")
-    elif q == "enbarTKE":
+    elif q == "encomTKE":
         return read_specs(df, "EncomTKE")
     elif q == "egbarTKE":
         return read_specs(df, "EgTbarTKE")
