@@ -38,6 +38,10 @@ all_quantities = [
     "pfnsZ",
     "pfgsZ",
     "nuATKE",
+    "pfnscomTKE",
+    "pfnscomA",
+    "encomA",
+    "encomTKE",
 ]
 
 
@@ -103,6 +107,8 @@ class HistData:
                 ("enbarTKE", "pfnsTKE"),
                 ("egbarTKE", "pfgsTKE"),
                 ("enbarZ", "pfnsZ"),
+                ("egcomTKE", "pfgscomTKE"),
+                ("encomZ", "pfnscomZ"),
                 ("egbarZ", "pfgsZ"),
                 ("multratioA", "nubarA"),
                 ("multratioA", "nugbarA"),
@@ -164,6 +170,8 @@ class HistData:
                 self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "enbarA":
                 self.vector_qs["enbarA"] = np.zeros((nensemble, self.abins.size))
+            elif q == "encomA":
+                self.vector_qs["encomA"] = np.zeros((nensemble, self.abins.size))
             elif q == "egbarA":
                 self.vector_qs["egbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "enbarZ":
@@ -182,6 +190,8 @@ class HistData:
                 )
             elif q == "enbarTKE":
                 self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+            elif q == "encomTKE":
+                self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "egbarTKE":
                 self.vector_qs["egbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "pnu":
@@ -204,6 +214,10 @@ class HistData:
                 self.tensor_qs["pfgsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tgecenters.size)
                 )
+            elif q == "pfnscomTKE":
+                self.tensor_qs["pfnscomTKE"] = np.zeros(
+                    (nensemble, self.TKEcenters.size, self.tecenters.size)
+                )
             elif q == "pfnsZ":
                 self.tensor_qs["pfnsZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.tecenters.size)
@@ -214,6 +228,10 @@ class HistData:
                 )
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
+                    (nensemble, self.abins.size, self.tecenters.size)
+                )
+            elif q == "pfnscomA":
+                self.tensor_qs["pfnscomA"] = np.zeros(
                     (nensemble, self.abins.size, self.tecenters.size)
                 )
             elif q == "pfgsA":
@@ -592,7 +610,7 @@ class HistData:
             mask = mask.repeat(2, axis=0)
 
             # < d nu / dE | TKE >
-            if "pfnsTKE" in self.tensor_qs:
+            if "pfnsTKE" in self.tensor_qs or "enbarTKE" in self.vector_qs:
                 nelab = hs.getNeutronElab()[mask]
                 necm = hs.getNeutronEcm()[mask]
                 KE_pre = hs.getKEpre()[mask] / hs.getA()[mask]
@@ -603,11 +621,28 @@ class HistData:
                 (
                     self.tensor_qs["pfnsTKE"][n, l, :],
                     self.tensor_qs["pfnsTKE_stddev"][n, l, :],
-                    _,
-                    _,
+                    self.vector_qs["enbarTKE"][n, l],
+                    self.vector_qs["enbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_neutrons, nelab, bins=self.tebins, mask_generator=kinematic_cut
+                )
+
+            if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
+                necm = hs.getNeutronEcm()[mask]
+                KE_pre = hs.getKEpre()[mask] / hs.getA()[mask]
+
+                def kinematic_cut(hist: int):
+                    return np.where(np.asarray(necm[hist]) > KE_pre[hist])
+
+                (
+                    self.tensor_qs["pfnscomTKE"][n, l, :],
+                    self.tensor_qs["pfnscomTKE_stddev"][n, l, :],
+                    self.vector_qs["encomTKE"][n, l],
+                    self.vector_qs["encomTKE_stddev"][n, l],
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_neutrons, necm, bins=self.tebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / dE_g | TKE >
@@ -618,8 +653,8 @@ class HistData:
                 (
                     self.tensor_qs["pfgsTKE"][n, l, :],
                     self.tensor_qs["pfgsTKE_stddev"][n, l, :],
-                    _,
-                    _,
+                    self.vector_qs["egbarTKE"][n, l],
+                    self.vector_qs["egbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
@@ -665,9 +700,9 @@ class HistData:
 
             # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
                 necm = hs.getNeutronEcm()[mask]
-                KE_pre = hs.getKEpre()[mask] / float(a)
+                nelab = hs.getNeutronElab()[mask]
+                KE_pre = hs.getKEpre()[mask]
 
                 def kinematic_cut(hist: int):
                     min_energy = KE_pre[hist] / float(a)
@@ -681,6 +716,24 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_ns, nelab, bins=self.tebins, mask_generator=kinematic_cut
+                )
+
+            if "pfnscomA" in self.tensor_qs or "encomA" in self.vector_qs:
+                necm = hs.getNeutronEcm()[mask]
+                KE_pre = hs.getKEpre()[mask]
+
+                def kinematic_cut(hist: int):
+                    min_energy = KE_pre[hist] / float(a)
+                    return np.where(np.asarray(necm[hist]) > min_energy)
+
+                (
+                    self.tensor_qs["pfnscomA"][n, l, :],
+                    self.tensor_qs["pfnscomA_stddev"][n, l, :],
+                    self.vector_qs["encomA"][n, l],
+                    self.vector_qs["encomA_stddev"][n, l],
+                    _,
+                ) = self.hist_from_list_of_lists(
+                    num_ns, necm, bins=self.tebins, mask_generator=kinematic_cut
                 )
 
             # < d nu_g / d E_g | A >
