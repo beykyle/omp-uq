@@ -710,7 +710,7 @@ class HistData:
                     self.vector_qs["nubarA_stddev"][n, l],
                     self.vector_qs["nugbarA_stddev"][n, l],
                 )
-                if nu > 0:
+                if nu > 0 and dnu > 0:
                     self.vector_qs["multratioA"][n, l] = nug / nu
                     self.vector_qs["multratioA_stddev"][n, l] = np.sqrt(
                         dnug**2 / nu**2 + dnu**2 * (dnug / dnu) ** 2
