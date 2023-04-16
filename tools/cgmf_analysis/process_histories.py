@@ -20,14 +20,14 @@ all_quantities = [
     "nubarTKE",
     "nugbarTKE",
     "enbarA",
-    "egbarA",
+    "egtbarA",
     "enbarZ",
-    "egbarZ",
+    "egtbarZ",
     "enbarTKE",
-    "egbarTKE",
+    "egtbarTKE",
     "pnu",
     "pnug",
-    "egbarnu",
+    "egtbarnu",
     "pfns",
     "pfgs",
     "multratioA",
@@ -103,13 +103,13 @@ class HistData:
             quantities,
             [
                 ("enbarA", "pfnsA"),
-                ("egbarA", "pfgsA"),
+                ("egtbarA", "pfgsA"),
                 ("enbarTKE", "pfnsTKE"),
-                ("egbarTKE", "pfgsTKE"),
+                ("egtbarTKE", "pfgsTKE"),
                 ("enbarZ", "pfnsZ"),
                 ("egcomTKE", "pfgscomTKE"),
                 ("encomZ", "pfnscomZ"),
-                ("egbarZ", "pfgsZ"),
+                ("egtbarZ", "pfgsZ"),
                 ("multratioA", "nubarA"),
                 ("multratioA", "nugbarA"),
             ],
@@ -172,12 +172,12 @@ class HistData:
                 self.vector_qs["enbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "encomA":
                 self.vector_qs["encomA"] = np.zeros((nensemble, self.abins.size))
-            elif q == "egbarA":
-                self.vector_qs["egbarA"] = np.zeros((nensemble, self.abins.size))
+            elif q == "egtbarA":
+                self.vector_qs["egtbarA"] = np.zeros((nensemble, self.abins.size))
             elif q == "enbarZ":
                 self.vector_qs["enbarZ"] = np.zeros((nensemble, self.zbins.size))
-            elif q == "egbarZ":
-                self.vector_qs["egbarZ"] = np.zeros((nensemble, self.zbins.size))
+            elif q == "egtbarZ":
+                self.vector_qs["egtbarZ"] = np.zeros((nensemble, self.zbins.size))
             elif q == "nubarZ":
                 self.vector_qs["nubarZ"] = np.zeros((nensemble, self.zbins.size))
             elif q == "nugbarZ":
@@ -192,14 +192,14 @@ class HistData:
                 self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "encomTKE":
                 self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
-            elif q == "egbarTKE":
-                self.vector_qs["egbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+            elif q == "egtbarTKE":
+                self.vector_qs["egtbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pnug":
                 self.vector_qs["pnug"] = np.zeros((nensemble, self.nugbins.size))
-            elif q == "egbarnu":
-                self.vector_qs["egbarnu"] = np.zeros((nensemble, self.nubins.size))
+            elif q == "egtbarnu":
+                self.vector_qs["egtbarnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pfns":
                 self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
             elif q == "pfgs":
@@ -340,7 +340,7 @@ class HistData:
         )
         self.gebins = np.load(self.res_dir / "GE_bins.npy")
 
-    def hist_from_list_of_lists(self, num, lol, bins, mask_generator=None):
+    def hist_from_list_of_lists(self, num, lol, bins, mask_generator=None, totals=False):
         """
         returns a histogram of values that may occur multiple times per history,
         e.g. neutron energies, formatted as a list of lists; outer being history,
@@ -356,6 +356,7 @@ class HistData:
         """
 
         v = np.zeros(num)
+        totals = []
 
         c = 0
         if mask_generator is not None:
@@ -364,6 +365,7 @@ class HistData:
                 h = h[mask_generator(i)]
                 numi = h.size
                 v[c : c + numi] = h
+                totals.append(np.sum(h))
                 c = c + numi
         else:
             for i in range(lol.size):
@@ -371,11 +373,17 @@ class HistData:
                 numi = h.size
                 v[c : c + numi] = h
                 c = c + numi
+                totals.append(np.sum(h))
 
         mean, sem = self.estimate_mean(v[0:c])
         hist, stdev = self.histogram_with_binomial_uncertainty(v[0:c], bins=bins)
 
+        if totals:
+            meant, semt = self.estimate_mean(np.asarray(totals))
+            return hist, stdev, mean, sem, meant, semt, c
+
         return hist, stdev, mean, sem, c
+
 
     def histogram_with_binomial_uncertainty(self, histories, bins, int_bins=False):
         """
@@ -509,7 +517,7 @@ class HistData:
             )
 
         # nu dependent
-        if "egbarnu" in self.vector_qs:
+        if "egtbarnu" in self.vector_qs:
             for l, nu in enumerate(self.nubins):
                 mask = np.where(hs.getNu() == nu)
                 num_gammas = np.sum(hs.getNug()[mask])
@@ -519,14 +527,17 @@ class HistData:
                 (
                     _,
                     _,
-                    self.vector_qs["egbarnu"][n, l],
-                    self.vector_qs["egbarnu_stddev"][n, l],
+                    _,
+                    _,
+                    self.vector_qs["egtbarnu"][n, l],
+                    self.vector_qs["egtbarnu_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
                     bins=self.ebins,
                     mask_generator=self.gamma_cut(gelab, ages),
+                    totals=True
                 )
 
         # Z dependent
@@ -565,21 +576,24 @@ class HistData:
                 )
 
             # < d nu_g / d E_g | A >
-            if "pfgsZ" in self.tensor_qs or "egbarZ" in self.vector_qs:
+            if "pfgsZ" in self.tensor_qs or "egtbarZ" in self.vector_qs:
                 gelab = hs.getGammaElab()[mask]
                 ages = hs.getGammaAges()[mask]
 
                 (
                     self.tensor_qs["pfgsZ"][n, l, :],
                     self.tensor_qs["pfgsZ_stddev"][n, l, :],
-                    self.vector_qs["egbarZ"][n, l],
-                    self.vector_qs["egbarZ_stddev"][n, l],
+                    _,
+                    _,
+                    self.vector_qs["egtbarZ"][n, l],
+                    self.vector_qs["egtbarZ_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
+                    totals=True
                 )
 
         # TKE dependent
@@ -653,14 +667,17 @@ class HistData:
                 (
                     self.tensor_qs["pfgsTKE"][n, l, :],
                     self.tensor_qs["pfgsTKE_stddev"][n, l, :],
-                    self.vector_qs["egbarTKE"][n, l],
-                    self.vector_qs["egbarTKE_stddev"][n, l],
+                    _,
+                    _,
+                    self.vector_qs["egtbarTKE"][n, l],
+                    self.vector_qs["egtbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
+                    totals=True
                 )
 
         # A dependent
@@ -738,21 +755,24 @@ class HistData:
                 )
 
             # < d nu_g / d E_g | A >
-            if "pfgsA" in self.tensor_qs or "egbarA" in self.vector_qs:
+            if "pfgsA" in self.tensor_qs or "egtbarA" in self.vector_qs:
                 gelab = hs.getGammaElab()[mask]
                 ages = hs.getGammaAges()[mask]
 
                 (
                     self.tensor_qs["pfgsA"][n, l, :],
                     self.tensor_qs["pfgsA_stddev"][n, l, :],
-                    self.vector_qs["egbarA"][n, l],
-                    self.vector_qs["egbarA_stddev"][n, l],
+                    _,
+                    _,
+                    self.vector_qs["egtbarA"][n, l],
+                    self.vector_qs["egtbarA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
+                    totals=True
                 )
 
             # < nu | TKE, A >
