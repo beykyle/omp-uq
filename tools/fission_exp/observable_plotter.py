@@ -663,18 +663,18 @@ class Plotter:
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}_n\rangle $ [MeV]")
 
-    def egbarTKE(self, cgmf_datasets=None):
+    def egtbarTKE(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egbarTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.TKEcenters ))
 
-        egbar = read(self.exp_data_path, "egbarTKE")
+        egtbar = read(self.exp_data_path, "egtbarTKE")
 
-        labels = [m["label"] for m in egbar.meta]
+        labels = [m["label"] for m in egtbar.meta]
         plts = []
 
-        for d, l in zip(egbar.data, labels):
+        for d, l in zip(egtbar.data, labels):
             plts.append(
                 plt.errorbar(
                     d[0, :],
@@ -691,20 +691,20 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
+        plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
-    def egbarA(self, cgmf_datasets=None):
+    def egtbarA(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "egbarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.abins ))
 
-        egbar = read(self.exp_data_path, "egbarA")
+        egtbar = read(self.exp_data_path, "egtbarA")
 
-        labels = [m["label"] for m in egbar.meta]
+        labels = [m["label"] for m in egtbar.meta]
         plts = []
 
-        for d, l in zip(egbar.data, labels):
+        for d, l in zip(egtbar.data, labels):
             plts.append(
                 plt.errorbar(
                     d[0, :],
@@ -721,20 +721,20 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
+        plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
-    def egbarnu(self, cgmf_datasets=None):
+    def egtbarnu(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egbarnu", d.nubins ))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.nubins ))
 
-        egbar = read(self.exp_data_path, "egbarnu")
+        egtbar = read(self.exp_data_path, "egtbarnu")
 
-        labels = [m["label"] for m in egbar.meta]
+        labels = [m["label"] for m in egtbar.meta]
         plts = []
 
-        for d, l in zip(egbar.data, labels):
+        for d, l in zip(egtbar.data, labels):
             plts.append(
                 plt.errorbar(
                     d[0, :],
@@ -751,4 +751,4 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
-        plt.ylabel(r"$ \langle{E}_\gamma\rangle $ [MeV]")
+        plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
