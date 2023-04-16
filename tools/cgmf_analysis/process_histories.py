@@ -693,10 +693,11 @@ class HistData:
                     self.vector_qs["nubarA_stddev"][n, l],
                     self.vector_qs["nugbarA_stddev"][n, l],
                 )
-                self.vector_qs["multratioA"][n, l] = nug / nu
-                self.vector_qs["multratioA_stddev"][n, l] = np.sqrt(
-                    dnug**2 / nu**2 + dnu**2 * (dnug / dnu) ** 2
-                )
+                if nu > 0:
+                    self.vector_qs["multratioA"][n, l] = nug / nu
+                    self.vector_qs["multratioA_stddev"][n, l] = np.sqrt(
+                        dnug**2 / nu**2 + dnu**2 * (dnug / dnu) ** 2
+                    )
 
             # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
