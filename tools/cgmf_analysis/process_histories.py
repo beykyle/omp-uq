@@ -823,7 +823,7 @@ class HistData:
             if mpi_comm is None:
                 print("Reading {} ...".format(fname))
             else:
-                print("Reading {} on rank {}...".format(fname, mpi_comm.Get_rank()))
+                print("On lap {}; reading {} on rank {}...".format(n % mpi_comm.Get_size(), fname, mpi_comm.Get_rank()))
                 sys.stdout.flush()
 
             if self.hist_fname_postfix == ".npy":
