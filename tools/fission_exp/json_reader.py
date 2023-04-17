@@ -287,13 +287,13 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_specs(df, "multiplicityRatioA")
     elif q == "encomA":
         return read_specs(df, "EncomA")
-    elif q == "egbarA":
+    elif q == "egtbarA":
         return read_specs(df, "EgTbarA")
     elif q == "encomTKE":
         return read_specs(df, "EncomTKE")
-    elif q == "egbarTKE":
+    elif q == "egtbarTKE":
         return read_specs(df, "EgTbarTKE")
-    elif q == "egbarnu":
+    elif q == "egtbarnu":
         return read_specs(df, "EgTbarnubar")
     elif q == "nubarATKE":
         return read_nubarATKE(df)
