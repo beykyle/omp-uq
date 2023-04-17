@@ -390,8 +390,8 @@ class HistData:
         if totals:
             totals_v = np.asarray(totals_v)
             if not fragment:
-                # sum every 2 totals together
-                totals_v = totals_v.reshape((-1,2)).sum(1)
+                # sum every 2 totals together to get totals per fission event
+                totals_v = totals_v.reshape((-1, 2)).sum(1)
             meant, semt = self.estimate_mean(totals_v)
             return hist, stdev, mean, sem, meant, semt, c
 
@@ -471,7 +471,7 @@ class HistData:
         index and returns a mask selecting the neutrons with kinetic energy larger than
         the kinetic energy per nucleon of the pre-emission fragment
         """
-        def cut(i : int):
+        def cut(i: int):
             return np.where( np.asarray(necm[i]) >= ke_pre[i]/a )
 
         return cut
@@ -564,7 +564,8 @@ class HistData:
                     gelab,
                     bins=self.ebins,
                     mask_generator=self.gamma_cut(gelab, ages),
-                    totals=True
+                    totals=True,
+                    fragment=False
                 )
 
         # Z dependent
@@ -617,7 +618,8 @@ class HistData:
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
-                    totals=True
+                    totals=True,
+                    fragment=False,
                 )
 
         # TKE dependent
@@ -692,7 +694,8 @@ class HistData:
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
-                    totals=True
+                    totals=True,
+                    fragment=False,
                 )
 
         # A dependent
@@ -779,7 +782,8 @@ class HistData:
                     gelab,
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
-                    totals=True
+                    totals=True,
+                    fragment=False,
                 )
 
             # < nu | TKE, A >
