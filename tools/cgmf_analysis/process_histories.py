@@ -440,15 +440,13 @@ class HistData:
         """
 
         def cut(i: int):
-            return np.where(
-                np.logical_and(
+            return np.logical_and(
                     np.logical_and(
                         np.asarray(ages_lol[i]) >= self.min_time,
                         np.asarray(ages_lol[i]) < self.max_time,
                     ),
                     np.asarray(energy_lol[i]) > self.Ethg,
                 )
-            )
 
         return cut
 
@@ -460,7 +458,7 @@ class HistData:
         """
 
         def cut(i: int):
-            return np.where(np.asarray(energy_lol[i]) > self.Ethn)
+            return np.asarray(energy_lol[i]) > self.Ethn
 
         return cut
 
@@ -472,7 +470,7 @@ class HistData:
         the kinetic energy per nucleon of the pre-emission fragment
         """
         def cut(i: int):
-            return np.where( np.asarray(necm[i]) >= ke_pre[i]/a )
+            return np.asarray(necm[i]) >= ke_pre[i]/a
 
         return cut
 
