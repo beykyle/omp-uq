@@ -93,7 +93,7 @@ class HistData:
         self.res_dir = Path(res_dir)
         self.hist_fname_prefix = "histories"
         if convert_cgmf_to_npy:
-            self.hist_fname_prefix = ".o"
+            self.hist_fname_postfix = ".o"
         else:
             self.hist_fname_postfix = ".npy"
 
