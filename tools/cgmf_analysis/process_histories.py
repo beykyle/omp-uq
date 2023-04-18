@@ -86,12 +86,16 @@ class HistData:
         quantities: list,
         hist_dir=parent_dir,
         res_dir=post_dir,
+        convert_cgmf_to_npy=False
     ):
         # filesystem dealings
         self.hist_dir = Path(hist_dir)
         self.res_dir = Path(res_dir)
         self.hist_fname_prefix = "histories"
-        self.hist_fname_postfix = ".npy"
+        if convert_cgmf_to_npy:
+            self.hist_fname_prefix = ".o"
+        else:
+            self.hist_fname_postfix = ".npy"
 
         # get ensemble range
         self.min_ensemble = ensemble_range[0]
@@ -462,15 +466,15 @@ class HistData:
 
         return cut
 
-    def kinematic_cut(self, necm : np.array, ke_pre: np.array, a : float):
+    def kinematic_cut(self, energy_lol: np.array, min_energy: np.array):
         """
-        Given COM neutron energies in list of lists format, and the pre-emission
-        kinetic energy for each fragment, returns a callable that takes in a fragment
-        index and returns a mask selecting the neutrons with kinetic energy larger than
-        the kinetic energy per nucleon of the pre-emission fragment
+        Given energies in list of lists format, and some min energy cutoff for each
+        fragment, returns the corresponding mask for a given fragment number
         """
+        assert(min_energy.size == energy_lol.size)
+
         def cut(i: int):
-            return np.asarray(necm[i]) >= ke_pre[i]/a
+            return np.asarray(energy_lol[i]) >= min_energy[i]
 
         return cut
 
@@ -563,7 +567,6 @@ class HistData:
                     bins=self.ebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
-                    fragment=False
                 )
 
         # Z dependent
@@ -617,7 +620,6 @@ class HistData:
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
-                    fragment=False,
                 )
 
         # TKE dependent
@@ -662,7 +664,12 @@ class HistData:
                 )
 
             if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
-                necm = hs.getNeutronEcm()[mask]
+                nelab = hs.getNeutronElab()[mask]
+                necm   = hs.getNeutronEcm()[mask]
+                ke_pre = hs.getKEpre()[mask]
+                A = hs.getA()[mask]
+                min_energy = ke_pre / A
+
 
                 (
                     self.tensor_qs["pfnscomTKE"][n, l, :],
@@ -671,7 +678,7 @@ class HistData:
                     self.vector_qs["encomTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons, necm, bins=self.tebins
+                    num_neutrons, necm, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
                 )
 
             # < d nu_g / dE_g | TKE >
@@ -693,7 +700,6 @@ class HistData:
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
-                    fragment=False,
                 )
 
         # A dependent
@@ -734,9 +740,10 @@ class HistData:
 
             # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
-                necm = hs.getNeutronEcm()[mask]
-                nelab = hs.getNeutronElab()[mask]
-                KE_pre = hs.getKEpre()[mask]
+                nelab  = hs.getNeutronElab()[mask]
+                necm   = hs.getNeutronEcm()[mask]
+                ke_pre = hs.getKEpre()[mask]
+                min_energy = ke_pre / float(a)
 
                 (
                     self.tensor_qs["pfnsA"][n, l, :],
@@ -745,12 +752,14 @@ class HistData:
                     self.vector_qs["enbarA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, nelab, bins=self.tebins, mask_generator=self.kinematic_cut(necm, KE_pre, a)
+                    num_ns, nelab, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
                 )
 
             if "pfnscomA" in self.tensor_qs or "encomA" in self.vector_qs:
-                necm = hs.getNeutronEcm()[mask]
-                KE_pre = hs.getKEpre()[mask]
+                nelab = hs.getNeutronElab()[mask]
+                necm   = hs.getNeutronEcm()[mask]
+                ke_pre = hs.getKEpre()[mask]
+                min_energy = ke_pre / float(a)
 
                 (
                     self.tensor_qs["pfnscomA"][n, l, :],
@@ -759,7 +768,7 @@ class HistData:
                     self.vector_qs["encomA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, necm, bins=self.tebins, mask_generator=self.kinematic_cut(necm, KE_pre, a)
+                    num_ns, necm, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
                 )
 
             # < d nu_g / d E_g | A >
@@ -781,7 +790,6 @@ class HistData:
                     bins=self.tgebins,
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
-                    fragment=False,
                 )
 
             # < nu | TKE, A >
@@ -855,10 +863,19 @@ class HistData:
                 print("On lap {}; reading {} on rank {}...".format(n % mpi_comm.Get_size(), fname, mpi_comm.Get_rank()))
                 sys.stdout.flush()
 
-            if self.hist_fname_postfix == ".npy":
+            if not self.convert_cgmf_to_npy or self.hist_fname_postfix == ".npy":
                 hs = fh.Histories.load(fname)
             else:
                 hs = fh.Histories(filename=fname, ang_mom_printed=True)
+                if self.convert_cgmf_to_npy:
+                    fname_out = self.hist_dir / (
+                        "{}_{}{}".format(
+                            self.hist_fname_prefix,
+                            ensemble_idx,
+                            ".npy",
+                        )
+                    )
+                    hs.save(fname_out)
 
             if mpi_comm is None:
                 print(
