@@ -92,6 +92,7 @@ class HistData:
         self.hist_dir = Path(hist_dir)
         self.res_dir = Path(res_dir)
         self.hist_fname_prefix = "histories"
+        self.convert_cgmf_to_npy = convert_cgmf_to_npy
         if convert_cgmf_to_npy:
             self.hist_fname_postfix = ".o"
         else:
@@ -860,7 +861,8 @@ class HistData:
             if mpi_comm is None:
                 print("Reading {} ...".format(fname))
             else:
-                print("On lap {}; reading {} on rank {}...".format(n % mpi_comm.Get_size(), fname, mpi_comm.Get_rank()))
+                print("Rank {} on lap {} out of {}; reading {}...".format(
+                    mpi_comm.Get_rank(), n - start, end - start, fname))
                 sys.stdout.flush()
 
             if not self.convert_cgmf_to_npy or self.hist_fname_postfix == ".npy":
