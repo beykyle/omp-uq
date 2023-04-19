@@ -669,8 +669,7 @@ class HistData:
                 necm   = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 A = hs.getA()[mask]
-                min_energy = ke_pre / A
-
+                min_energy = np.ones_like(A) * 1.04540752 # Bowman small angle cut
 
                 (
                     self.tensor_qs["pfnscomTKE"][n, l, :],
