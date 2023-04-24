@@ -369,7 +369,7 @@ class HistData:
         or event-by-event (False) for totals. If the latter, sums over every other entry in totals_v
         before finding the means
         """
-        v = np.zeros(num)
+        v = np.zeros(int(num))
         totals_v = []
 
         c = 0
@@ -669,7 +669,8 @@ class HistData:
                 necm   = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 A = hs.getA()[mask]
-                min_energy = np.ones_like(A) * 1.04540752 # Bowman small angle cut
+                # Bowman small angle cut (E[Mev] = m_n *(1 cm/ns)**2)
+                min_energy = np.ones_like(A) * 1.04540752
 
                 (
                     self.tensor_qs["pfnscomTKE"][n, l, :],
