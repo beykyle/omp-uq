@@ -56,18 +56,18 @@ class Spec:
 
         return sp
 
-    def moment(self, n : int):
-        return np.trapz(self.spec * (self.bins)**n, x=self.bins)
+    def moment(self, n: int):
+        return np.trapz(self.spec * (self.bins) ** n, x=self.bins)
 
     def mean(self):
         m0 = self.moment(0)
         m1 = self.moment(1)
 
-        return m1/m0
+        return m1 / m0
 
     def variance(self):
-        mean   = self.mean()
-        var_un = np.trapz(self.spec * (self.bins - mean)**2, x=self.bins)
+        mean = self.mean()
+        var_un = np.trapz(self.spec * (self.bins - mean) ** 2, x=self.bins)
         return var_un
 
 
@@ -100,4 +100,3 @@ def maxwellian(ebins: np.array, Eavg: float):
     return (
         2 * np.sqrt(ebins / np.pi) * (1 / Eavg) ** (3.0 / 2.0) * np.exp(-ebins / Eavg)
     )
-

@@ -86,7 +86,7 @@ class HistData:
         quantities: list,
         hist_dir=parent_dir,
         res_dir=post_dir,
-        convert_cgmf_to_npy=False
+        convert_cgmf_to_npy=False,
     ):
         # filesystem dealings
         self.hist_dir = Path(hist_dir)
@@ -127,9 +127,9 @@ class HistData:
 
         # default processing parameters
         self.Ethn = 0.001  # neutron detection lower energy threshold
-        self.Ethg = 0.10   # gamma detection lower energy threshold
+        self.Ethg = 0.10  # gamma detection lower energy threshold
         self.min_time = 0
-        self.max_time = 10E9
+        self.max_time = 10e9
 
         # set up histogram grids
         self.nubins = np.arange(0, 11)
@@ -200,7 +200,9 @@ class HistData:
             elif q == "encomTKE":
                 self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
             elif q == "egtbarTKE":
-                self.vector_qs["egtbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["egtbarTKE"] = np.zeros(
+                    (nensemble, self.TKEcenters.size)
+                )
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
             elif q == "pnug":
@@ -351,7 +353,9 @@ class HistData:
         )
         self.gebins = np.load(self.res_dir / "GE_bins.npy")
 
-    def hist_from_list_of_lists(self, num, lol, bins, mask_generator=None, totals=False, fragment=True):
+    def hist_from_list_of_lists(
+        self, num, lol, bins, mask_generator=None, totals=False, fragment=True
+    ):
         """
         returns a histogram of values that may occur multiple times per history,
         e.g. neutron energies, formatted as a list of lists; outer being history,
@@ -402,7 +406,6 @@ class HistData:
 
         return hist, stdev, mean, sem, c
 
-
     def histogram_with_binomial_uncertainty(self, histories, bins, int_bins=False):
         """
         For a set of scalar quantities organized by history along axis 0,
@@ -446,12 +449,12 @@ class HistData:
 
         def cut(i: int):
             return np.logical_and(
-                    np.logical_and(
-                        np.asarray(ages_lol[i]) >= self.min_time,
-                        np.asarray(ages_lol[i]) < self.max_time,
-                    ),
-                    np.asarray(energy_lol[i]) > self.Ethg,
-                )
+                np.logical_and(
+                    np.asarray(ages_lol[i]) >= self.min_time,
+                    np.asarray(ages_lol[i]) < self.max_time,
+                ),
+                np.asarray(energy_lol[i]) > self.Ethg,
+            )
 
         return cut
 
@@ -472,7 +475,7 @@ class HistData:
         Given energies in list of lists format, and some min energy cutoff for each
         fragment, returns the corresponding mask for a given fragment number
         """
-        assert(min_energy.size == energy_lol.size)
+        assert min_energy.size == energy_lol.size
 
         def cut(i: int):
             return np.asarray(energy_lol[i]) >= min_energy[i]
@@ -599,7 +602,10 @@ class HistData:
                     self.vector_qs["enbarZ_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, nelab, bins=self.tebins, mask_generator=self.neutron_cut(nelab)
+                    num_ns,
+                    nelab,
+                    bins=self.tebins,
+                    mask_generator=self.neutron_cut(nelab),
                 )
 
             # < d nu_g / d E_g | A >
@@ -661,12 +667,15 @@ class HistData:
                     self.vector_qs["enbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons, nelab, bins=self.tebins, mask_generator=self.neutron_cut(nelab)
+                    num_neutrons,
+                    nelab,
+                    bins=self.tebins,
+                    mask_generator=self.neutron_cut(nelab),
                 )
 
             if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
                 nelab = hs.getNeutronElab()[mask]
-                necm   = hs.getNeutronEcm()[mask]
+                necm = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 A = hs.getA()[mask]
                 # Bowman small angle cut (E[Mev] = m_n *(1 cm/ns)**2)
@@ -679,7 +688,10 @@ class HistData:
                     self.vector_qs["encomTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons, necm, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
+                    num_neutrons,
+                    necm,
+                    bins=self.tebins,
+                    mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
 
             # < d nu_g / dE_g | TKE >
@@ -741,8 +753,8 @@ class HistData:
 
             # < d nu / d E_n | A >
             if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
-                nelab  = hs.getNeutronElab()[mask]
-                necm   = hs.getNeutronEcm()[mask]
+                nelab = hs.getNeutronElab()[mask]
+                necm = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 min_energy = ke_pre / float(a)
 
@@ -753,12 +765,15 @@ class HistData:
                     self.vector_qs["enbarA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, nelab, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
+                    num_ns,
+                    nelab,
+                    bins=self.tebins,
+                    mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
 
             if "pfnscomA" in self.tensor_qs or "encomA" in self.vector_qs:
                 nelab = hs.getNeutronElab()[mask]
-                necm   = hs.getNeutronEcm()[mask]
+                necm = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 min_energy = ke_pre / float(a)
 
@@ -769,7 +784,10 @@ class HistData:
                     self.vector_qs["encomA_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_ns, necm, bins=self.tebins, mask_generator=self.kinematic_cut(nelab, min_energy)
+                    num_ns,
+                    necm,
+                    bins=self.tebins,
+                    mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
 
             # < d nu_g / d E_g | A >
@@ -861,8 +879,11 @@ class HistData:
             if mpi_comm is None:
                 print("Reading {} ...".format(fname))
             else:
-                print("Rank {} on lap {} out of {}; reading {}...".format(
-                    mpi_comm.Get_rank(), n - start, end - start, fname))
+                print(
+                    "Rank {} on lap {} out of {}; reading {}...".format(
+                        mpi_comm.Get_rank(), n - start, end - start, fname
+                    )
+                )
                 sys.stdout.flush()
 
             if not self.convert_cgmf_to_npy or self.hist_fname_postfix == ".npy":

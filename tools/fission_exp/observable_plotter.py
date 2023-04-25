@@ -50,22 +50,23 @@ class Plotter:
         spec = np.mean(spec_all, axis=0)
 
         p1 = plt.plot(x, spec, label=d.label, zorder=100, linewidth=2)
-        plt.fill_between(
-            x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100)
+        plt.fill_between(x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100)
         plt.fill_between(
             x,
             spec + spec_err,
             spec + spec_err + mean_mc_err,
             alpha=0.3,
             zorder=100,
-            color="k")
+            color="k",
+        )
         plt.fill_between(
             x,
             spec - spec_err,
             spec - spec_err - mean_mc_err,
             alpha=0.3,
             zorder=100,
-            color="k")
+            color="k",
+        )
         return p1[0]
 
     def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=True):
@@ -85,7 +86,7 @@ class Plotter:
                 alpha=0.3,
                 zorder=100,
                 step="mid",
-                color="k"
+                color="k",
             )
             plt.fill_between(
                 x,
@@ -94,7 +95,7 @@ class Plotter:
                 alpha=0.3,
                 zorder=100,
                 step="mid",
-                color="k"
+                color="k",
             )
         return p1[0]
 
@@ -104,26 +105,24 @@ class Plotter:
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
     def plot_cgmf_spec_from_tensor(self, d, quantity, x, index, mc=True):
-        spec_all = d.tensor_qs[quantity][:,index,:]
-        spec_stddev_all = d.tensor_qs[quantity + "_stddev"][:,index,:]
+        spec_all = d.tensor_qs[quantity][:, index, :]
+        spec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
     def pfns(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-
             # normalization
             x = d.ecenters
             m = maxwellian(x, 1.32)
             k = np.trapz(m, x)
             for i in range(d.vector_qs["pfns"].shape[0]):
-                d.vector_qs["pfns"][i,:] *= (k/m)
-                d.vector_qs["pfns_stddev"][i,:] *= (k/m)
+                d.vector_qs["pfns"][i, :] *= k / m
+                d.vector_qs["pfns_stddev"][i, :] *= k / m
 
             # plotting
-            plts_sim.append( self.plot_cgmf_spec(d, "pfns", x) )
-
+            plts_sim.append(self.plot_cgmf_spec(d, "pfns", x))
 
         def plt_exp_spec(s, l):
             x = s.bins
@@ -208,7 +207,7 @@ class Plotter:
             )
 
         for s, l, u in zip(specs, labels, units):
-            p= plt_exp_spec(s.normalizePxdx(), l)
+            p = plt_exp_spec(s.normalizePxdx(), l)
             plts.append(p)
 
         lexp = plt.legend(handles=plts, fontsize=9, ncol=1, loc="upper right")
@@ -225,7 +224,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.abins))
 
         # experiment
         nugbarA = read(self.exp_data_path, "nugbarA")
@@ -259,7 +258,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.TKEcenters))
 
         nubarTKE = read(self.exp_data_path, "nubarTKE")
 
@@ -290,7 +289,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "nugbarTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "nugbarTKE", d.TKEcenters))
 
         nugbarTKE = read(self.exp_data_path, "nugbarTKE")
 
@@ -321,7 +320,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.zbins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.zbins))
 
         # experiment
         nubarZ = read(self.exp_data_path, "nubarZ")
@@ -344,7 +343,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc='lower right')
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
 
         plt.xlabel(r"$Z$ [protons]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -353,7 +352,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.abins))
 
         # experiment
         nubarA = read(self.exp_data_path, "nubarA")
@@ -383,7 +382,6 @@ class Plotter:
         plt.ylim([0, 6])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
-
 
     def pnug(self, cgmf_datasets=None):
         plts_sim = []
@@ -467,7 +465,7 @@ class Plotter:
             else:
                 h, e = np.histogram(nugbar, density=True, bins=num_bins)
 
-            h = h/np.sum(h)
+            h = h / np.sum(h)
             de = e[1:] - e[:-1]
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
@@ -524,11 +522,11 @@ class Plotter:
             nubar = d.scalar_qs["nubar"]
             if num_bins == None:
                 h, e = np.histogram(nubar, density=True)
-                num_bins  = h.size
+                num_bins = h.size
             else:
                 h, e = np.histogram(nubar, density=True, bins=num_bins)
 
-            h = h/np.sum(h)
+            h = h / np.sum(h)
             de = e[1:] - e[:-1]
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
@@ -590,12 +588,13 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^{%d}\rangle $ [MeV]" % n)
 
-    def pfnsA(self, a : int, pfnsa, cgmf_datasets=None):
-
+    def pfnsA(self, a: int, pfnsa, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
-            plts_sim.append(self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index ))
+            plts_sim.append(
+                self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index)
+            )
 
         labels = [m["label"] for m in pfnsa.meta]
         plts = []
@@ -604,36 +603,33 @@ class Plotter:
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             E, counts, err = data.getPFNS(a)
             norm = np.trapz(E, counts)
-            plts.append(
-                plt.errorbar(E, counts/norm, err/norm)
-            )
+            plts.append(plt.errorbar(E, counts / norm, err / norm))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
         plt.xlabel(r"$E^n_{cm}$ [MeV]")
-        plt.ylabel(r"$ p(E|TKE, A = {}) $".format(a) )
+        plt.ylabel(r"$ p(E|TKE, A = {}) $".format(a))
 
-    def nubarATKE(self, a : int, nubaratke, cgmf_datasets=None):
-
+    def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
-            plts_sim.append(self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index ))
+            plts_sim.append(
+                self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index)
+            )
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            mask = a == d[4,:]
-            tke  = d[0,:][mask]
-            dtke = d[1,:][mask]
-            nu   = d[2,:][mask]
-            dnu  = d[3,:][mask]
-            plts.append(
-                plt.errorbar(tke, dtke, nu, dnu, label=l)
-            )
+            mask = a == d[4, :]
+            tke = d[0, :][mask]
+            dtke = d[1, :][mask]
+            nu = d[2, :][mask]
+            dnu = d[3, :][mask]
+            plts.append(plt.errorbar(tke, dtke, nu, dnu, label=l))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
@@ -642,25 +638,24 @@ class Plotter:
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(r"$ \langle \nu | A = {} \rangle $ [neutrons]".format(a))
 
-    def encomATKE(self, a : int, encomatke, cgmf_datasets=None):
-
+    def encomATKE(self, a: int, encomatke, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
-            plts_sim.append(self.plot_cgmf_spec_from_tensor(d, "encomATKE", index, d.tebins ))
+            plts_sim.append(
+                self.plot_cgmf_spec_from_tensor(d, "encomATKE", index, d.tebins)
+            )
 
         labels = [m["label"] for m in encomatke.meta]
         plts = []
 
         for d, l in zip(encomatke.data, labels):
-            mask = a == d[4,:]
-            tke  = d[0,:][mask]
-            dtke = d[1,:][mask]
-            encom   = d[2,:][mask]
-            dencom  = d[3,:][mask]
-            plts.append(
-                plt.errorbar(tke, dtke, encom, dencom, label=l)
-            )
+            mask = a == d[4, :]
+            tke = d[0, :][mask]
+            dtke = d[1, :][mask]
+            encom = d[2, :][mask]
+            dencom = d[3, :][mask]
+            plts.append(plt.errorbar(tke, dtke, encom, dencom, label=l))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
@@ -673,7 +668,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.abins))
 
         mr = read(self.exp_data_path, "multiplicityRatioA")
 
@@ -695,7 +690,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
@@ -703,7 +698,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.abins))
 
         enbar = read(self.exp_data_path, "encomA")
 
@@ -726,7 +721,7 @@ class Plotter:
         plt.ylim([0, 3.0])
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_n \rangle$ [MeV]")
 
@@ -734,7 +729,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.TKEcenters))
 
         enbar = read(self.exp_data_path, "encomTKE")
 
@@ -757,7 +752,7 @@ class Plotter:
         plt.ylim([1, 2.0])
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}_n\rangle $ [MeV]")
 
@@ -765,7 +760,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.TKEcenters ))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.TKEcenters))
 
         egtbar = read(self.exp_data_path, "egtbarTKE")
 
@@ -787,7 +782,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
@@ -795,7 +790,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.abins ))
+            plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.abins))
 
         egtbar = read(self.exp_data_path, "egtbarA")
 
@@ -817,7 +812,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
@@ -825,7 +820,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.nubins ))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.nubins))
 
         egtbar = read(self.exp_data_path, "egtbarnu")
 
@@ -847,6 +842,6 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend( handles=plts_sim, fontsize=10 , ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")

@@ -156,8 +156,8 @@ def read_3D(df, quantity):
                 )
             )
         if fmt == "xminxmaxyz":
-            data_fm[0, :] = (data[:, 0] + data[:, 1])*0.5
-            data_fm[1, :] = (data[:, 1] - data[:, 0])
+            data_fm[0, :] = (data[:, 0] + data[:, 1]) * 0.5
+            data_fm[1, :] = data[:, 1] - data[:, 0]
             data_fm[2, :] = data[:, 2]
             data_fm[4, :] = data[:, 3]
             units.append(
