@@ -155,6 +155,17 @@ def read_3D(df, quantity):
                     ["units-x", "units-dx", "units-y", None, "units-z", "units-z"],
                 )
             )
+        if fmt == "xminxmaxyz":
+            data_fm[0, :] = (data[:, 0] + data[:, 1])*0.5
+            data_fm[1, :] = (data[:, 1] - data[:, 0])
+            data_fm[2, :] = data[:, 2]
+            data_fm[4, :] = data[:, 3]
+            units.append(
+                extract_units(
+                    entry,
+                    ["units-x", "units-dx", "units-y", None, "units-z", None],
+                )
+            )
         elif fmt == "xdxydyz":
             data_fm[:5] = data
             data_fm[5] = data[:, 4]
@@ -253,6 +264,8 @@ def read_nubarATKE(df):
         dt[4, :] = d[0, :]
         dt[5, :] = d[0, :]
         nubarATKE.data.append(dt)
+
+    return nubarATKE
 
 
 def read_json(df: pd.DataFrame, quantity: str):
