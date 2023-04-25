@@ -163,7 +163,7 @@ def read_3D(df, quantity):
             units.append(
                 extract_units(
                     entry,
-                    ["units-x", "units-dx", "units-y", None, "units-z", None],
+                    ["units-xmin", "units-xmax", "units-y", None, "units-z", None],
                 )
             )
         elif fmt == "xdxydyz":
