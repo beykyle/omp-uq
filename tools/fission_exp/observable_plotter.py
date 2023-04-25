@@ -17,6 +17,11 @@ matplotlib.rcParams["image.cmap"] = "BuPu"
 
 from fission_exp import Quantity, maxwellian, PFNSA, read
 
+def normalize_to_maxwell(x,y,dy,temp_MeV):
+    m = maxwellian(x, temp_MeV)
+    k = np.trapz(m, x)
+    y = y * k / m
+    dy = dy * k / m
 
 class Plotter:
     def __init__(self, exp_data_path: Path):
@@ -41,28 +46,31 @@ class Plotter:
     def normalize(self, arr: np.array):
         return arr / np.sum(arr)
 
-    def plot_cgmf_vec(self, d, quantity, x):
-        spec_all = d.vector_qs[quantity]
-        spec_stddev_all = d.vector_qs[quantity + "_stddev"]
+    def plot_cgmf_vec(self, d, quantity, x, mc=True):
+        vec_all = d.vector_qs[quantity]
+        vec_stddev_all = d.vector_qs[quantity + "_stddev"]
+        return plot_vec(vec_all, vec_stddev, x, d.label,mc)
 
-        spec_err = np.sqrt(np.var(spec_all, axis=0))
-        mean_mc_err = np.mean(spec_stddev_all, axis=0)
-        spec = np.mean(spec_all, axis=0)
 
-        p1 = plt.plot(x, spec, label=d.label, zorder=100, linewidth=2)
-        plt.fill_between(x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100)
+    def plot_vec(self, vec_all, vec_stddev, x, label, mc=True):
+        vec_err = np.sqrt(np.var(vec_all, axis=0))
+        mean_mc_err = np.mean(vec_stddev, axis=0)
+        vec = np.mean(vec_all, axis=0)
+
+        p1 = plt.plot(x, vec, label=label, zorder=100, linewidth=2)
+        plt.fill_between(x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100)
         plt.fill_between(
             x,
-            spec + spec_err,
-            spec + spec_err + mean_mc_err,
+            vec + vec_err,
+            vec + vec_err + mean_mc_err,
             alpha=0.3,
             zorder=100,
             color="k",
         )
         plt.fill_between(
             x,
-            spec - spec_err,
-            spec - spec_err - mean_mc_err,
+            vec - vec_err,
+            vec - vec_err - mean_mc_err,
             alpha=0.3,
             zorder=100,
             color="k",
@@ -109,29 +117,32 @@ class Plotter:
         spec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
+    def plot_cgmf_vec_from_tensor(self, d, quantity, x, index, mc=True):
+        vec_all = d.tensor_qs[quantity][:, index, :]
+        vec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
+        return self.plot_vec(vec_all, vec_stddev_all, x, d.label, mc)
+
     def pfns(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
             # normalization
             x = d.ecenters
-            m = maxwellian(x, 1.32)
-            k = np.trapz(m, x)
-            for i in range(d.vector_qs["pfns"].shape[0]):
-                d.vector_qs["pfns"][i, :] *= k / m
-                d.vector_qs["pfns_stddev"][i, :] *= k / m
+            pfns = d.vector_qs["pfns"]
+            pfns_err = d.vector_qs["pfns_stddev"]
 
-            # plotting
-            plts_sim.append(self.plot_cgmf_spec(d, "pfns", x))
+            normalize_to_maxwell(x, pfns , pfns_err, 1.32)
+
+            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label))
 
         def plt_exp_spec(s, l):
             x = s.bins
-            m = maxwellian(x, 1.32)
-            k = np.trapz(m, x)
-            y = s.spec * k / m
-            yerr = s.err * k / m
+            pfns = s.spec
+            pfns_stddev = s.err
+            normalize_to_maxwell(x, pfns, pfns_err, 1.32)
+
             return plt.errorbar(
-                x, y, yerr=yerr, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
+                x, pfns, yerr=pfns_stddev, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
             )
 
         pfns = read(self.exp_data_path, "pfns")
@@ -180,7 +191,7 @@ class Plotter:
         plt.ylim([0.5, 2.0])
         plt.xlim([2e-2, 21])
         plt.xlabel(r"$E_{lab}$ [MeV]")
-        plt.ylabel(r"PFNS ratio to Maxwellian ($kT = 1.32$ MeV)")
+        plt.ylabel(r"$p(E) / $Maxwellian $(kT = 1.32$ MeV$)$")
 
     def pfgs(self, cgmf_datasets=None):
         plts_sim = []
@@ -592,8 +603,12 @@ class Plotter:
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
+            x = d.tecenters
+            pfns = d.tensor_qs["pfnsA"][:,index,:]
+            pfns_err = d.tensor_qs["pfnsA_stddev"][:,index,:]
+            normalize_to_maxwell(x, pfns, pfns_err, 1.)
             plts_sim.append(
-                self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index)
+                self.plot_spec(pfns, pfns_err, x, d.label, mc=False)
             )
 
         labels = [m["label"] for m in pfnsa.meta]
@@ -601,24 +616,27 @@ class Plotter:
 
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
-            E, counts, err = data.getPFNS(a)
-            norm = np.trapz(E, counts)
-            plts.append(plt.errorbar(E, counts / norm, err / norm))
+            x, pfns, pfns_err = data.getPFNS(a)
+            normalize_to_maxwell(x, pfns, pfns_err, 1.)
+            plts.append(plt.errorbar(x, pfns, pfns_err))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
+        plt.xscale("log")
         plt.xlabel(r"$E^n_{cm}$ [MeV]")
-        plt.ylabel(r"$ p(E|TKE, A = {}) $".format(a))
+        plt.ylabel(r"$p(E | A = {}) / M(kT = 1$ MeV$)$".format(a))
 
     def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
-        for d in cgmf_datasets:
-            index = np.nonzero(a == d.abins)[0][0]
-            plts_sim.append(
-                self.plot_cgmf_spec_from_tensor(d, "pfnsA", d.tecenters, index)
-            )
+
+        if False:
+            for d in cgmf_datasets:
+                index = np.nonzero(a == d.abins)[0][0]
+                plts_sim.append(
+                    self.plot_cgmf_vec_from_tensor(d, "nuATKE", d.TKEcenters, index, mc=False)
+                )
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
@@ -643,7 +661,7 @@ class Plotter:
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_spec_from_tensor(d, "encomATKE", index, d.tebins)
+                self.plot_cgmf_vec_from_tensor(d, "encomATKE", d.TKEcenters, index)
             )
 
         labels = [m["label"] for m in encomatke.meta]
