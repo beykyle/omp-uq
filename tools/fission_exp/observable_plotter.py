@@ -635,8 +635,6 @@ class Plotter:
                 plt.errorbar(tke, dtke, nu, dnu, label=l)
             )
 
-
-
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
