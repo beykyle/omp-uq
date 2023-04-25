@@ -85,13 +85,12 @@ class PFNSA:
 
     def getPFNS(self, A: int):
         mask = np.where(self.Amsk == A)
-        return self.cnts[mask], self.sterr[mask]
+        return self.E[mask], self.cnts[mask], self.sterr[mask]
 
     def getSpecs(self, masses):
         specs = []
-        ebins = self.getEbins()
         for mass in masses:
-            spec, err = self.getPFNS(mass)
+            ebins, spec, err = self.getPFNS(mass)
             specs.append(Spec(spec, err, ebins))
 
         return specs
