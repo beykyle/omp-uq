@@ -43,7 +43,7 @@ all_quantities = [
     "pfnscomA",
     "encomA",
     "encomTKE",
-    "encomATKE"
+    "encomATKE",
 ]
 
 
@@ -164,7 +164,7 @@ class HistData:
 
         # center of mass bins for neutron tensor q's
         self.com_tebins = np.logspace(-1.1, 1.1, 30)
-        self.com_tecencom_ters = 0.5 * (self.com_tebins[0:-1] + self.com_tebins[1:])
+        self.com_tecenters = 0.5 * (self.com_tebins[0:-1] + self.com_tebins[1:])
         self.com_tde = self.com_tebins[1:] - self.com_tebins[:-1]
 
         # ebins for tensor gamma q's
@@ -263,32 +263,32 @@ class HistData:
                 self.tensor_qs["pfgsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tgecenters.size)
                 )
-                self.bins["pfgsTKE"] = ( self.TKEbins, self.tgebins)
+                self.bins["pfgsTKE"] = (self.TKEbins, self.tgebins)
                 self.centers["pfgsTKE"] = (self.TKEcenters, self.tgecenters)
             elif q == "pfnscomTKE":
                 self.tensor_qs["pfnscomTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.cm_tecenters.size)
+                    (nensemble, self.TKEcenters.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomTKE"] = (self.TKEbins, self.cm_tebins)
-                self.centers["pfnscomTKE"] = (self.TKEcenters, self.cm_tecenters)
+                self.bins["pfnscomTKE"] = (self.TKEbins, self.com_tebins)
+                self.centers["pfnscomTKE"] = (self.TKEcenters, self.com_tecenters)
             elif q == "pfnsZ":
                 self.tensor_qs["pfnsZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.tecenters.size)
                 )
                 self.bins["pfnsZ"] = (self.zbins, self.tebins)
-                self.centers["pfnsZ"] = (self.zcenters, self.tecenters)
+                self.centers["pfnsZ"] = (self.zbins, self.tecenters)
             elif q == "pfgsZ":
                 self.tensor_qs["pfgsZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.tgecenters.size)
                 )
-                self.bins["pfgsZ"] = (self.zbins,self.tgebins)
-                self.centers["pfgsZ"] = (self.zbins,self.tgecenters)
+                self.bins["pfgsZ"] = (self.zbins, self.tgebins)
+                self.centers["pfgsZ"] = (self.zbins, self.tgecenters)
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
                     (nensemble, self.abins.size, self.tecenters.size)
                 )
-                self.bins["pfnsA"] = (self.abins,self.tebins)
-                self.centers["pfnsA"] = (self.abins,self.tecenters)
+                self.bins["pfnsA"] = (self.abins, self.tebins)
+                self.centers["pfnsA"] = (self.abins, self.tecenters)
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
                     (nensemble, self.abins.size, self.tgecenters.size)
@@ -297,16 +297,16 @@ class HistData:
                 self.centers["pfgsA"] = (self.abins, self.tgecenters)
             elif q == "pfnscomA":
                 self.tensor_qs["pfnscomA"] = np.zeros(
-                    (nensemble, self.abins.size, self.cm_tecenters.size)
+                    (nensemble, self.abins.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomA"] = (self.abins, self.cm_tebins)
-                self.centers["pfnscomA"] = (self.abins, self.cm_tecenters)
+                self.bins["pfnscomA"] = (self.abins, self.com_tebins)
+                self.centers["pfnscomA"] = (self.abins, self.com_tecenters)
             elif q == "pfnscomZ":
                 self.tensor_qs["pfnscomZ"] = np.zeros(
-                    (nensemble, self.zbins.size, self.cm_tecenters.size)
+                    (nensemble, self.zbins.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomZ"] = (self.zbins, self.cm_tebins)
-                self.centers["pfnscomZ"] = (self.zbins, self.cm_tecenters)
+                self.bins["pfnscomZ"] = (self.zbins, self.com_tebins)
+                self.centers["pfnscomZ"] = (self.zbins, self.com_tecenters)
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
@@ -359,15 +359,15 @@ class HistData:
             )
 
     def write_bins(self, with_ensemble_idx=False, mpi_comm=None):
-        def pickle_dump(data, fpath : Path):
-            with open(fpath, 'rb') as f:
+        def pickle_dump(data, fpath: Path):
+            with open(fpath, "rb") as f:
                 pickle.dump(data, f)
 
         for k, v in self.bins.items():
-            pickle_dump(v, self.res_dir / "{}_bins_{}.npy".format(k, f))
+            pickle_dump(v, self.res_dir / "{}_bins{}.npy".format(k, f))
 
         for k, v in self.centers.items():
-            pickle_dump(v, self.res_dir / "{}_centers_{}.npy".format(k, f))
+            pickle_dump(v, self.res_dir / "{}_centers{}.npy".format(k, f))
 
     def write(self, with_ensemble_idx=True):
         if with_ensemble_idx:
@@ -385,8 +385,8 @@ class HistData:
             np.save(self.res_dir / "{}{}.npy".format(k, f), v)
 
     def read(self, with_ensemble_idx=True):
-        def pickle_load(fpath : Path):
-            with open(fpath, 'rb') as f:
+        def pickle_load(fpath: Path):
+            with open(fpath, "rb") as f:
                 return pickle.load(f)
 
         self.res_dir = Path(self.res_dir)
@@ -405,11 +405,12 @@ class HistData:
             self.tensor_qs[k] = np.load(self.res_dir / "{}{}.npy".format(k, f))
 
         for k in self.bins:
-            self.bins[k] = pickle_load(self.res_dir / "{}_bins_{}.npy".format(k, f))
+            self.bins[k] = pickle_load(self.res_dir / "{}_bins{}.npy".format(k, f))
 
         for k in self.centers:
-            self.centers[k] = pickle_load(self.res_dir / "{}_centers_{}.npy".format(k, f))
-
+            self.centers[k] = pickle_load(
+                self.res_dir / "{}_centers{}.npy".format(k, f)
+            )
 
     def hist_from_list_of_lists(
         self, num, lol, bins, mask_generator=None, totals=False, fragment=True
@@ -847,8 +848,7 @@ class HistData:
                     bins=self.bins["pfnscomA"][1],
                     mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
-                #TODO use kinematic cut here?
-
+                # TODO use kinematic cut here?
 
             # < d nu_g / d E_g | A >
             if "pfgsA" in self.tensor_qs or "egtbarA" in self.vector_qs:
@@ -903,8 +903,8 @@ class HistData:
                         self.tensor_qs["encomATKE"][n, l, m],
                         self.tensor_qs["encomATKE_stddev"][n, l, m],
                         _,
-                    ) = self.hist_from_list_of_lists(num_neutrons, necm, [0,100])
-                    #TODO kinematic cut?
+                    ) = self.hist_from_list_of_lists(num_neutrons, necm, [0, 100])
+                    # TODO kinematic cut?
 
     def gather(self, mpi_comm, rank, size, rank_slice):
         if mpi_comm is None:
