@@ -17,11 +17,13 @@ matplotlib.rcParams["image.cmap"] = "BuPu"
 
 from fission_exp import Quantity, maxwellian, PFNSA, read
 
-def normalize_to_maxwell(x,y,dy,temp_MeV):
+
+def normalize_to_maxwell(x, y, dy, temp_MeV):
     m = maxwellian(x, temp_MeV)
     k = np.trapz(m, x)
     y = y * k / m
     dy = dy * k / m
+
 
 class Plotter:
     def __init__(self, exp_data_path: Path):
@@ -49,8 +51,7 @@ class Plotter:
     def plot_cgmf_vec(self, d, quantity, x, mc=True):
         vec_all = d.vector_qs[quantity]
         vec_stddev_all = d.vector_qs[quantity + "_stddev"]
-        return plot_vec(vec_all, vec_stddev, x, d.label,mc)
-
+        return plot_vec(vec_all, vec_stddev, x, d.label, mc)
 
     def plot_vec(self, vec_all, vec_stddev, x, label, mc=True):
         vec_err = np.sqrt(np.var(vec_all, axis=0))
@@ -131,7 +132,7 @@ class Plotter:
             pfns = d.vector_qs["pfns"]
             pfns_err = d.vector_qs["pfns_stddev"]
 
-            normalize_to_maxwell(x, pfns , pfns_err, 1.32)
+            normalize_to_maxwell(x, pfns, pfns_err, 1.32)
 
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label))
 
@@ -142,7 +143,13 @@ class Plotter:
             normalize_to_maxwell(x, pfns, pfns_err, 1.32)
 
             return plt.errorbar(
-                x, pfns, yerr=pfns_stddev, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
+                x,
+                pfns,
+                yerr=pfns_stddev,
+                xerr=s.xerr,
+                alpha=0.7,
+                label=l,
+                linestyle="none",
             )
 
         pfns = read(self.exp_data_path, "pfns")
@@ -604,12 +611,10 @@ class Plotter:
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
             x = d.tecenters
-            pfns = d.tensor_qs["pfnsA"][:,index,:]
-            pfns_err = d.tensor_qs["pfnsA_stddev"][:,index,:]
-            normalize_to_maxwell(x, pfns, pfns_err, 1.)
-            plts_sim.append(
-                self.plot_spec(pfns, pfns_err, x, d.label, mc=False)
-            )
+            pfns = d.tensor_qs["pfnsA"][:, index, :]
+            pfns_err = d.tensor_qs["pfnsA_stddev"][:, index, :]
+            normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=False))
 
         labels = [m["label"] for m in pfnsa.meta]
         plts = []
@@ -617,7 +622,7 @@ class Plotter:
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
-            normalize_to_maxwell(x, pfns, pfns_err, 1.)
+            normalize_to_maxwell(x, pfns, pfns_err, 1.0)
             plts.append(plt.errorbar(x, pfns, pfns_err))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
@@ -635,7 +640,9 @@ class Plotter:
             for d in cgmf_datasets:
                 index = np.nonzero(a == d.abins)[0][0]
                 plts_sim.append(
-                    self.plot_cgmf_vec_from_tensor(d, "nuATKE", d.TKEcenters, index, mc=False)
+                    self.plot_cgmf_vec_from_tensor(
+                        d, "nuATKE", d.TKEcenters, index, mc=False
+                    )
                 )
 
         labels = [m["label"] for m in nubaratke.meta]
