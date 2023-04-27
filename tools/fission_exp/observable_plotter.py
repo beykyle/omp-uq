@@ -23,6 +23,7 @@ def normalize_to_maxwell(x, y, dy, temp_MeV):
     k = np.trapz(m, x)
     y = y * k / m
     dy = dy * k / m
+    return y, dy
 
 
 class Plotter:
@@ -50,62 +51,89 @@ class Plotter:
 
     def plot_cgmf_vec(self, d, quantity, x, mc=True):
         vec_all = d.vector_qs[quantity]
-        vec_stddev_all = d.vector_qs[quantity + "_stddev"]
-        return plot_vec(vec_all, vec_stddev, x, d.label, mc)
+        vec_stddev = d.vector_qs[quantity + "_stddev"]
+        return self.plot_vec(vec_all, vec_stddev, x, d.label, mc)
 
-    def plot_vec(self, vec_all, vec_stddev, x, label, mc=True):
+    def plot_vec(self, vec_all, vec_stddev, x, label, mc=True, plot_type="fill"):
         vec_err = np.sqrt(np.var(vec_all, axis=0))
         mean_mc_err = np.mean(vec_stddev, axis=0)
         vec = np.mean(vec_all, axis=0)
 
         p1 = plt.plot(x, vec, label=label, zorder=100, linewidth=2)
-        plt.fill_between(x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100)
-        plt.fill_between(
-            x,
-            vec + vec_err,
-            vec + vec_err + mean_mc_err,
-            alpha=0.3,
-            zorder=100,
-            color="k",
-        )
-        plt.fill_between(
-            x,
-            vec - vec_err,
-            vec - vec_err - mean_mc_err,
-            alpha=0.3,
-            zorder=100,
-            color="k",
-        )
+
+        if plot_type == "overlapping":
+            for i in range(vec_all.shape[0]):
+                plt.fill_between(
+                    x,
+                    vec_all[i,...] + vec_stddev[i,...],
+                    vec_all[i,...] - vec_stddev[i,...],
+                    alpha=1./vec_all.shape[0],
+                    zorder=100,
+                    step="mid",
+                    color=p1[0].get_color()
+                )
+        elif plot_type == "fill":
+            plt.fill_between(x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100)
+            plt.fill_between(
+                x,
+                vec + vec_err,
+                vec + vec_err + mean_mc_err,
+                alpha=0.3,
+                zorder=100,
+                color="k",
+            )
+            plt.fill_between(
+                x,
+                vec - vec_err,
+                vec - vec_err - mean_mc_err,
+                alpha=0.3,
+                zorder=100,
+                color="k",
+            )
         return p1[0]
 
-    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=True):
+    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=True, plot_type="fill"):
         spec_err = np.sqrt(np.var(spec_all, axis=0))
         mean_mc_err = np.mean(spec_stddev_all, axis=0)
         spec = np.mean(spec_all, axis=0)
 
         p1 = plt.step(x, spec, label=label, zorder=100, linewidth=2, where="mid")
-        plt.fill_between(
-            x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100, step="mid"
-        )
-        if mc:
+
+        if plot_type == "overlapping":
+            for i in range(spec_all.shape[0]):
+                plt.fill_between(
+                    x,
+                    spec_all[i,...] + spec_stddev_all[i,...],
+                    spec_all[i,...] - spec_stddev_all[i,...],
+                    alpha=1./spec_all.shape[0],
+                    zorder=100,
+                    step="mid",
+                    color=p1[0].get_color()
+                )
+        elif plot_type == "fill":
             plt.fill_between(
-                x,
-                spec + spec_err,
-                spec + spec_err + mean_mc_err,
-                alpha=0.3,
-                zorder=100,
-                step="mid",
-                color="k",
+                x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100, step="mid"
             )
-            plt.fill_between(
-                x,
-                spec - spec_err,
-                spec - spec_err - mean_mc_err,
-                alpha=0.3,
-                zorder=100,
-                step="mid",
-                color="k",
-            )
+            if mc:
+                plt.fill_between(
+                    x,
+                    spec + spec_err,
+                    spec + spec_err + mean_mc_err,
+                    alpha=0.3,
+                    zorder=100,
+                    step="mid",
+                    color="k",
+                )
+                plt.fill_between(
+                    x,
+                    spec - spec_err,
+                    spec - spec_err - mean_mc_err,
+                    alpha=0.3,
+                    zorder=100,
+                    step="mid",
+                    color="k",
+                )
+
         return p1[0]
 
     def plot_cgmf_spec(self, d, quantity, x, mc=True):
@@ -128,24 +156,24 @@ class Plotter:
         plts_sim = []
         for d in cgmf_datasets:
             # normalization
-            x = d.ecenters
+            x = d.centers["pfns"]
             pfns = d.vector_qs["pfns"]
             pfns_err = d.vector_qs["pfns_stddev"]
 
-            normalize_to_maxwell(x, pfns, pfns_err, 1.32)
+            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
 
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label))
 
         def plt_exp_spec(s, l):
             x = s.bins
             pfns = s.spec
-            pfns_stddev = s.err
-            normalize_to_maxwell(x, pfns, pfns_err, 1.32)
+            pfns_err = s.err
+            pfns, pfns_err= normalize_to_maxwell(x, pfns, pfns_err, 1.32)
 
             return plt.errorbar(
                 x,
                 pfns,
-                yerr=pfns_stddev,
+                yerr=pfns_err,
                 xerr=s.xerr,
                 alpha=0.7,
                 label=l,
@@ -187,7 +215,8 @@ class Plotter:
 
         for s, l, u in zip(specs, labels, units):
             if l in la:
-                p = plt_exp_spec(s.normalizePxdx(), l)
+                s = s.normalizePxdx()
+                p = plt_exp_spec(s, l)
                 plts.append(p)
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=3)
@@ -204,7 +233,7 @@ class Plotter:
         plts_sim = []
 
         for d in cgmf_datasets:
-            x = d.gecenters
+            x = d.centers["pfgs"]
             plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
 
         # experimental data
@@ -242,7 +271,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.abins))
+            plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.bins["nugbarA"]))
 
         # experiment
         nugbarA = read(self.exp_data_path, "nugbarA")
@@ -276,7 +305,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.TKEcenters))
+            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.centers["nubarTKE"]))
 
         nubarTKE = read(self.exp_data_path, "nubarTKE")
 
@@ -338,7 +367,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.zbins))
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.bins["nubarZ"]))
 
         # experiment
         nubarZ = read(self.exp_data_path, "nubarZ")
@@ -370,7 +399,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.abins))
+            plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.bins["nubarA"]))
 
         # experiment
         nubarA = read(self.exp_data_path, "nubarA")
@@ -404,7 +433,7 @@ class Plotter:
     def pnug(self, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
-            nu = d.nugbins
+            nu = d.bins["pnug"]
             plts_sim.append(self.plot_cgmf_vec(d, "pnug", nu))
 
         # exp
@@ -437,7 +466,7 @@ class Plotter:
         # exp
         plts_sim = []
         for d in cgmf_datasets:
-            nu = d.nubins
+            nu = d.bins["pnu"]
             plts_sim.append(self.plot_cgmf_vec(d, "pnu", nu))
 
         pnu = read(self.exp_data_path, "pnu")
@@ -610,11 +639,11 @@ class Plotter:
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
-            x = d.tecenters
-            pfns = d.tensor_qs["pfnsA"][:, index, :]
-            pfns_err = d.tensor_qs["pfnsA_stddev"][:, index, :]
-            normalize_to_maxwell(x, pfns, pfns_err, 1.0)
-            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=False))
+            x = d.centers["pfnscomA"][1]
+            pfns = d.tensor_qs["pfnscomA"][:, index, :]
+            pfns_err = d.tensor_qs["pfnscomA_stddev"][:, index, :]
+            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=True))
 
         labels = [m["label"] for m in pfnsa.meta]
         plts = []
@@ -622,7 +651,7 @@ class Plotter:
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
-            normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
             plts.append(plt.errorbar(x, pfns, pfns_err))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
@@ -641,7 +670,7 @@ class Plotter:
                 index = np.nonzero(a == d.abins)[0][0]
                 plts_sim.append(
                     self.plot_cgmf_vec_from_tensor(
-                        d, "nuATKE", d.TKEcenters, index, mc=False
+                        d, "nuATKE", d.centers["nuATKE"], index, mc=False
                     )
                 )
 
@@ -668,7 +697,7 @@ class Plotter:
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_vec_from_tensor(d, "encomATKE", d.TKEcenters, index)
+                self.plot_cgmf_vec_from_tensor(d, "encomATKE", d.centers["encomATKE"], index)
             )
 
         labels = [m["label"] for m in encomatke.meta]
@@ -693,7 +722,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.abins))
+            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.bins["multratioA"]))
 
         mr = read(self.exp_data_path, "multiplicityRatioA")
 
@@ -723,7 +752,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.abins))
+            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.bins["encomA"]))
 
         enbar = read(self.exp_data_path, "encomA")
 
@@ -754,7 +783,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.TKEcenters))
+            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.centers["encomTKE"]))
 
         enbar = read(self.exp_data_path, "encomTKE")
 
@@ -785,7 +814,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.TKEcenters))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.centers["egtbarTKE"]))
 
         egtbar = read(self.exp_data_path, "egtbarTKE")
 
@@ -815,7 +844,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.abins))
+            plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.bins["egtbarA"]))
 
         egtbar = read(self.exp_data_path, "egtbarA")
 
@@ -845,7 +874,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.nubins))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.bins["egtbarnu"]))
 
         egtbar = read(self.exp_data_path, "egtbarnu")
 
