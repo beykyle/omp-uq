@@ -358,9 +358,14 @@ class HistData:
                 color="k",
             )
 
-    def write_bins(self, with_ensemble_idx=False, mpi_comm=None):
+    def write_bins(self, with_ensemble_idx=True, mpi_comm=None):
+        if with_ensemble_idx:
+            f = "_samples_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
+        else:
+            f = ""
+
         def pickle_dump(data, fpath: Path):
-            with open(fpath, "rb") as f:
+            with open(fpath, "wb") as f:
                 pickle.dump(data, f)
 
         for k, v in self.bins.items():
@@ -371,7 +376,7 @@ class HistData:
 
     def write(self, with_ensemble_idx=True):
         if with_ensemble_idx:
-            f = "_ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
+            f = "_samples_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
         else:
             f = ""
 
@@ -391,7 +396,7 @@ class HistData:
 
         self.res_dir = Path(self.res_dir)
         if with_ensemble_idx:
-            f = "_ensembles_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
+            f = "_samples_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
         else:
             f = ""
 
@@ -927,7 +932,7 @@ class HistData:
     def post_process(self, mpi_comm=None):
         if mpi_comm is None or mpi_comm.Get_rank() == 0:
             print(
-                "Running ensembles {} to {}".format(
+                "Running samples {} to {}".format(
                     self.min_ensemble, self.max_ensemble
                 )
             )
