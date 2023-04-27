@@ -149,6 +149,7 @@ def read_3D(df, quantity):
         if fmt == "xdxyz":
             data_fm[:3, :] = data[:, :3]
             data_fm[4, :] = data[:, 3]
+            data_fm[5, :] = data_fm[4,:]
             units.append(
                 extract_units(
                     entry,
@@ -160,15 +161,16 @@ def read_3D(df, quantity):
             data_fm[1, :] = data[:, 1] - data[:, 0]
             data_fm[2, :] = data[:, 2]
             data_fm[4, :] = data[:, 3]
+            data_fm[5, :] = data_fm[4,:]
             units.append(
                 extract_units(
                     entry,
-                    ["units-xmin", "units-xmax", "units-y", None, "units-z", None],
+                    ["units-xmin", "units-xmin", "units-y", None, "units-z"]
                 )
             )
         elif fmt == "xdxydyz":
-            data_fm[:5] = data
-            data_fm[5] = data[:, 4]
+            data_fm[:5,...] = data
+            data_fm[5, :] = data_fm[4,:]
             units.append(
                 extract_units(
                     entry,
@@ -178,14 +180,16 @@ def read_3D(df, quantity):
                         "units-y",
                         "units-dy",
                         "units-z",
-                        "units-z",
+                        None
                     ],
                 )
             )
         elif fmt == "xydyz":
             data_fm[0, :] = data[:, 0]
-            data_fm[2:5, :] = data[:, 1:].T
-            data_fm[5] = data[:, 3]
+            data_fm[2, :] = data[:, 1]
+            data_fm[3, :] = data[:, 2]
+            data_fm[4, :] = data[:, 3]
+            data_fm[5, :] = data_fm[4,:]
 
             units.append(
                 extract_units(
@@ -196,7 +200,6 @@ def read_3D(df, quantity):
         elif fmt == "xydyzminzmax":
             data_fm[0, :] = data[:, 0]
             data_fm[2:5, :] = data[:, 1:].T
-            data_fm[5] = data[:, 3]
 
             units.append(
                 extract_units(
@@ -250,20 +253,17 @@ def read(fname: str, quantity: str):
 
 def read_nubarATKE(df):
     """
-    convert all <nu | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
+    convert all <nu_fragment | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubarTKEA = read_3D(df, "nubarTKEA")  # in TKE, dTKE, nu, dnu, u, u
     nubarATKE = read_3D(df, "nubarATKE")
 
-    for i, d in enumerate(nubarTKEA.data):
-        nubarATKE.meta.append(nubarTKEA.meta[i])
-        nubarATKE.units.append(nubarTKEA.units[i])
-        dt = np.zeros_like(d)
-        dt[0, :] = d[4, :]
-        dt[2:4, :] = d[2:4, :]
-        dt[4, :] = d[0, :]
-        dt[5, :] = d[0, :]
-        nubarATKE.data.append(dt)
+    return nubarATKE
+
+def read_nubartATKE(df):
+    """
+    convert all <nu_total | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
+    """
+    nubarATKE = read_3D(df, "nubarTKEA")  # in TKE, dTKE, nu, dnu, u, u
 
     return nubarATKE
 
@@ -310,6 +310,8 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_specs(df, "EgTbarnubar")
     elif q == "nubarATKE":
         return read_nubarATKE(df)
+    elif q == "nubartATKE":
+        return read_nubartATKE(df)
     elif q == "pfnsA":
         return read_3D(df, "PFNSA")
     else:
