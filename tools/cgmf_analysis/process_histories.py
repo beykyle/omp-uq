@@ -245,7 +245,7 @@ class HistData:
                 self.vector_qs["egtbarnu"] = np.zeros((nensemble, self.nubins.size))
                 self.bins["egtbarnu"] = self.nubins
             elif q == "pfns":
-                self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.s))
+                self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
                 self.bins["pfns"] = self.ecenters
                 self.bin_edges["pfns"] = self.ebins
             elif q == "pfgs":
@@ -316,7 +316,7 @@ class HistData:
                 self.bins["nutATKE"] = (self.abins, self.TKEcenters)
                 self.bin_edges["nutATKE"] = (self.abins, self.TKEbins)
             elif q == "encomATKE":
-                self.tensor_qs["nuATKE"] = np.zeros(
+                self.tensor_qs["encomATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["encomATKE"] = (self.abins, self.TKEcenters)
@@ -876,20 +876,25 @@ class HistData:
                     TKE_min = self.TKEbins[m]
                     TKE_max = self.TKEbins[m + 1]
                     TKE = hs.getTKEpost()
-                    mask = np.logical_and(
+                    mask_nut = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         np.logical_or(hs.getAHF() == a, hs.getALF() == a),
+                    )
+                    TKE = TKE.repeat(2, axis=0)
+                    mask_nu = np.logical_and(
+                        np.logical_and(TKE >= TKE_min, TKE < TKE_max),
+                        hs.getA() == a,
                     )
 
                     (
                         self.tensor_qs["nuATKE"][n, l, m],
                         self.tensor_qs["nuATKE_stddev"][n, l, m],
-                    ) = self.estimate_mean(hs.getNu()[mask])
+                    ) = self.estimate_mean(hs.getNu()[mask_nu])
 
                     (
                         self.tensor_qs["nutATKE"][n, l, m],
                         self.tensor_qs["nutATKE_stddev"][n, l, m],
-                    ) = self.estimate_mean(hs.getNutot()[mask])
+                    ) = self.estimate_mean(hs.getNutot()[mask_nut])
 
             if "encomATKE" in self.tensor_qs:
                 for m in range(self.TKEcenters.size):
