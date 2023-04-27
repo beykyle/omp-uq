@@ -173,7 +173,6 @@ class HistData:
         self.tde = self.tgebins[1:] - self.tgebins[:-1]
 
         self.bins = {}
-        self.centers = {}
 
         # allocate arrays for histogram values
         # all arrays have as their first axis the ensemble
@@ -214,28 +213,23 @@ class HistData:
                 self.bins["nugbarZ"] = self.zbins
             elif q == "nubarTKE":
                 self.vector_qs["nubarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
-                self.bins["nubarTKE"] = self.TKEbins
-                self.centers["nubarTKE"] = self.TKEcenters
+                self.bins["nubarTKE"] = self.TKEcenters
             elif q == "nugbarTKE":
                 self.vector_qs["nugbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
-                self.bins["nugbarTKE"] = self.TKEbins
-                self.centers["nugbarTKE"] = self.TKEcenters
+                self.bins["nugbarTKE"] = self.TKEcenters
             elif q == "enbarTKE":
                 self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
-                self.bins["enbarTKE"] = self.TKEbins
-                self.centers["enbarTKE"] = self.TKEcenters
+                self.bins["enbarTKE"] = self.TKEcenters
             elif q == "encomTKE":
                 self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
-                self.bins["encomTKE"] = self.TKEbins
-                self.centers["encomTKE"] = self.TKEcenters
+                self.bins["encomTKE"] = self.TKEcenters
             elif q == "egtbarTKE":
                 self.vector_qs["egtbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
-                self.bins["egbarTKE"] = self.TKEbins
-                self.centers["egbarTKE"] = self.TKEcenters
+                self.bins["egtbarTKE"] = self.TKEcenters
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
                 self.bins["pnu"] = self.nubins
@@ -247,78 +241,63 @@ class HistData:
                 self.bins["egtbarnu"] = self.nubins
             elif q == "pfns":
                 self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
-                self.bins["pfns"] = self.ebins
-                self.centers["pfns"] = self.ecenters
+                self.bins["pfns"] = self.ecenters
             elif q == "pfgs":
                 self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
-                self.bins["pfgs"] = self.gebins
-                self.centers["pfgs"] = self.gecenters
+                self.bins["pfgs"] = self.gecenters
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
                 )
-                self.bins["pfnsTKE"] = (self.TKEbins, self.tebins)
-                self.centers["pfnsTKE"] = (self.TKEcenters, self.tecenters)
+                self.bins["pfnsTKE"] = (self.TKEbins, self.tecenters)
             elif q == "pfgsTKE":
                 self.tensor_qs["pfgsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tgecenters.size)
                 )
-                self.bins["pfgsTKE"] = (self.TKEbins, self.tgebins)
-                self.centers["pfgsTKE"] = (self.TKEcenters, self.tgecenters)
+                self.bins["pfgsTKE"] = (self.TKEbins, self.tgecenters)
             elif q == "pfnscomTKE":
                 self.tensor_qs["pfnscomTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomTKE"] = (self.TKEbins, self.com_tebins)
-                self.centers["pfnscomTKE"] = (self.TKEcenters, self.com_tecenters)
+                self.bins["pfnscomTKE"] = (self.TKEbins, self.com_tecenters)
             elif q == "pfnsZ":
                 self.tensor_qs["pfnsZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.tecenters.size)
                 )
-                self.bins["pfnsZ"] = (self.zbins, self.tebins)
-                self.centers["pfnsZ"] = (self.zbins, self.tecenters)
+                self.bins["pfnsZ"] = (self.zbins, self.tecenters)
             elif q == "pfgsZ":
-                self.tensor_qs["pfgsZ"] = np.zeros(
-                    (nensemble, self.zbins.size, self.tgecenters.size)
-                )
+                self.tensor_qs["pfgsZ"] = np.zeros()
                 self.bins["pfgsZ"] = (self.zbins, self.tgebins)
-                self.centers["pfgsZ"] = (self.zbins, self.tgecenters)
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
                     (nensemble, self.abins.size, self.tecenters.size)
                 )
-                self.bins["pfnsA"] = (self.abins, self.tebins)
-                self.centers["pfnsA"] = (self.abins, self.tecenters)
+                self.bins["pfnsA"] = (self.abins, self.tecenters)
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
                     (nensemble, self.abins.size, self.tgecenters.size)
                 )
-                self.bins["pfgsA"] = (self.abins, self.tgebins)
-                self.centers["pfgsA"] = (self.abins, self.tgecenters)
+                self.bins["pfgsA"] = (self.abins, self.tgecenters)
             elif q == "pfnscomA":
                 self.tensor_qs["pfnscomA"] = np.zeros(
                     (nensemble, self.abins.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomA"] = (self.abins, self.com_tebins)
-                self.centers["pfnscomA"] = (self.abins, self.com_tecenters)
+                self.bins["pfnscomA"] = (self.abins, self.com_tecenters)
             elif q == "pfnscomZ":
                 self.tensor_qs["pfnscomZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.com_tecenters.size)
                 )
-                self.bins["pfnscomZ"] = (self.zbins, self.com_tebins)
-                self.centers["pfnscomZ"] = (self.zbins, self.com_tecenters)
+                self.bins["pfnscomZ"] = (self.zbins, self.com_tecenters)
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
                 )
-                self.bins["nuATKE"] = (self.abins, self.TKEbins)
-                self.centers["nuATKE"] = (self.abins, self.TKEcenters)
+                self.bins["nuATKE"] = (self.abins, self.TKEcenters)
             elif q == "encomATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
                 )
-                self.bins["encomATKE"] = (self.abins, self.TKEbins)
-                self.centers["encomATKE"] = (self.abins, self.TKEcenters)
+                self.bins["encomATKE"] = (self.abins, self.TKEcenters)
             else:
                 print("Unkown quantity: {}".format(q))
                 sys.stdout.flush()
@@ -371,9 +350,6 @@ class HistData:
         for k, v in self.bins.items():
             pickle_dump(v, self.res_dir / "{}_bins{}.npy".format(k, f))
 
-        for k, v in self.centers.items():
-            pickle_dump(v, self.res_dir / "{}_centers{}.npy".format(k, f))
-
     def write(self, with_ensemble_idx=True):
         if with_ensemble_idx:
             f = "_samples_{}_to_{}".format(self.min_ensemble, self.max_ensemble)
@@ -411,11 +387,6 @@ class HistData:
 
         for k in self.bins:
             self.bins[k] = pickle_load(self.res_dir / "{}_bins{}.npy".format(k, f))
-
-        for k in self.centers:
-            self.centers[k] = pickle_load(
-                self.res_dir / "{}_centers{}.npy".format(k, f)
-            )
 
     def hist_from_list_of_lists(
         self, num, lol, bins, mask_generator=None, totals=False, fragment=True
@@ -932,9 +903,7 @@ class HistData:
     def post_process(self, mpi_comm=None):
         if mpi_comm is None or mpi_comm.Get_rank() == 0:
             print(
-                "Running samples {} to {}".format(
-                    self.min_ensemble, self.max_ensemble
-                )
+                "Running samples {} to {}".format(self.min_ensemble, self.max_ensemble)
             )
             sys.stdout.flush()
 
