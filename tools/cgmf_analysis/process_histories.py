@@ -234,8 +234,8 @@ class HistData:
                 self.vector_qs["egtbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
-                self.bins["egbarTKE"] = self.TKEbins
-                self.centers["egbarTKE"] = self.TKEcenters
+                self.bins["egtbarTKE"] = self.TKEbins
+                self.centers["egtbarTKE"] = self.TKEcenters
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
                 self.bins["pnu"] = self.nubins
