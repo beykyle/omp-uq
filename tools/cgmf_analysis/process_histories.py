@@ -121,6 +121,7 @@ class HistData:
                 ("egtbarZ", "pfgsZ"),
                 ("multratioA", "nubarA"),
                 ("multratioA", "nugbarA"),
+                ("nuATKE", "nutATKE"),
             ],
         )
         self.scalar_qs = {}
@@ -173,6 +174,7 @@ class HistData:
         self.tde = self.tgebins[1:] - self.tgebins[:-1]
 
         self.bins = {}
+        self.bin_edges = {}
 
         # allocate arrays for histogram values
         # all arrays have as their first axis the ensemble
@@ -214,22 +216,25 @@ class HistData:
             elif q == "nubarTKE":
                 self.vector_qs["nubarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
                 self.bins["nubarTKE"] = self.TKEcenters
+                self.bin_edges["nubarTKE"] = self.TKEbins
             elif q == "nugbarTKE":
-                self.vector_qs["nugbarTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size)
-                )
+                self.vector_qs["nugbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
                 self.bins["nugbarTKE"] = self.TKEcenters
+                self.bin_edges["nugbarTKE"] = self.TKEbins
             elif q == "enbarTKE":
                 self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
                 self.bins["enbarTKE"] = self.TKEcenters
+                self.bin_edges["enbarTKE"] = self.TKEbins
             elif q == "encomTKE":
                 self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
                 self.bins["encomTKE"] = self.TKEcenters
+                self.bin_edges["encomTKE"] = self.TKEbins
             elif q == "egtbarTKE":
                 self.vector_qs["egtbarTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size)
                 )
                 self.bins["egtbarTKE"] = self.TKEcenters
+                self.bin_edges["egtbarTKE"] = self.TKEbins
             elif q == "pnu":
                 self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
                 self.bins["pnu"] = self.nubins
@@ -240,31 +245,37 @@ class HistData:
                 self.vector_qs["egtbarnu"] = np.zeros((nensemble, self.nubins.size))
                 self.bins["egtbarnu"] = self.nubins
             elif q == "pfns":
-                self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
+                self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.s))
                 self.bins["pfns"] = self.ecenters
+                self.bin_edges["pfns"] = self.ebins
             elif q == "pfgs":
                 self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
                 self.bins["pfgs"] = self.gecenters
+                self.bin_edges["pfgs"] = self.gebins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
                 )
                 self.bins["pfnsTKE"] = (self.TKEbins, self.tecenters)
+                self.bin_edges["pfnsTKE"] = (self.TKEbins, self.tebins)
             elif q == "pfgsTKE":
                 self.tensor_qs["pfgsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tgecenters.size)
                 )
                 self.bins["pfgsTKE"] = (self.TKEbins, self.tgecenters)
+                self.bin_edges["pfgsTKE"] = (self.TKEbins, self.tgebins)
             elif q == "pfnscomTKE":
                 self.tensor_qs["pfnscomTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomTKE"] = (self.TKEbins, self.com_tecenters)
+                self.bin_edges["pfnscomTKE"] = (self.TKEbins, self.com_tebins)
             elif q == "pfnsZ":
                 self.tensor_qs["pfnsZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.tecenters.size)
                 )
                 self.bins["pfnsZ"] = (self.zbins, self.tecenters)
+                self.bin_edges["pfnsZ"] = (self.zbins, self.tebins)
             elif q == "pfgsZ":
                 self.tensor_qs["pfgsZ"] = np.zeros()
                 self.bins["pfgsZ"] = (self.zbins, self.tgebins)
@@ -273,31 +284,43 @@ class HistData:
                     (nensemble, self.abins.size, self.tecenters.size)
                 )
                 self.bins["pfnsA"] = (self.abins, self.tecenters)
+                self.bin_edges["pfnsA"] = (self.abins, self.tebins)
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
                     (nensemble, self.abins.size, self.tgecenters.size)
                 )
                 self.bins["pfgsA"] = (self.abins, self.tgecenters)
+                self.bin_edges["pfgsA"] = (self.abins, self.tgebins)
             elif q == "pfnscomA":
                 self.tensor_qs["pfnscomA"] = np.zeros(
                     (nensemble, self.abins.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomA"] = (self.abins, self.com_tecenters)
+                self.bin_edges["pfnscomA"] = (self.abins, self.com_tebins)
             elif q == "pfnscomZ":
                 self.tensor_qs["pfnscomZ"] = np.zeros(
                     (nensemble, self.zbins.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomZ"] = (self.zbins, self.com_tecenters)
+                self.bin_edges["pfnscomZ"] = (self.zbins, self.com_tebins)
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["nuATKE"] = (self.abins, self.TKEcenters)
+                self.bin_edges["nuATKE"] = (self.abins, self.TKEbins)
+            elif q == "nutATKE":
+                self.tensor_qs["nutATKE"] = np.zeros(
+                    (nensemble, self.abins.size, self.TKEcenters.size)
+                )
+                self.bins["nutATKE"] = (self.abins, self.TKEcenters)
+                self.bin_edges["nutATKE"] = (self.abins, self.TKEbins)
             elif q == "encomATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
                     (nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["encomATKE"] = (self.abins, self.TKEcenters)
+                self.bin_edges["encomATKE"] = (self.abins, self.TKEbins)
             else:
                 print("Unkown quantity: {}".format(q))
                 sys.stdout.flush()
@@ -565,7 +588,7 @@ class HistData:
                 _,
                 _,
             ) = self.hist_from_list_of_lists(
-                num_neutrons, nelab, self.bins["pfns"], self.neutron_cut(nelab)
+                num_neutrons, nelab, self.bin_edges["pfns"], self.neutron_cut(nelab)
             )
 
         if "pfgs" in self.vector_qs:
@@ -579,7 +602,7 @@ class HistData:
                 _,
                 _,
             ) = self.hist_from_list_of_lists(
-                num_gammas, gelab, self.bins["pfgs"], self.gamma_cut(gelab, ages)
+                num_gammas, gelab, self.bin_edges["pfgs"], self.gamma_cut(gelab, ages)
             )
 
         # nu dependent
@@ -603,7 +626,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
-                    bins=self.bins["pfgs"],
+                    bins=self.bin_edges["pfgs"],
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
@@ -639,7 +662,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_ns,
                     nelab,
-                    bins=self.bins["pfnsZ"][1],
+                    bins=self.bin_edges["pfnsZ"][1],
                     mask_generator=self.neutron_cut(nelab),
                 )
 
@@ -659,7 +682,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
-                    bins=self.bins["pfgsZ"][1],
+                    bins=self.bin_edges["pfgsZ"][1],
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
@@ -704,7 +727,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_neutrons,
                     nelab,
-                    bins=self.bins["pfnsTKE"][1],
+                    bins=self.bin_edges["pfnsTKE"][1],
                     mask_generator=self.neutron_cut(nelab),
                 )
 
@@ -725,7 +748,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_neutrons,
                     necm,
-                    bins=self.bins["pfnscomTKE"][1],
+                    bins=self.bin_edges["pfnscomTKE"][1],
                     mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
 
@@ -745,7 +768,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gammas,
                     gelab,
-                    bins=self.bins["pfgsTKE"][1],
+                    bins=self.bin_edges["pfgsTKE"][1],
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
@@ -802,7 +825,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_ns,
                     nelab,
-                    bins=self.bins["pfnsA"][1],
+                    bins=self.bin_edges["pfnsA"][1],
                     mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
 
@@ -821,7 +844,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_ns,
                     necm,
-                    bins=self.bins["pfnscomA"][1],
+                    bins=self.bin_edges["pfnscomA"][1],
                     mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
                 # TODO use kinematic cut here?
@@ -842,7 +865,7 @@ class HistData:
                 ) = self.hist_from_list_of_lists(
                     num_gs,
                     gelab,
-                    bins=self.bins["pfgsA"][1],
+                    bins=self.bin_edges["pfgsA"][1],
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
@@ -861,6 +884,11 @@ class HistData:
                     (
                         self.tensor_qs["nuATKE"][n, l, m],
                         self.tensor_qs["nuATKE_stddev"][n, l, m],
+                    ) = self.estimate_mean(hs.getNu()[mask])
+
+                    (
+                        self.tensor_qs["nutATKE"][n, l, m],
+                        self.tensor_qs["nutATKE_stddev"][n, l, m],
                     ) = self.estimate_mean(hs.getNutot()[mask])
 
             if "encomATKE" in self.tensor_qs:
