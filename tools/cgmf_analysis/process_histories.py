@@ -901,19 +901,23 @@ class HistData:
                     TKE_min = self.TKEbins[m]
                     TKE_max = self.TKEbins[m + 1]
                     TKE = hs.getTKEpost()
+                    TKE = TKE.repeat(2, axis=0)
                     mask = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
-                        np.logical_or(hs.getAHF() == a, hs.getALF() == a),
+                        hs.getA() == a,
                     )
+                    necm = hs.getNeutronEcm()[mask]
+                    num_neutrons = np.sum(hs.getNu()[mask])
+                    if num_neutrons > 0:
+                        # TODO kinematic cut?
 
-                    (
-                        _,
-                        _,
-                        self.tensor_qs["encomATKE"][n, l, m],
-                        self.tensor_qs["encomATKE_stddev"][n, l, m],
-                        _,
-                    ) = self.hist_from_list_of_lists(num_neutrons, necm, [0, 100])
-                    # TODO kinematic cut?
+                        (
+                            _,
+                            _,
+                            self.tensor_qs["encomATKE"][n, l, m],
+                            self.tensor_qs["encomATKE_stddev"][n, l, m],
+                            _,
+                        ) = self.hist_from_list_of_lists(num_neutrons, necm, np.array([0, 100]))
 
     def gather(self, mpi_comm, rank, size, rank_slice):
         if mpi_comm is None:
