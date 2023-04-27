@@ -266,8 +266,7 @@ class HistData:
                 )
                 self.bins["pfnsZ"] = (self.zbins, self.tecenters)
             elif q == "pfgsZ":
-                self.tensor_qs["pfgsZ"] = np.zeros(
-                )
+                self.tensor_qs["pfgsZ"] = np.zeros()
                 self.bins["pfgsZ"] = (self.zbins, self.tgebins)
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
@@ -904,9 +903,7 @@ class HistData:
     def post_process(self, mpi_comm=None):
         if mpi_comm is None or mpi_comm.Get_rank() == 0:
             print(
-                "Running samples {} to {}".format(
-                    self.min_ensemble, self.max_ensemble
-                )
+                "Running samples {} to {}".format(self.min_ensemble, self.max_ensemble)
             )
             sys.stdout.flush()
 
