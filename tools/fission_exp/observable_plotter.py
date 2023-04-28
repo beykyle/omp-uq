@@ -642,7 +642,7 @@ class Plotter:
             x = d.centers["pfnscomA"][1]
             pfns = d.tensor_qs["pfnscomA"][:, index, :]
             pfns_err = d.tensor_qs["pfnscomA_stddev"][:, index, :]
-            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            #pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=True))
 
         labels = [m["label"] for m in pfnsa.meta]
@@ -651,7 +651,7 @@ class Plotter:
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
-            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            #pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
             plts.append(plt.errorbar(x, pfns, pfns_err))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
@@ -660,9 +660,9 @@ class Plotter:
 
         plt.xscale("log")
         plt.xlabel(r"$E^n_{cm}$ [MeV]")
-        plt.ylabel(r"$p(E | A = {}) / M(kT = 1$ MeV$)$".format(a))
+        plt.ylabel(r"$p(E | A = {})$".format(a))
 
-    def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
+    def nubartATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
 
         if False:
@@ -678,12 +678,13 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            mask = a == d[4, :]
+            amin = d[4,:]
+            mask = a == amin
             tke = d[0, :][mask]
             dtke = d[1, :][mask]
             nu = d[2, :][mask]
             dnu = d[3, :][mask]
-            plts.append(plt.errorbar(tke, dtke, nu, dnu, label=l))
+            plts.append(plt.errorbar(tke, nu, dnu, dtke, label=l, linestyle='none'))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
         plt.gca().add_artist(lexp)
