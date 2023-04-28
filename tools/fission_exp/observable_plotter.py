@@ -156,7 +156,7 @@ class Plotter:
         plts_sim = []
         for d in cgmf_datasets:
             # normalization
-            x = d.centers["pfns"]
+            x = d.bins["pfns"]
             pfns = d.vector_qs["pfns"]
             pfns_err = d.vector_qs["pfns_stddev"]
 
@@ -233,7 +233,7 @@ class Plotter:
         plts_sim = []
 
         for d in cgmf_datasets:
-            x = d.centers["pfgs"]
+            x = d.bins["pfgs"]
             plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
 
         # experimental data
@@ -305,7 +305,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.centers["nubarTKE"]))
+            plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.bins["nubarTKE"]))
 
         nubarTKE = read(self.exp_data_path, "nubarTKE")
 
@@ -639,10 +639,10 @@ class Plotter:
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
-            x = d.centers["pfnscomA"][1]
+            x = d.bins["pfnscomA"][1]
             pfns = d.tensor_qs["pfnscomA"][:, index, :]
             pfns_err = d.tensor_qs["pfnscomA_stddev"][:, index, :]
-            #pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=True))
 
         labels = [m["label"] for m in pfnsa.meta]
@@ -651,7 +651,7 @@ class Plotter:
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
-            #pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.0)
+            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
             plts.append(plt.errorbar(x, pfns, pfns_err))
 
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
@@ -660,19 +660,19 @@ class Plotter:
 
         plt.xscale("log")
         plt.xlabel(r"$E^n_{cm}$ [MeV]")
-        plt.ylabel(r"$p(E | A = {})$".format(a))
+        plt.ylabel(r"$p(E | A = {}) / M(E, kT = 1.32$ MeV$)$".format(a))
 
-    def nubartATKE(self, a: int, nubaratke, cgmf_datasets=None):
+    def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
 
-        if False:
-            for d in cgmf_datasets:
-                index = np.nonzero(a == d.abins)[0][0]
-                plts_sim.append(
-                    self.plot_cgmf_vec_from_tensor(
-                        d, "nuATKE", d.centers["nuATKE"], index, mc=False
-                    )
+        for d in cgmf_datasets:
+            (abins, TKEbins) = d.bins["nuATKE"]
+            index = np.nonzero(a == abins)[0][0]
+            plts_sim.append(
+                self.plot_cgmf_vec_from_tensor(
+                    d, "nuATKE", TKEbins, index, mc=False
                 )
+            )
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
@@ -693,12 +693,53 @@ class Plotter:
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(r"$ \langle \nu | A = {} \rangle $ [neutrons]".format(a))
 
+
+    def nubartATKE(self, a: int, nubaratke, cgmf_datasets=None):
+        plts_sim = []
+
+        for d in cgmf_datasets:
+            (abins, TKEbins) = d.bins["nutATKE"]
+            index = np.nonzero(a == abins)[0][0]
+            plts_sim.append(
+                self.plot_cgmf_vec_from_tensor(
+                    d, "nutATKE", TKEbins, index, mc=False
+                )
+            )
+
+        labels = [m["label"] for m in nubaratke.meta]
+        plts = []
+
+        for d, l in zip(nubaratke.data, labels):
+            amin = d[4,:]
+            mask = a == amin
+            tke = d[0, :][mask]
+            dtke = d[1, :][mask]
+            nu = d[2, :][mask]
+            dnu = d[3, :][mask]
+            plts.append(plt.errorbar(
+                tke, nu, dnu, dtke, label=l, linestyle='none'))
+
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
+        plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=10, ncol=3)
+
+        plt.xlabel(r"$TKE$ [MeV]")
+        plt.ylabel(r"$ \langle \nu_t | A = {},{} \rangle $ [neutrons]"\
+                   .format(a, 252-a)
+                   )
+
     def encomATKE(self, a: int, encomatke, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
-            index = np.nonzero(a == d.abins)[0][0]
+            (abins, TKEbins) = d.bins["nutATKE"]
+            index = np.nonzero(a == abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_vec_from_tensor(d, "encomATKE", d.centers["encomATKE"], index)
+                self.plot_cgmf_vec_from_tensor(
+                    d,
+                    "encomATKE",
+                    TKEbins,
+                    index,
+                )
             )
 
         labels = [m["label"] for m in encomatke.meta]
@@ -717,7 +758,7 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
         plt.xlabel(r"$TKE$ [MeV]")
-        plt.ylabel(r"$ \langle E^n_{cm} | A = {} \rangle $ [neutrons]".format(A))
+        plt.ylabel(r"$ \langle E | A = {} \rangle $ [neutrons]".format(a))
 
     def multratA(self, cgmf_datasets=None):
         # sim
@@ -784,7 +825,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.centers["encomTKE"]))
+            plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.bins["encomTKE"]))
 
         enbar = read(self.exp_data_path, "encomTKE")
 
@@ -815,7 +856,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.centers["egtbarTKE"]))
+            plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.bins["egtbarTKE"]))
 
         egtbar = read(self.exp_data_path, "egtbarTKE")
 

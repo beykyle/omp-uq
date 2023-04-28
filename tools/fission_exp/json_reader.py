@@ -251,21 +251,21 @@ def read(fname: str, quantity: str):
     return read_json(df, quantity)
 
 
-def read_nubarATKE(df):
+def read_nubarTKEA(df):
     """
     convert all <nu_fragment | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubarATKE = read_3D(df, "nubarATKE")
+    nubarTKEA = read_3D(df, "nubarTKEA")
 
-    return nubarATKE
+    return nubarTKEA
 
-def read_nubartATKE(df):
+def read_nubartTKEA(df):
     """
     convert all <nu_total | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubarATKE = read_3D(df, "nubarTKEA")  # in TKE, dTKE, nu, dnu, u, u
+    nubartTKEA = read_3D(df, "nubartTKEA")
 
-    return nubarATKE
+    return nubartTKEA
 
 
 def read_json(df: pd.DataFrame, quantity: str):
@@ -308,15 +308,16 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_specs(df, "EgTbarTKE")
     elif q == "egtbarnu":
         return read_specs(df, "EgTbarnubar")
-    elif q == "nubarATKE":
-        return read_nubarATKE(df)
-    elif q == "nubartATKE":
-        return read_nubartATKE(df)
+    elif q == "nubarTKEA":
+        return read_nubarTKEA(df)
+    elif q == "nubartTKEA":
+        return read_nubartTKEA(df)
     elif q == "pfnsA":
         return read_3D(df, "PFNSA")
+    elif q == "encomATKE":
+        return read_3D(df, "encomATKE")
     else:
-        print("Unkown quantity: " + quantity)
-        exit(1)
+        raise ValueError("Unknown quantity: " + quantity)
 
 
 if __name__ == "__main__":
