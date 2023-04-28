@@ -322,9 +322,7 @@ class HistData:
                 self.bins["encomATKE"] = (self.abins, self.TKEcenters)
                 self.bin_edges["encomATKE"] = (self.abins, self.TKEbins)
             else:
-                print("Unkown quantity: {}".format(q))
-                sys.stdout.flush()
-                exit(1)
+                raise ValueError("Unknown quantity: {}".format(q))
 
         for k in list(self.scalar_qs):
             key = k + "_stddev"
