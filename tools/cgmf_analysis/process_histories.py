@@ -39,6 +39,7 @@ all_quantities = [
     "pfnsZ",
     "pfgsZ",
     "nuATKE",
+    "nutATKE",
     "pfnscomTKE",
     "pfnscomA",
     "encomA",
