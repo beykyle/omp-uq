@@ -160,12 +160,12 @@ class HistData:
         self.gde = self.gebins[1:] - self.gebins[:-1]
 
         # ebins for tensor q's q/ lower statistics
-        self.tebins = np.logspace(-3, 2, 30)
+        self.tebins = np.logspace(-3, 2, 20)
         self.tecenters = 0.5 * (self.tebins[0:-1] + self.tebins[1:])
         self.tde = self.tebins[1:] - self.tebins[:-1]
 
         # center of mass bins for neutron tensor q's
-        self.com_tebins = np.logspace(-1.1, 1.1, 30)
+        self.com_tebins = np.logspace(-1.2, 1.1, 20)
         self.com_tecenters = 0.5 * (self.com_tebins[0:-1] + self.com_tebins[1:])
         self.com_tde = self.com_tebins[1:] - self.com_tebins[:-1]
 
