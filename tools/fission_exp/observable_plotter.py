@@ -27,8 +27,9 @@ def normalize_to_maxwell(x, y, dy, temp_MeV):
 
 
 class Plotter:
-    def __init__(self, exp_data_path: Path):
+    def __init__(self, exp_data_path: Path, energy_range=None):
         self.exp_data_path = exp_data_path
+        self.energy_range = energy_range
 
     def get_fact_moments(self, moments: np.array, nu: np.array, pnu: np.array):
         assert nu.shape == pnu.shape
@@ -49,12 +50,12 @@ class Plotter:
     def normalize(self, arr: np.array):
         return arr / np.sum(arr)
 
-    def plot_cgmf_vec(self, d, quantity, x, mc=True):
+    def plot_cgmf_vec(self, d, quantity, x, mc=False):
         vec_all = d.vector_qs[quantity]
         vec_stddev = d.vector_qs[quantity + "_stddev"]
         return self.plot_vec(vec_all, vec_stddev, x, d.label, mc)
 
-    def plot_vec(self, vec_all, vec_stddev, x, label, mc=True, plot_type="fill"):
+    def plot_vec(self, vec_all, vec_stddev, x, label, mc=False, plot_type="fill"):
         vec_err = np.sqrt(np.var(vec_all, axis=0))
         mean_mc_err = np.mean(vec_stddev, axis=0)
         vec = np.mean(vec_all, axis=0)
@@ -74,25 +75,26 @@ class Plotter:
                 )
         elif plot_type == "fill":
             plt.fill_between(x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100)
-            plt.fill_between(
-                x,
-                vec + vec_err,
-                vec + vec_err + mean_mc_err,
-                alpha=0.3,
-                zorder=100,
-                color="k",
-            )
-            plt.fill_between(
-                x,
-                vec - vec_err,
-                vec - vec_err - mean_mc_err,
-                alpha=0.3,
-                zorder=100,
-                color="k",
-            )
+            if mc:
+                plt.fill_between(
+                    x,
+                    vec + vec_err,
+                    vec + vec_err + mean_mc_err,
+                    alpha=0.3,
+                    zorder=100,
+                    color="k",
+                )
+                plt.fill_between(
+                    x,
+                    vec - vec_err,
+                    vec - vec_err - mean_mc_err,
+                    alpha=0.3,
+                    zorder=100,
+                    color="k",
+                )
         return p1[0]
 
-    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=True, plot_type="fill"):
+    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=False, plot_type="fill"):
         spec_err = np.sqrt(np.var(spec_all, axis=0))
         mean_mc_err = np.mean(spec_stddev_all, axis=0)
         spec = np.mean(spec_all, axis=0)
@@ -136,17 +138,17 @@ class Plotter:
 
         return p1[0]
 
-    def plot_cgmf_spec(self, d, quantity, x, mc=True):
+    def plot_cgmf_spec(self, d, quantity, x, mc=False):
         spec_all = d.vector_qs[quantity]
         spec_stddev_all = d.vector_qs[quantity + "_stddev"]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
-    def plot_cgmf_spec_from_tensor(self, d, quantity, x, index, mc=True):
+    def plot_cgmf_spec_from_tensor(self, d, quantity, x, index, mc=False):
         spec_all = d.tensor_qs[quantity][:, index, :]
         spec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
-    def plot_cgmf_vec_from_tensor(self, d, quantity, x, index, mc=True):
+    def plot_cgmf_vec_from_tensor(self, d, quantity, x, index, mc=False):
         vec_all = d.tensor_qs[quantity][:, index, :]
         vec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_vec(vec_all, vec_stddev_all, x, d.label, mc)
@@ -180,7 +182,7 @@ class Plotter:
                 linestyle="none",
             )
 
-        pfns = read(self.exp_data_path, "pfns")
+        pfns = read(self.exp_data_path, "pfns", self.energy_range)
         specs = pfns[0].get_specs()
         labels = [m["label"] for m in pfns[0].meta]
         units = pfns[0].units
@@ -227,7 +229,7 @@ class Plotter:
         plt.ylim([0.5, 2.0])
         plt.xlim([2e-2, 21])
         plt.xlabel(r"$E_{lab}$ [MeV]")
-        plt.ylabel(r"$p(E) / $Maxwellian $(kT = 1.32$ MeV$)$")
+        plt.ylabel(r"$p(E) / M(kT = 1.32$ MeV$)$")
 
     def pfgs(self, cgmf_datasets=None):
         plts_sim = []
@@ -237,7 +239,7 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
 
         # experimental data
-        pfgs = read(self.exp_data_path, "pfgs")
+        pfgs = read(self.exp_data_path, "pfgs", self.energy_range)
 
         specs = pfgs.get_specs()
         labels = [m["label"] for m in pfgs.meta]
@@ -274,7 +276,7 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_vec(d, "nugbarA", d.bins["nugbarA"]))
 
         # experiment
-        nugbarA = read(self.exp_data_path, "nugbarA")
+        nugbarA = read(self.exp_data_path, "nugbarA", self.energy_range)
 
         labels = [m["label"] for m in nugbarA.meta]
         plts = []
@@ -307,7 +309,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_spec(d, "nubarTKE", d.bins["nubarTKE"]))
 
-        nubarTKE = read(self.exp_data_path, "nubarTKE")
+        nubarTKE = read(self.exp_data_path, "nubarTKE", self.energy_range)
 
         plts = []
         labels = [m["label"] for m in nubarTKE.meta]
@@ -338,7 +340,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_spec(d, "nugbarTKE", d.TKEcenters))
 
-        nugbarTKE = read(self.exp_data_path, "nugbarTKE")
+        nugbarTKE = read(self.exp_data_path, "nugbarTKE", self.energy_range)
 
         plts = []
         labels = [m["label"] for m in nugbarTKE.meta]
@@ -370,7 +372,7 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_vec(d, "nubarZ", d.bins["nubarZ"]))
 
         # experiment
-        nubarZ = read(self.exp_data_path, "nubarZ")
+        nubarZ = read(self.exp_data_path, "nubarZ", self.energy_range)
 
         labels = [m["label"] for m in nubarZ.meta]
         plts = []
@@ -402,7 +404,7 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_vec(d, "nubarA", d.bins["nubarA"]))
 
         # experiment
-        nubarA = read(self.exp_data_path, "nubarA")
+        nubarA = read(self.exp_data_path, "nubarA", self.energy_range)
 
         labels = [m["label"] for m in nubarA.meta]
         plts = []
@@ -437,7 +439,7 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_vec(d, "pnug", nu))
 
         # exp
-        pnug = read(self.exp_data_path, "pnug")
+        pnug = read(self.exp_data_path, "pnug", self.energy_range)
         labels = [m["label"] for m in pnug.meta]
         plts = []
 
@@ -469,7 +471,7 @@ class Plotter:
             nu = d.bins["pnu"]
             plts_sim.append(self.plot_cgmf_vec(d, "pnu", nu))
 
-        pnu = read(self.exp_data_path, "pnu")
+        pnu = read(self.exp_data_path, "pnu", self.energy_range)
 
         labels = [m["label"] for m in pnu.meta]
         plts = []
@@ -528,7 +530,7 @@ class Plotter:
                 ma = np.max(h)
 
         # experiment
-        nugbar = read(self.exp_data_path, "nugbar")
+        nugbar = read(self.exp_data_path, "nugbar", self.energy_range)
 
         labels = [m["label"] for m in nugbar.meta]
         plts = []
@@ -592,7 +594,7 @@ class Plotter:
             plt.plot([endf, endf], [0, ma], label="ENDF/B-VI.8", linestyle="--")
 
         # experiment
-        nubar = read(self.exp_data_path, "nubar")
+        nubar = read(self.exp_data_path, "nubar", self.energy_range)
 
         labels = [m["label"] for m in nubar.meta]
         plts = []
@@ -620,7 +622,7 @@ class Plotter:
         plt.ylabel(r"$p(\bar{\nu})$")
 
     def pfns_A_moments(self, n: int):
-        pfnsa = read(self.exp_data_path, "pfnsA")
+        pfnsa = read(self.exp_data_path, "pfnsA", self.energy_range)
 
         labels = [m["label"] for m in pfnsa.meta]
         plts = []
@@ -643,24 +645,24 @@ class Plotter:
             pfns = d.tensor_qs["pfnscomA"][:, index, :]
             pfns_err = d.tensor_qs["pfnscomA_stddev"][:, index, :]
             pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
-            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=True))
+            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=False))
 
         labels = [m["label"] for m in pfnsa.meta]
-        plts = []
 
+        plts = []
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
             pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
-            plts.append(plt.errorbar(x, pfns, pfns_err))
+            plts.append(plt.errorbar(x, pfns, pfns_err, label=l))
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
         plt.xscale("log")
-        plt.xlabel(r"$E^n_{cm}$ [MeV]")
-        plt.ylabel(r"$p(E | A = {}) / M(E, kT = 1.32$ MeV$)$".format(a))
+        plt.xlabel(r"$E_{cm}$ [MeV]")
+        plt.ylabel(r"$p(E | A = {}) / M(E, kT = 1.32$ MeV$)$".format(a), fontsize=16)
 
     def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
@@ -686,7 +688,7 @@ class Plotter:
             dnu = d[3, :][mask]
             plts.append(plt.errorbar(tke, nu, dnu, dtke, label=l, linestyle='none'))
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
@@ -719,7 +721,7 @@ class Plotter:
             plts.append(plt.errorbar(
                 tke, nu, dnu, dtke, label=l, linestyle='none'))
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
@@ -739,6 +741,7 @@ class Plotter:
                     "encomATKE",
                     TKEbins,
                     index,
+                    mc = False
                 )
             )
 
@@ -753,7 +756,7 @@ class Plotter:
             dencom = d[3, :][mask]
             plts.append(plt.errorbar(tke, dtke, encom, dencom, label=l))
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1)
+        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3)
 
@@ -764,9 +767,9 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.bins["multratioA"]))
+            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.bins["multratioA"], mc=False))
 
-        mr = read(self.exp_data_path, "multiplicityRatioA")
+        mr = read(self.exp_data_path, "multiplicityRatioA", self.energy_range)
 
         labels = [m["label"] for m in mr.meta]
         plts = []
@@ -794,9 +797,9 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.bins["encomA"]))
+            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.bins["encomA"], mc=False))
 
-        enbar = read(self.exp_data_path, "encomA")
+        enbar = read(self.exp_data_path, "encomA", self.energy_range)
 
         labels = [m["label"] for m in enbar.meta]
         plts = []
@@ -827,7 +830,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_spec(d, "encomTKE", d.bins["encomTKE"]))
 
-        enbar = read(self.exp_data_path, "encomTKE")
+        enbar = read(self.exp_data_path, "encomTKE", self.energy_range)
 
         labels = [m["label"] for m in enbar.meta]
         plts = []
@@ -858,7 +861,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_spec(d, "egtbarTKE", d.bins["egtbarTKE"]))
 
-        egtbar = read(self.exp_data_path, "egtbarTKE")
+        egtbar = read(self.exp_data_path, "egtbarTKE", self.energy_range)
 
         labels = [m["label"] for m in egtbar.meta]
         plts = []
@@ -888,7 +891,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_vec(d, "egtbarA", d.bins["egtbarA"]))
 
-        egtbar = read(self.exp_data_path, "egtbarA")
+        egtbar = read(self.exp_data_path, "egtbarA", self.energy_range)
 
         labels = [m["label"] for m in egtbar.meta]
         plts = []
@@ -918,7 +921,7 @@ class Plotter:
         for d in cgmf_datasets:
             plts_sim.append(self.plot_cgmf_spec(d, "egtbarnu", d.bins["egtbarnu"]))
 
-        egtbar = read(self.exp_data_path, "egtbarnu")
+        egtbar = read(self.exp_data_path, "egtbarnu", self.energy_range)
 
         labels = [m["label"] for m in egtbar.meta]
         plts = []
