@@ -77,16 +77,16 @@ def read_scalar(df, quantity):
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
         if fmt == "xy":
-            y = d[0][0][1]
+            y = d[0][1]
             dy = 0
             units.append(extract_units(entry, ["units-y", None]))
         elif fmt == "xydy":
-            y = d[0][0][1]
-            dy = d[0][0][2]
+            y = d[0][1]
+            dy = d[0][2]
             units.append(extract_units(entry, ["units-y", "units-dy"]))
         elif fmt == "xdxydy":
-            y = d[0][0][2]
-            dy = d[0][0][3]
+            y = d[0][2]
+            dy = d[0][3]
             units.append(extract_units(entry, ["units-y", "units-dy"]))
         else:
             print("Invalid format specifier for quantity " + quantity + ": " + fmt)
@@ -104,7 +104,7 @@ def read_specs(df, quantity):
 
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
-        data = np.array(list(d)[0])
+        data = np.array(list(d))
         data_xdxydy = np.zeros((4, data.shape[0]))
         if fmt == "xy":
             data_xdxydy[0, :] = data[:, 0]
@@ -144,7 +144,7 @@ def read_3D(df, quantity):
 
     for i, (d, fmt) in enumerate(zip(dfq["data"], dfq["fmt"])):
         entry = dfq.iloc[[i]]
-        data = np.array(list(d)[0])
+        data = np.array(list(d))
         data_fm = np.zeros((6, data.shape[0]))
         if fmt == "xdxyz":
             data_fm[:3, :] = data[:, :3]
@@ -245,10 +245,27 @@ def read_pfns(df):
     ]
 
 
-def read(fname: str, quantity: str):
+def read(fname: str, quantity: str, energy_range=None):
     print("parsing {}".format(fname))
     df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
-    return read_json(df, quantity)
+    if 'Einc' in df:
+        df1 = df[ df['Einc'].str.len() >= 1].explode(['Einc', 'data'])
+        df1['Einc'] = pd.to_numeric(df1['Einc'])
+        if energy_range is not None:
+            (emin, emax) = energy_range
+            df1 = df1[ (df1['Einc'] >= emin) & ~ (df1['Einc'] < emax)  ]
+            return read_json(df1, quantity)
+
+        #TODO sanitize for unlisted Einc
+        # some of these entries are just thermal -> set Einc == [2.5E-08]
+        # others have incident energy as a dimension -> set Einc == [x]
+
+        df2 = df[ df['Einc'].str.len() == 0]
+        df2['data'] = df2['data'].map( lambda x : x[0] )
+        return read_json(pd.concat([df, df2]), quantity)
+    else:
+        df['data'] = df['data'].map( lambda x : x[0] )
+        return read_json(df, quantity)
 
 
 def read_nubarTKEA(df):
@@ -318,87 +335,3 @@ def read_json(df: pd.DataFrame, quantity: str):
         return read_3D(df, "encomATKE")
     else:
         raise ValueError("Unknown quantity: " + quantity)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Read fission quantities from JSON experimental compendium."
-    )
-    parser.add_argument(
-        "-p",
-        "--path",
-        type=str,
-        dest="fpath",
-        required=True,
-        help="path to JSON experimental compendium",
-    )
-    parser.add_argument(
-        "-q",
-        "--quantity",
-        dest="quantity",
-        type=str,
-        required=True,
-        choices=["nubar", "nugbar", "pfns", "pfgs", "pnu", "pnug", "nug / nu"],
-        help="quantity to read",
-    )
-    parser.add_argument(
-        "-d",
-        "--diff",
-        dest="diff",
-        default=None,
-        choices=["A", "TKE"],
-        type=str,
-        help="variable upon which quantity should be differentiated, (default=None)",
-    )
-    parser.add_argument(
-        "--HF",
-        action=argparse.BooleanOptionalAction,
-        help="find quantity associated only with heavy fragment",
-    )
-    parser.add_argument(
-        "--LF",
-        action=argparse.BooleanOptionalAction,
-        help="find quantity associated only with light fragment",
-    )
-    parser.add_argument(
-        "-o",
-        "--out-path",
-        type=str,
-        dest="opath",
-        required=False,
-        help="path to dump pickled output",
-        default="default_out.pickle",
-    )
-
-    args = parser.parse_args()
-
-    q = args.quantity
-
-    if args.HF and args.LF:
-        exit(1)
-
-    if args.HF:
-        q += "HF"
-    elif args.LF:
-        q += "LF"
-
-    if args.diff is not None:
-        q += args.diff
-
-    quantity = read(args.fpath, q)
-
-    if args.opath == "default_out.pickle":
-        q_str = args.quantity
-        if args.HF:
-            q_str += "HF"
-        if args.LF:
-            q_str += "LF"
-        diff_str = ""
-        if args.diff is not None:
-            diff_str = "_given_" + args.diff
-        args.opath = args.quantity + diff_str + ".pickle"
-
-    print("Writing " + args.quantity + " to " + args.opath)
-    ofile = open(args.opath, "wb")
-    pickle.dump(quantity, ofile)
-    ofile.close()
