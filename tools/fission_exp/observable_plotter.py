@@ -226,8 +226,6 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
         plt.xscale("log")
-        plt.ylim([0.5, 2.0])
-        plt.xlim([2e-2, 21])
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"$p(E) / M(kT = 1.32$ MeV$)$")
 
@@ -264,8 +262,6 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
         plt.xscale("log")
-        plt.ylim([0.0, 2.0])
-        plt.xlim([1e-1, 10])
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFGS [MeV$^{-1}$]")
 
@@ -298,8 +294,6 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
 
-        plt.xlim([76, 174])
-        plt.ylim([1, 8])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
 
@@ -427,8 +421,6 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
 
-        plt.xlim([70, 180])
-        plt.ylim([0, 6])
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
@@ -549,9 +541,6 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower right")
 
-        plt.xlim([7.5, 11])
-        plt.ylim([0, y * 1.2])
-        plt.xticks(np.arange(7.5, 10, 0.5))
         plt.grid(visible=True, axis="x", which="major")
 
         plt.grid(visible=True, axis="x", which="major")
@@ -614,9 +603,6 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
 
-        plt.xlim([3.7, 3.88])
-        plt.ylim([0, y * 1.2])
-        plt.xticks(np.arange(3.7, 3.84, 0.02))
         plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
@@ -817,7 +803,7 @@ class Plotter:
                 )
             )
 
-        plt.ylim([0, 3.0])
+
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
@@ -848,7 +834,6 @@ class Plotter:
                 )
             )
 
-        plt.ylim([1, 2.0])
         lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
