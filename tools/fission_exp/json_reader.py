@@ -115,6 +115,11 @@ def read_specs(df, quantity):
             data_xdxydy[2, :] = data[:, 1]
             data_xdxydy[3, :] = data[:, 2]
             units.append(extract_units(entry, ["units-x", None, "units-y", "units-dy"]))
+        elif fmt == "xydydz":
+            data_xdxydy[0, :] = data[:, 0]
+            data_xdxydy[2, :] = data[:, 1]
+            data_xdxydy[3, :] = data[:, 2]
+            units.append(extract_units(entry, ["units-x", None, "units-y", "units-dy"]))
         elif fmt == "xdxldxuydy":
             data_xdxydy[0, :] = data[:, 0]
             data_xdxydy[1, :] = data[:, 1]
