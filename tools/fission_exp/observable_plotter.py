@@ -453,7 +453,7 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu_\gamma$ [gammas]")
-        plt.ylabel(r"$p(\nu_\gamma)$ [\%]")
+        plt.ylabel(r"$p(\nu_\gamma)$")
         plt.tight_layout()
 
     def pnu(self, cgmf_datasets=None):
@@ -547,6 +547,8 @@ class Plotter:
         plt.xlabel(r"$\bar{\nu}_\gamma$ [gammas]")
         plt.ylabel(r"$p(\bar{\nu}_\gamma)$")
 
+        return y
+
     def nubar(self, cgmf_datasets=None, endf=None):
         # simulation
         plts_sim = []
@@ -606,6 +608,8 @@ class Plotter:
         plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
+
+        return y
 
     def pfns_A_moments(self, n: int):
         pfnsa = read(self.exp_data_path, "pfnsA", self.energy_range)
