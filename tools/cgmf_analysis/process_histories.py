@@ -448,14 +448,8 @@ class HistData:
         totals_v = []
 
         c = 0
-        if mask_generator is not None:
-            for i in range(lol.size):
-                h = np.asarray(lol[i])
-                h = h[mask_generator(i)]
-                numi = h.size
-                v[c : c + numi] = h
-                totals_v.append(np.sum(h))
-                c = c + numi
+        if mask_generator is not none:
+            v, _ = self.filter_lol(num, lol, mask_generator)
         else:
             for i in range(lol.size):
                 h = np.asarray(lol[i])
@@ -499,29 +493,32 @@ class HistData:
         norm = np.sum(h) * dbins
         return h / norm, stdev / norm
 
-    def estimate_mean(self, histories, mask_generator=None):
+    def estimate_mean(self, histories):
         """
         For a set of scalar quantities organized by history along axis 0,
         return the mean, and the standard error in the mean sqrt(stddev/N)
         """
         if histories.size == 0:
             return 0, 0
-        elif mask_generator == None:
+        else:
             h2 = histories**2
             hbar = np.mean(histories, axis=0)
             sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
             return hbar, sem
-        else:
-            c = 0
-            c2 = 0
-            N = 0
-            for i in range(lol.size):
-                h = np.asarray(lol[i])
-                h = h[mask_generator(i)]
-                c += np.sum(h)
-                c2 += np.sum(h**2)
-                N += 1
-            return c / N, np.sqrt(c2 - c * c / N) / N
+
+    def filter_lol(self, num, lol, mask_generator):
+        v = np.zeros(int(num))
+        c = 0
+        nu = np.zeros(len(lol))
+        for i in range(lol.size):
+            h = np.asarray(lol[i])
+            h = h[mask_generator(i)]
+            numi = h.size
+            v[c : c + numi] = h
+            c = c + numi
+            nu[i] = len(h)
+
+        return v[0:c], nu
 
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
@@ -582,17 +579,17 @@ class HistData:
         if "nugbar" in self.scalar_qs:
             gelab = hs.getGammaElab()
             ages = hs.getGammaAges()
+            num_gammas = np.sum(hs.getNug())
+            _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
             (
-                self.scalar_qs["nugbar"][n],
-                self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean(
-                hs.nugLF + hs.nugHF, mask_generator=self.gamma_cut(gelab, ages)
-            )
+                self.vector_qs["nugbar"][n],
+                self.vector_qs["nugbar_stddev"][n],
+            ) = self.estimate_mean(nu)
             print(self.scalar_qs["nugbar"][n])
             _, nugbar = hs.nubargtot(
                 timeWindow=[self.min_time, self.max_time], Eth=self.Ethg
             )
-            print(nubar[1])
+            print(nugbar[1])
 
         if "pnu" in self.vector_qs:
             nutot = (
