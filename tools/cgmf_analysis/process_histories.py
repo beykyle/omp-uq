@@ -132,6 +132,8 @@ class HistData:
         # default processing parameters
         self.Ethn = 0.001  # neutron detection lower energy threshold
         self.Ethg = 0.10  # gamma detection lower energy threshold
+        self.Emaxn = np.inf  # neutron detection lower energy threshold
+        self.Emaxg = np.inf  # gamma detection lower energy threshold
         self.min_time = 0
         self.max_time = 10e9
 
@@ -219,7 +221,9 @@ class HistData:
                 self.bins["nubarTKE"] = self.TKEcenters
                 self.bin_edges["nubarTKE"] = self.TKEbins
             elif q == "nugbarTKE":
-                self.vector_qs["nugbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["nugbarTKE"] = np.zeros(
+                    (nensemble, self.TKEcenters.size)
+                )
                 self.bins["nugbarTKE"] = self.TKEcenters
                 self.bin_edges["nugbarTKE"] = self.TKEbins
             elif q == "enbarTKE":
@@ -485,17 +489,29 @@ class HistData:
         norm = np.sum(h) * dbins
         return h / norm, stdev / norm
 
-    def estimate_mean(self, histories):
+    def estimate_mean(self, histories, mask_generator=None):
         """
         For a set of scalar quantities organized by history along axis 0,
         return the mean, and the standard error in the mean sqrt(stddev/N)
         """
         if histories.size == 0:
             return 0, 0
-        h2 = histories**2
-        hbar = np.mean(histories, axis=0)
-        sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
-        return hbar, sem
+        elif mask_generator == None:
+            h2 = histories**2
+            hbar = np.mean(histories, axis=0)
+            sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
+            return hbar, sem
+        else:
+            c = 0
+            c2 = 0
+            N = 0
+            for i in range(lol.size):
+                h = np.asarray(lol[i])
+                h = h[mask_generator(i)]
+                c += np.sum(h)
+                c2 += np.sum(h**2)
+                N += 1
+            return c / N, np.sqrt(c2 - c * c / N) / N
 
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
@@ -510,7 +526,10 @@ class HistData:
                     np.asarray(ages_lol[i]) >= self.min_time,
                     np.asarray(ages_lol[i]) < self.max_time,
                 ),
-                np.asarray(energy_lol[i]) > self.Ethg,
+                np.logical_and(
+                    np.asarray(energy_lol[i]) > self.Ethg,
+                    np.asarray(energy_lol[i]) <= self.Emaxg,
+                ),
             )
 
         return cut
@@ -523,7 +542,10 @@ class HistData:
         """
 
         def cut(i: int):
-            return np.asarray(energy_lol[i]) > self.Ethn
+            return np.logical_and(
+                np.asarray(energy_lol[i]) > self.Ethn,
+                np.asarray(energy_lol[i]) <= self.Emaxn,
+            )
 
         return cut
 
@@ -540,7 +562,6 @@ class HistData:
         return cut
 
     def process_ensemble(self, hs: fh.Histories, n: int):
-        # TODO enforce cutoffs in energy and time for gammas
         # scalar quantities
         if "nubar" in self.scalar_qs:
             (
@@ -549,10 +570,19 @@ class HistData:
             ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
 
         if "nugbar" in self.scalar_qs:
+            gelab = hs.getGammaElab()
+            ages = hs.getGammaAges()
             (
                 self.scalar_qs["nugbar"][n],
                 self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean(hs.nugLF + hs.nugHF)
+            ) = self.estimate_mean(
+                hs.nugLF + hs.nugHF, mask_generator=self.gamma_cut(gelab, ages)
+            )
+            print(self.scalar_qs["nugbar"][n])
+            _, nugbar = hs.nubargtot(
+                timeWindow=[self.min_time, self.max_time], Eth=self.Ethg
+            )
+            print(nubar[1])
 
         if "pnu" in self.vector_qs:
             nutot = (
@@ -916,7 +946,9 @@ class HistData:
                             self.tensor_qs["encomATKE"][n, l, m],
                             self.tensor_qs["encomATKE_stddev"][n, l, m],
                             _,
-                        ) = self.hist_from_list_of_lists(num_neutrons, necm, np.array([0, 100]))
+                        ) = self.hist_from_list_of_lists(
+                            num_neutrons, necm, np.array([0, 100])
+                        )
 
     def gather(self, mpi_comm, rank, size, rank_slice):
         if mpi_comm is None:
