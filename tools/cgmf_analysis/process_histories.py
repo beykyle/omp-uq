@@ -45,6 +45,7 @@ all_quantities = [
     "encomA",
     "encomTKE",
     "encomATKE",
+    "nnangles",
 ]
 
 
@@ -174,7 +175,12 @@ class HistData:
         # ebins for tensor gamma q's
         self.tgebins = np.logspace(-1, 1, 60)
         self.tgecenters = 0.5 * (self.tgebins[0:-1] + self.tgebins[1:])
-        self.tde = self.tgebins[1:] - self.tgebins[:-1]
+        self.tgede = self.tgebins[1:] - self.tgebins[:-1]
+
+        # bins for angular correlations
+        self.thetabins = np.linspace(0, 180, 18)
+        self.thetacenters = 0.5 * (self.thetabins[0:-1] + self.thetabins[1:])
+        self.dtheta = self.thetabins[1:] - self.thetabins[:-1]
 
         self.bins = {}
         self.bin_edges = {}
@@ -257,6 +263,10 @@ class HistData:
                 self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
                 self.bins["pfgs"] = self.gecenters
                 self.bin_edges["pfgs"] = self.gebins
+            elif q == "nnangles":
+                self.vector_qs["nnangles"] = np.zeros((nensemble, self.thetabins.size))
+                self.bins["nnangles"] = self.thetacenters
+                self.bin_edges["nnangles"] = self.thetabins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
@@ -659,6 +669,19 @@ class HistData:
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
+        if "nnangles" in self.vector_qs:
+            nelab = hs.getNeutronElab()
+            num_neutrons = np.sum(hs.getNutot())
+            nnLF, nnHF, nnAll = hs.nnangles()
+            (
+                self.vector_qs["nnangles"][n],
+                self.vector_qs["nnangles_stddev"][n],
+                _,
+                _,
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_neutrons, nnall, self.bin_edges["nnangles"], self.neutron_cut(nelab)
+            )
 
         # Z dependent
         for l, z in enumerate(self.zbins):
