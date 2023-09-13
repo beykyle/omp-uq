@@ -582,14 +582,9 @@ class HistData:
             num_gammas = np.sum(hs.getNug())
             _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
             (
-                self.vector_qs["nugbar"][n],
-                self.vector_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean(nu)
-            print(self.scalar_qs["nugbar"][n])
-            _, nugbar = hs.nubargtot(
-                timeWindow=[self.min_time, self.max_time], Eth=self.Ethg
-            )
-            print(nugbar[1])
+                self.scalar_qs["nugbar"][n],
+                self.scalar_qs["nugbar_stddev"][n],
+            ) = self.estimate_mean( nu.reshape((hs.numberEvents,2)).sum(axis=1) )
 
         if "pnu" in self.vector_qs:
             nutot = (
@@ -667,6 +662,7 @@ class HistData:
                     totals=True,
                 )
         if "nnangles" in self.vector_qs:
+            nncos = hs.histories[:,20]
             nelab = hs.getNeutronElab()
             num_neutrons = np.sum(hs.getNutot())
             nnLF, nnHF, nnAll = hs.nnangles()
