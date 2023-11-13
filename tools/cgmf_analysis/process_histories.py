@@ -45,6 +45,7 @@ all_quantities = [
     "encomA",
     "encomTKE",
     "encomATKE",
+    "nnangles",
 ]
 
 
@@ -132,6 +133,8 @@ class HistData:
         # default processing parameters
         self.Ethn = 0.001  # neutron detection lower energy threshold
         self.Ethg = 0.10  # gamma detection lower energy threshold
+        self.Emaxn = np.inf  # neutron detection lower energy threshold
+        self.Emaxg = np.inf  # gamma detection lower energy threshold
         self.min_time = 0
         self.max_time = 10e9
 
@@ -172,7 +175,12 @@ class HistData:
         # ebins for tensor gamma q's
         self.tgebins = np.logspace(-1, 1, 60)
         self.tgecenters = 0.5 * (self.tgebins[0:-1] + self.tgebins[1:])
-        self.tde = self.tgebins[1:] - self.tgebins[:-1]
+        self.tgede = self.tgebins[1:] - self.tgebins[:-1]
+
+        # bins for angular correlations
+        self.thetabins = np.linspace(0, 180, 18)
+        self.thetacenters = 0.5 * (self.thetabins[0:-1] + self.thetabins[1:])
+        self.dtheta = self.thetabins[1:] - self.thetabins[:-1]
 
         self.bins = {}
         self.bin_edges = {}
@@ -219,7 +227,9 @@ class HistData:
                 self.bins["nubarTKE"] = self.TKEcenters
                 self.bin_edges["nubarTKE"] = self.TKEbins
             elif q == "nugbarTKE":
-                self.vector_qs["nugbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["nugbarTKE"] = np.zeros(
+                    (nensemble, self.TKEcenters.size)
+                )
                 self.bins["nugbarTKE"] = self.TKEcenters
                 self.bin_edges["nugbarTKE"] = self.TKEbins
             elif q == "enbarTKE":
@@ -253,6 +263,10 @@ class HistData:
                 self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
                 self.bins["pfgs"] = self.gecenters
                 self.bin_edges["pfgs"] = self.gebins
+            elif q == "nnangles":
+                self.vector_qs["nnangles"] = np.zeros((nensemble, self.thetabins.size))
+                self.bins["nnangles"] = self.thetacenters
+                self.bin_edges["nnangles"] = self.thetabins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
@@ -434,14 +448,8 @@ class HistData:
         totals_v = []
 
         c = 0
-        if mask_generator is not None:
-            for i in range(lol.size):
-                h = np.asarray(lol[i])
-                h = h[mask_generator(i)]
-                numi = h.size
-                v[c : c + numi] = h
-                totals_v.append(np.sum(h))
-                c = c + numi
+        if mask_generator is not none:
+            v, _ = self.filter_lol(num, lol, mask_generator)
         else:
             for i in range(lol.size):
                 h = np.asarray(lol[i])
@@ -492,10 +500,25 @@ class HistData:
         """
         if histories.size == 0:
             return 0, 0
-        h2 = histories**2
-        hbar = np.mean(histories, axis=0)
-        sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
-        return hbar, sem
+        else:
+            h2 = histories**2
+            hbar = np.mean(histories, axis=0)
+            sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
+            return hbar, sem
+
+    def filter_lol(self, num, lol, mask_generator):
+        v = np.zeros(int(num))
+        c = 0
+        nu = np.zeros(len(lol))
+        for i in range(lol.size):
+            h = np.asarray(lol[i])
+            h = h[mask_generator(i)]
+            numi = h.size
+            v[c : c + numi] = h
+            c = c + numi
+            nu[i] = len(h)
+
+        return v[0:c], nu
 
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
@@ -510,7 +533,10 @@ class HistData:
                     np.asarray(ages_lol[i]) >= self.min_time,
                     np.asarray(ages_lol[i]) < self.max_time,
                 ),
-                np.asarray(energy_lol[i]) > self.Ethg,
+                np.logical_and(
+                    np.asarray(energy_lol[i]) > self.Ethg,
+                    np.asarray(energy_lol[i]) <= self.Emaxg,
+                ),
             )
 
         return cut
@@ -523,7 +549,10 @@ class HistData:
         """
 
         def cut(i: int):
-            return np.asarray(energy_lol[i]) > self.Ethn
+            return np.logical_and(
+                np.asarray(energy_lol[i]) > self.Ethn,
+                np.asarray(energy_lol[i]) <= self.Emaxn,
+            )
 
         return cut
 
@@ -540,7 +569,6 @@ class HistData:
         return cut
 
     def process_ensemble(self, hs: fh.Histories, n: int):
-        # TODO enforce cutoffs in energy and time for gammas
         # scalar quantities
         if "nubar" in self.scalar_qs:
             (
@@ -549,10 +577,14 @@ class HistData:
             ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
 
         if "nugbar" in self.scalar_qs:
+            gelab = hs.getGammaElab()
+            ages = hs.getGammaAges()
+            num_gammas = np.sum(hs.getNug())
+            _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
             (
                 self.scalar_qs["nugbar"][n],
                 self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean(hs.nugLF + hs.nugHF)
+            ) = self.estimate_mean( nu.reshape((hs.numberEvents,2)).sum(axis=1) )
 
         if "pnu" in self.vector_qs:
             nutot = (
@@ -629,6 +661,20 @@ class HistData:
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
+        if "nnangles" in self.vector_qs:
+            nncos = hs.histories[:,20]
+            nelab = hs.getNeutronElab()
+            num_neutrons = np.sum(hs.getNutot())
+            nnLF, nnHF, nnAll = hs.nnangles()
+            (
+                self.vector_qs["nnangles"][n],
+                self.vector_qs["nnangles_stddev"][n],
+                _,
+                _,
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_neutrons, nnall, self.bin_edges["nnangles"], self.neutron_cut(nelab)
+            )
 
         # Z dependent
         for l, z in enumerate(self.zbins):
@@ -916,7 +962,9 @@ class HistData:
                             self.tensor_qs["encomATKE"][n, l, m],
                             self.tensor_qs["encomATKE_stddev"][n, l, m],
                             _,
-                        ) = self.hist_from_list_of_lists(num_neutrons, necm, np.array([0, 100]))
+                        ) = self.hist_from_list_of_lists(
+                            num_neutrons, necm, np.array([0, 100])
+                        )
 
     def gather(self, mpi_comm, rank, size, rank_slice):
         if mpi_comm is None:
