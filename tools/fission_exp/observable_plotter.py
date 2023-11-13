@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 from pathlib import Path
+from matplotlib.ticker import StrMethodFormatter
+
+import statsmodels.stats.api as sms
 
 matplotlib.rcParams["font.size"] = 12
 matplotlib.rcParams["font.family"] = "serif"
@@ -18,11 +21,28 @@ matplotlib.rcParams["image.cmap"] = "BuPu"
 from fission_exp import Quantity, maxwellian, PFNSA, read
 
 
-def normalize_to_maxwell(x, y, dy, temp_MeV):
+def normalize_to_maxwell(x, y, dy, temp_MeV, ratio=None):
     m = maxwellian(x, temp_MeV)
-    k = np.trapz(m, x)
-    y = y * k / m
-    dy = dy * k / m
+    if x.shape == y.shape:
+        k = np.trapz(m, x) / np.trapz(y, x, axis=0)
+    else:
+        k = np.trapz(m, x) / np.trapz(y, x, axis=1)
+
+    if ratio:
+        if x.shape == y.shape:
+            y = y * k / m
+            dy = dy * k / m
+        else:
+            y = y * k[:, np.newaxis] / m
+            dy = dy * k[:, np.newaxis] / m
+    else:
+        if x.shape == y.shape:
+            y = y * k
+            dy = dy * k
+        else:
+            y = y * k[:, np.newaxis]
+            dy = dy * k[:, np.newaxis]
+
     return y, dy
 
 
@@ -50,12 +70,12 @@ class Plotter:
     def normalize(self, arr: np.array):
         return arr / np.sum(arr)
 
-    def plot_cgmf_vec(self, d, quantity, x, mc=False):
+    def plot_cgmf_vec(self, d, quantity, x, mc=True):
         vec_all = d.vector_qs[quantity]
         vec_stddev = d.vector_qs[quantity + "_stddev"]
         return self.plot_vec(vec_all, vec_stddev, x, d.label, mc)
 
-    def plot_vec(self, vec_all, vec_stddev, x, label, mc=False, plot_type="fill"):
+    def plot_vec(self, vec_all, vec_stddev, x, label, mc=True, plot_type="fill"):
         vec_err = np.sqrt(np.var(vec_all, axis=0))
         mean_mc_err = np.mean(vec_stddev, axis=0)
         vec = np.mean(vec_all, axis=0)
@@ -66,12 +86,12 @@ class Plotter:
             for i in range(vec_all.shape[0]):
                 plt.fill_between(
                     x,
-                    vec_all[i,...] + vec_stddev[i,...],
-                    vec_all[i,...] - vec_stddev[i,...],
-                    alpha=1./vec_all.shape[0],
+                    vec_all[i, ...] + vec_stddev[i, ...],
+                    vec_all[i, ...] - vec_stddev[i, ...],
+                    alpha=1.0 / vec_all.shape[0],
                     zorder=100,
                     step="mid",
-                    color=p1[0].get_color()
+                    color=p1[0].get_color(),
                 )
         elif plot_type == "fill":
             plt.fill_between(x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100)
@@ -80,7 +100,7 @@ class Plotter:
                     x,
                     vec + vec_err,
                     vec + vec_err + mean_mc_err,
-                    alpha=0.3,
+                    alpha=0.2,
                     zorder=100,
                     color="k",
                 )
@@ -88,72 +108,84 @@ class Plotter:
                     x,
                     vec - vec_err,
                     vec - vec_err - mean_mc_err,
-                    alpha=0.3,
+                    alpha=0.2,
                     zorder=100,
                     color="k",
                 )
         return p1[0]
 
-    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=False, plot_type="fill"):
+    def plot_spec(self, spec_all, spec_stddev_all, x, label, mc=True, plot_type="fill"):
         spec_err = np.sqrt(np.var(spec_all, axis=0))
         mean_mc_err = np.mean(spec_stddev_all, axis=0)
         spec = np.mean(spec_all, axis=0)
 
-        p1 = plt.step(x, spec, label=label, zorder=100, linewidth=2, where="mid")
+        # p1 = plt.step(x, spec, label=label, zorder=100, linewidth=2, where="mid")
+        p1 = plt.plot(x, spec, label=label, zorder=100, linewidth=2)
 
         if plot_type == "overlapping":
             for i in range(spec_all.shape[0]):
                 plt.fill_between(
                     x,
-                    spec_all[i,...] + spec_stddev_all[i,...],
-                    spec_all[i,...] - spec_stddev_all[i,...],
-                    alpha=1./spec_all.shape[0],
+                    spec_all[i, ...] + spec_stddev_all[i, ...],
+                    spec_all[i, ...] - spec_stddev_all[i, ...],
+                    alpha=1.0 / spec_all.shape[0],
                     zorder=100,
-                    step="mid",
-                    color=p1[0].get_color()
+                    color=p1[0].get_color(),
                 )
         elif plot_type == "fill":
+            if mc:
+                err = np.where(
+                    spec_err > mean_mc_err, np.sqrt(spec_err**2 - mean_mc_err**2), 0
+                )
+            else:
+                confint = sms.DescrStatsW(spec_all).tconfint_mean()
+                err = confint
             plt.fill_between(
-                x, spec + spec_err, spec - spec_err, alpha=0.6, zorder=100, step="mid"
+                x,
+                spec + err,
+                spec - err,
+                alpha=0.6,
+                zorder=100,
+                # step="mid"
             )
             if mc:
                 plt.fill_between(
                     x,
-                    spec + spec_err,
-                    spec + spec_err + mean_mc_err,
-                    alpha=0.3,
+                    spec + err,
+                    spec + err + mean_mc_err,
+                    alpha=0.2,
                     zorder=100,
-                    step="mid",
+                    # step="mid",
                     color="k",
                 )
                 plt.fill_between(
                     x,
-                    spec - spec_err,
-                    spec - spec_err - mean_mc_err,
-                    alpha=0.3,
+                    spec - err,
+                    spec - err - mean_mc_err,
+                    alpha=0.2,
                     zorder=100,
-                    step="mid",
+                    # step="mid",
                     color="k",
                 )
 
         return p1[0]
 
-    def plot_cgmf_spec(self, d, quantity, x, mc=False):
+    def plot_cgmf_spec(self, d, quantity, x, mc=True):
         spec_all = d.vector_qs[quantity]
         spec_stddev_all = d.vector_qs[quantity + "_stddev"]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
-    def plot_cgmf_spec_from_tensor(self, d, quantity, x, index, mc=False):
+    def plot_cgmf_spec_from_tensor(self, d, quantity, x, index, mc=True):
         spec_all = d.tensor_qs[quantity][:, index, :]
         spec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_spec(spec_all, spec_stddev_all, x, d.label, mc)
 
-    def plot_cgmf_vec_from_tensor(self, d, quantity, x, index, mc=False):
+    def plot_cgmf_vec_from_tensor(self, d, quantity, x, index, mc=True):
         vec_all = d.tensor_qs[quantity][:, index, :]
         vec_stddev_all = d.tensor_qs[quantity + "_stddev"][:, index, :]
         return self.plot_vec(vec_all, vec_stddev_all, x, d.label, mc)
 
-    def pfns(self, cgmf_datasets=None):
+    def pfns(self, cgmf_datasets=None, temp=None, allowed_labels=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
@@ -162,74 +194,61 @@ class Plotter:
             pfns = d.vector_qs["pfns"]
             pfns_err = d.vector_qs["pfns_stddev"]
 
-            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
+            if temp is not None:
+                pfns, pfns_err = normalize_to_maxwell(
+                    x, pfns, pfns_err, temp, ratio=True
+                )
+            else:
+                pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, temp_MeV=1.21)
 
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label))
 
         def plt_exp_spec(s, l):
-            x = s.bins
-            pfns = s.spec
-            pfns_err = s.err
-            pfns, pfns_err= normalize_to_maxwell(x, pfns, pfns_err, 1.32)
+            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+                x = s.bins
+                pfns = s.spec
+                pfns_err = s.err
+                if temp is not None:
+                    pfns, pfns_err = normalize_to_maxwell(
+                        x, pfns, pfns_err, temp, ratio=True
+                    )
+                else:
+                    pfns, pfns_err = normalize_to_maxwell(
+                        x, pfns, pfns_err, temp_MeV=1.21
+                    )
 
-            return plt.errorbar(
-                x,
-                pfns,
-                yerr=pfns_err,
-                xerr=s.xerr,
-                alpha=0.7,
-                label=l,
-                linestyle="none",
-            )
+                return plt.errorbar(
+                    x,
+                    pfns,
+                    yerr=pfns_err,
+                    xerr=s.xerr,
+                    alpha=0.7,
+                    label=l,
+                    linestyle="none",
+                )
 
-        pfns = read(self.exp_data_path, "pfns", self.energy_range)
+        pfns = read(
+            self.exp_data_path, "pfns", self.energy_range, allowed_labels=allowed_labels
+        )
         specs = pfns[0].get_specs()
         labels = [m["label"] for m in pfns[0].meta]
         units = pfns[0].units
 
-        la = {
-            "Nefedov et al., 1983",
-            "Maerten et al., 1990",
-            "Knitter et al., 1973",
-            "Lajtai et al., 1990",
-            "Boytsov et al., 1983",
-            "H.R.Bowman et al., 1958",
-            "N.V.Kornilov2015",
-            "H.Conde et al., 1965",
-            "H.Werle et al., 1972",
-            "A.Chalupka et al., 1990",
-            "A.Chalupka et al., 1990",
-            "L.Jeki et al., 1971",
-            "L.Jeki et al., 1971",
-            "Li Anli et al., 1982",
-            "H.Maerten et al., 1990",
-            "P.R.P.Coelho et al., 1989",
-            "Z.A.Alexandrova et al., 1974",
-            "M.V.Blinov et al., 1973",
-            "M.V.Blinov et al., 1973",
-            "M.V.Blinov et al., 1973",
-            "B.I.Starostov et al., 1979",
-            "B.I.Starostov et al., 1983",
-            "P.P.Dyachenko et al., 1989",
-        }
-
         plts = []
 
         for s, l, u in zip(specs, labels, units):
-            if l in la:
-                s = s.normalizePxdx()
-                p = plt_exp_spec(s, l)
-                plts.append(p)
+            s = s.normalizePxdx()
+            p = plt_exp_spec(s, l)
+            plts.append(p)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=3)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=3)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower left")
 
-        plt.xscale("log")
         plt.xlabel(r"$E_{lab}$ [MeV]")
-        plt.ylabel(r"$p(E) / M(kT = 1.32$ MeV$)$")
+        plt.ylabel(r"$p(E_{\rm{lab}}) / " + r"M(E, kT = {}$ MeV$)$".format(temp), fontsize=16)
 
-    def pfgs(self, cgmf_datasets=None):
+    def pfgs(self, cgmf_datasets=None, allowed_labels=None):
         plts_sim = []
 
         for d in cgmf_datasets:
@@ -237,7 +256,9 @@ class Plotter:
             plts_sim.append(self.plot_cgmf_spec(d, "pfgs", x))
 
         # experimental data
-        pfgs = read(self.exp_data_path, "pfgs", self.energy_range)
+        pfgs = read(
+            self.exp_data_path, "pfgs", self.energy_range, allowed_labels=allowed_labels
+        )
 
         specs = pfgs.get_specs()
         labels = [m["label"] for m in pfgs.meta]
@@ -254,14 +275,14 @@ class Plotter:
             )
 
         for s, l, u in zip(specs, labels, units):
-            p = plt_exp_spec(s.normalizePxdx(), l)
-            plts.append(p)
+            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+                p = plt_exp_spec(s.normalizePxdx(), l)
+                plts.append(p)
 
         lexp = plt.legend(handles=plts, fontsize=9, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower left")
 
-        plt.xscale("log")
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFGS [MeV$^{-1}$]")
 
@@ -290,12 +311,12 @@ class Plotter:
             )
             plts.append(p)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower left")
 
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
+        plt.ylabel(r"$\bar{\nu}_\gamma$ [photons]")
 
     def nubarTKE(self, cgmf_datasets=None):
         # sim
@@ -321,9 +342,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower left")
 
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -352,12 +373,12 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower right")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower right")
 
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$\bar{\nu}_\gamma$ [gammas]")
+        plt.ylabel(r"$\bar{\nu}_\gamma$ [photons]")
 
     def nubarZ(self, cgmf_datasets=None):
         # sim
@@ -384,14 +405,14 @@ class Plotter:
             )
             plts.append(p)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="lower right")
 
         plt.xlabel(r"$Z$ [protons]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
 
-    def nubarA(self, cgmf_datasets=None):
+    def nubarA(self, cgmf_datasets=None, allowed_labels=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
@@ -404,7 +425,7 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubarA.data, labels):
-            if l != "B.G.Basova et al., 1979":
+            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
                 p = plt.errorbar(
                     d[0, :],
                     d[2, :],
@@ -417,9 +438,9 @@ class Plotter:
                 )
                 plts.append(p)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=2, loc="upper left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="lower right")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="lower right")
 
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -448,11 +469,11 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="upper left")
 
-        plt.xlabel(r"$\nu_\gamma$ [gammas]")
+        plt.xlabel(r"$\nu_\gamma$ [photons]")
         plt.ylabel(r"$p(\nu_\gamma)$")
         plt.tight_layout()
 
@@ -481,15 +502,15 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc="upper left")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$p(\nu)$  ")
         plt.tight_layout()
 
-    def nugbar(self, cgmf_datasets=None, endf=None):
+    def nugbar(self, cgmf_datasets=None, allowed_labels=None, bins=None):
         # simulation
         plts_sim = []
         max_n = 0
@@ -497,17 +518,19 @@ class Plotter:
         alphas = np.linspace(0.9, 0.4, num=num_plots)
         orders = np.arange(0, num_plots * 100, 100)
         ma = 0
-        num_bins = None
+        num_bins = 16
         for i, d in enumerate(cgmf_datasets):
             nugbar = d.scalar_qs["nugbar"]
-            if num_bins == None:
-                h, e = np.histogram(nugbar, density=True)
-                num_bins = h.size
+            if bins is not None:
+                h, e = np.histogram(nugbar, density=False, bins=bins)
+                h = h / np.sum(h)
             else:
-                h, e = np.histogram(nugbar, density=True, bins=num_bins)
+                h, e = np.histogram(nugbar, density=False)
+                delta = e[1:] - e[:-1]
+                h = h / delta / np.sum(h)
 
-            h = h / np.sum(h)
-            de = e[1:] - e[:-1]
+            num_bins = h.size
+
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
                 h,
@@ -530,26 +553,26 @@ class Plotter:
         y = 0.8 * ma
         i = 0
         for d, l in zip(nugbar.data, labels):
-            p = plt.errorbar(
-                [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
-            )
-            plts.append(p)
-            y += 0.05 * ma
-            i += 1
+            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+                p = plt.errorbar(
+                    [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
+                )
+                plts.append(p)
+                y += 0.05 * ma
+                i += 1
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3, loc="lower right")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="lower right")
 
-        plt.grid(visible=True, axis="x", which="major")
-
-        plt.grid(visible=True, axis="x", which="major")
-        plt.xlabel(r"$\bar{\nu}_\gamma$ [gammas]")
+        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
+        #plt.grid(visible=True, axis="x", which="major")
+        plt.xlabel(r"$\bar{\nu}_\gamma$ [photons]")
         plt.ylabel(r"$p(\bar{\nu}_\gamma)$")
 
         return y
 
-    def nubar(self, cgmf_datasets=None, endf=None):
+    def nubar(self, cgmf_datasets=None, allowed_labels=None, evaluated=None, bins=None):
         # simulation
         plts_sim = []
         max_n = 0
@@ -557,17 +580,19 @@ class Plotter:
         alphas = np.linspace(0.9, 0.4, num=num_plots)
         orders = np.arange(0, num_plots * 100, 100)
         ma = 0
-        num_bins = None
         for i, d in enumerate(cgmf_datasets):
             nubar = d.scalar_qs["nubar"]
-            if num_bins == None:
-                h, e = np.histogram(nubar, density=True)
-                num_bins = h.size
-            else:
-                h, e = np.histogram(nubar, density=True, bins=num_bins)
 
-            h = h / np.sum(h)
-            de = e[1:] - e[:-1]
+            if bins is not None:
+                h, e = np.histogram(nubar, density=False, bins=bins)
+                h = h / np.sum(h)
+            else:
+                h, e = np.histogram(nubar, density=False)
+                delta = e[1:] - e[:-1]
+                h = h / delta / np.sum(h)
+
+            num_bins = h.size
+
             p = plt.fill_between(
                 0.5 * (e[:-1] + e[1:]),
                 h,
@@ -581,10 +606,8 @@ class Plotter:
             if np.max(h) > ma:
                 ma = np.max(h)
 
-        if endf is not None:
-            plt.plot([endf, endf], [0, ma], label="ENDF/B-VI.8", linestyle="--")
-
         # experiment
+        # nubar = read(self.exp_data_path, "nubar", self.energy_range, allowed_labels=allowed_labels)
         nubar = read(self.exp_data_path, "nubar", self.energy_range)
 
         labels = [m["label"] for m in nubar.meta]
@@ -593,7 +616,7 @@ class Plotter:
         y = 0.8 * ma
         i = 0
         for d, l in zip(nubar.data, labels):
-            if d[1] < 0.1 and d[0] > 3.7 and d[0] < 3.85:
+            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
                 p = plt.errorbar(
                     [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
                 )
@@ -601,11 +624,28 @@ class Plotter:
                 y += 0.05 * ma
                 i += 1
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
-        plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        def plot_eval(val):
+            (nu, dnu, label) = val
+            nu = np.array([nu, nu])
+            dnu = np.array([dnu, dnu])
+            plts.append(
+                plt.fill_betweenx([0, y], nu - dnu, nu + dnu, label=label, alpha=0.2)
+            )
 
-        plt.grid(visible=True, axis="x", which="major")
+
+        if evaluated is not None:
+            if isinstance(evaluated, list):
+                for val in evaluated:
+                    plot_eval(val)
+            else:
+                plot_eval(evaluated)
+
+
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc='upper right')
+        plt.gca().add_artist(lexp)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc='lower right')
+        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
+        #plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
 
@@ -623,19 +663,61 @@ class Plotter:
             means = [s.moment(n) / s.moment(0) for s in specs]
             plt.errorbar(data.mass, means, label=l)
 
-        plt.legend(fontsize=10, ncol=1)
+        plt.legend(fontsize=12, ncol=1)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^{%d}\rangle $ [MeV]" % n)
 
-    def pfnsA(self, a: int, pfnsa, cgmf_datasets=None):
+    def plot_exp_data_over(self, x, y, dx=None, dy=None, label=None, num_sets=1, remove_zeros=True):
+
+        if remove_zeros:
+            mask = y > 0
+            y = y[mask]
+            x = x[mask]
+            if dx is not None:
+                dx = dx[mask]
+            if dy is not None:
+                dy = dy[mask]
+
+        if num_sets == 1:
+            return plt.errorbar(
+                x,
+                y,
+                yerr=dy,
+                xerr=dx,
+                marker=".",
+                linestyle="none",
+                color="k",
+                markersize=12,
+                label=label,
+                zorder=999,
+            )
+        else:
+            return plt.errorbar(
+                x,
+                y,
+                yerr=dy,
+                xerr=dx,
+                marker=".",
+                linestyle="none",
+                markersize=12,
+                label=label,
+                zorder=999,
+            )
+
+    def pfnsA(self, a: int, pfnsa, cgmf_datasets=None, temp=None):
         plts_sim = []
         for d in cgmf_datasets:
             index = np.nonzero(a == d.abins)[0][0]
             x = d.bins["pfnscomA"][1]
             pfns = d.tensor_qs["pfnscomA"][:, index, :]
             pfns_err = d.tensor_qs["pfnscomA_stddev"][:, index, :]
-            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
-            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=False))
+            if temp is not None:
+                pfns, pfns_err = normalize_to_maxwell(
+                    x, pfns, pfns_err, temp, ratio=True
+                )
+            else:
+                pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err)
+            plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label, mc=True))
 
         labels = [m["label"] for m in pfnsa.meta]
 
@@ -643,16 +725,28 @@ class Plotter:
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
-            pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err, 1.32)
-            plts.append(plt.errorbar(x, pfns, pfns_err, label=l))
+            if temp is not None:
+                pfns, pfns_err = normalize_to_maxwell(
+                    x, pfns, pfns_err, temp, ratio=True
+                )
+            else:
+                pfns, pfns_err = normalize_to_maxwell(x, pfns, pfns_err)
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
+            plts.append(
+                self.plot_exp_data_over(
+                    x, pfns, dy=pfns_err, label=l, num_sets=len(labels)
+                )
+            )
+
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1)
 
-        plt.xscale("log")
-        plt.xlabel(r"$E_{cm}$ [MeV]")
-        plt.ylabel(r"$p(E | A = {}) / M(E, kT = 1.32$ MeV$)$".format(a), fontsize=16)
+        plt.xlabel(r"$E_{\rm cm}$ [MeV]")
+        plt.ylabel(
+            r"$p(E | A = {}) / M(E, kT = {}$ MeV$)$".format(a, temp), fontsize=16
+        )
+        # plt.ylabel(r"$p(E_{\rm cm} | A = %d)$" % a, fontsize=16)
 
     def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
@@ -661,30 +755,31 @@ class Plotter:
             (abins, TKEbins) = d.bins["nuATKE"]
             index = np.nonzero(a == abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_vec_from_tensor(
-                    d, "nuATKE", TKEbins, index, mc=False
-                )
+                self.plot_cgmf_vec_from_tensor(d, "nuATKE", TKEbins, index, mc=True)
             )
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            amin = d[4,:]
+            amin = d[4, :]
             mask = a == amin
             tke = d[0, :][mask]
             dtke = d[1, :][mask]
             nu = d[2, :][mask]
             dnu = d[3, :][mask]
-            plts.append(plt.errorbar(tke, nu, dnu, dtke, label=l, linestyle='none'))
+            plts.append(
+                self.plot_exp_data_over(
+                    tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+                )
+            )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1)
 
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(r"$ \langle \nu | A = {} \rangle $ [neutrons]".format(a))
-
 
     def nubartATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
@@ -693,32 +788,33 @@ class Plotter:
             (abins, TKEbins) = d.bins["nutATKE"]
             index = np.nonzero(a == abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_vec_from_tensor(
-                    d, "nutATKE", TKEbins, index, mc=False
-                )
+                self.plot_cgmf_vec_from_tensor(d, "nutATKE", TKEbins, index, mc=True)
             )
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            amin = d[4,:]
+            amin = d[4, :]
             mask = a == amin
             tke = d[0, :][mask]
             dtke = d[1, :][mask]
             nu = d[2, :][mask]
             dnu = d[3, :][mask]
-            plts.append(plt.errorbar(
-                tke, nu, dnu, dtke, label=l, linestyle='none'))
+            plts.append(
+                self.plot_exp_data_over(
+                    tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+                )
+            )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1)
 
         plt.xlabel(r"$TKE$ [MeV]")
-        plt.ylabel(r"$ \langle \nu_t | A = {},{} \rangle $ [neutrons]"\
-                   .format(a, 252-a)
-                   )
+        plt.ylabel(
+            r"$ \langle \nu_t | A = {},{} \rangle $ [neutrons]".format(a, 252 - a)
+        )
 
     def encomATKE(self, a: int, encomatke, cgmf_datasets=None):
         plts_sim = []
@@ -726,13 +822,7 @@ class Plotter:
             (abins, TKEbins) = d.bins["nutATKE"]
             index = np.nonzero(a == abins)[0][0]
             plts_sim.append(
-                self.plot_cgmf_vec_from_tensor(
-                    d,
-                    "encomATKE",
-                    TKEbins,
-                    index,
-                    mc = False
-                )
+                self.plot_cgmf_vec_from_tensor(d, "encomATKE", TKEbins, index, mc=True)
             )
 
         labels = [m["label"] for m in encomatke.meta]
@@ -744,20 +834,26 @@ class Plotter:
             dtke = d[1, :][mask]
             encom = d[2, :][mask]
             dencom = d[3, :][mask]
-            plts.append(plt.errorbar(tke, dtke, encom, dencom, label=l))
+            plts.append(
+                self.plot_exp_data_over(
+                    tke, encom, dy=dencom, dx=dtke, label=l, num_sets=len(labels)
+                )
+            )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=3)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=3)
 
         plt.xlabel(r"$TKE$ [MeV]")
-        plt.ylabel(r"$ \langle E | A = {} \rangle $ [neutrons]".format(a))
+        plt.ylabel(r"$ \langle E_{\rm cm} | A = %d \rangle $ [neutrons]" % a)
 
     def multratA(self, cgmf_datasets=None):
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "multratioA", d.bins["multratioA"], mc=False))
+            plts_sim.append(
+                self.plot_cgmf_vec(d, "multratioA", d.bins["multratioA"], mc=True)
+            )
 
         mr = read(self.exp_data_path, "multiplicityRatioA", self.energy_range)
 
@@ -777,9 +873,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
@@ -787,7 +883,7 @@ class Plotter:
         # sim
         plts_sim = []
         for d in cgmf_datasets:
-            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.bins["encomA"], mc=False))
+            plts_sim.append(self.plot_cgmf_vec(d, "encomA", d.bins["encomA"], mc=True))
 
         enbar = read(self.exp_data_path, "encomA", self.energy_range)
 
@@ -807,12 +903,11 @@ class Plotter:
                 )
             )
 
-
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
-        plt.ylabel(r"$ \langle {E}_n \rangle$ [MeV]")
+        plt.ylabel(r"$ \langle {E}_{\rm cm} \rangle$ [MeV]")
 
     def encomTKE(self, cgmf_datasets=None):
         # sim
@@ -827,22 +922,34 @@ class Plotter:
 
         for d, l in zip(enbar.data, labels):
             plts.append(
-                plt.errorbar(
+                self.plot_exp_data_over(
                     d[0, :],
                     d[2, :],
-                    d[3, :],
-                    d[1, :],
+                    dy = d[3, :],
+                    dx= d[1, :],
                     label=l,
-                    linestyle="none",
-                    marker=".",
+                    num_sets=len(labels),
+                    remove_zeros=False
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(
+            handles=plts,
+            fontsize=12,
+            ncol=1,
+            loc="best",
+            bbox_to_anchor=(0.5, 0.7, 0.5, 0.3),
+        )
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(
+            handles=plts_sim,
+            fontsize=12,
+            ncol=1,
+            loc="best",
+            bbox_to_anchor=(0.5, 0.5, 0.5, 0.3),
+        )
         plt.xlabel(r"TKE [MeV]")
-        plt.ylabel(r"$ \langle{E}_n\rangle $ [MeV]")
+        plt.ylabel(r"$ \langle{E}_{\rm cm}\rangle $ [MeV]")
 
     def egtbarTKE(self, cgmf_datasets=None):
         # sim
@@ -868,9 +975,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc=2)
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
@@ -898,9 +1005,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
 
@@ -928,8 +1035,8 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=10, ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=10, ncol=1, loc=2)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
