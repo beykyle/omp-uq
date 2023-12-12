@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import argparse
 import pickle
+from pathlib import Path
 
 from .spec_analysis import Spec
 
@@ -32,7 +33,7 @@ class Quantity:
         return [get_normed_spec(d) for d in self.data]
 
 
-def select(df, key):
+def select(df, key, allowed_labels):
     dfq = df[df["quantity"] == key]
 
     if dfq.empty:
@@ -52,6 +53,10 @@ def select(df, key):
         ]
     ].to_dict("records")
 
+    if allowed_labels is not None:
+        meta = [m for m in meta if m["label"] in allowed_labels]
+        dfq = dfq.apply(lambda row: row[df["label"].isin(allowed_labels)])
+
     print("Found {} results for quantity {}".format(len(meta), key))
 
     return dfq, meta
@@ -68,8 +73,8 @@ def extract_units(row, fmt: list):
     return units
 
 
-def read_scalar(df, quantity):
-    dfq, meta = select(df, quantity)
+def read_scalar(df, quantity, allowed_labels):
+    dfq, meta = select(df, quantity, allowed_labels)
 
     data = []
     units = []
@@ -96,8 +101,8 @@ def read_scalar(df, quantity):
     return Quantity(quantity, "y,dy", data, meta, units)
 
 
-def read_specs(df, quantity):
-    dfq, meta = select(df, quantity)
+def read_specs(df, quantity, allowed_labels):
+    dfq, meta = select(df, quantity, allowed_labels)
 
     specs = []
     units = []
@@ -136,13 +141,15 @@ def read_specs(df, quantity):
         else:
             print("Invalid format specifier for quantity " + quantity + ": " + fmt)
             exit(1)
+        # ensure data is sorted by x value
+        data_xdxydy = data_xdxydy[:, data_xdxydy[0, :].argsort()]
         specs.append(data_xdxydy)
 
     return Quantity(quantity, "x,dx,y,dy", specs, meta, units)
 
 
-def read_3D(df, quantity):
-    dfq, meta = select(df, quantity)
+def read_3D(df, quantity, allowed_labels):
+    dfq, meta = select(df, quantity, allowed_labels)
 
     specs = []
     units = []
@@ -154,7 +161,7 @@ def read_3D(df, quantity):
         if fmt == "xdxyz":
             data_fm[:3, :] = data[:, :3]
             data_fm[4, :] = data[:, 3]
-            data_fm[5, :] = data_fm[4,:]
+            data_fm[5, :] = data_fm[4, :]
             units.append(
                 extract_units(
                     entry,
@@ -166,27 +173,19 @@ def read_3D(df, quantity):
             data_fm[1, :] = data[:, 1] - data[:, 0]
             data_fm[2, :] = data[:, 2]
             data_fm[4, :] = data[:, 3]
-            data_fm[5, :] = data_fm[4,:]
+            data_fm[5, :] = data_fm[4, :]
             units.append(
                 extract_units(
-                    entry,
-                    ["units-xmin", "units-xmin", "units-y", None, "units-z"]
+                    entry, ["units-xmin", "units-xmin", "units-y", None, "units-z"]
                 )
             )
         elif fmt == "xdxydyz":
-            data_fm[:5,...] = data
-            data_fm[5, :] = data_fm[4,:]
+            data_fm[:5, ...] = data
+            data_fm[5, :] = data_fm[4, :]
             units.append(
                 extract_units(
                     entry,
-                    [
-                        "units-x",
-                        "units-dx",
-                        "units-y",
-                        "units-dy",
-                        "units-z",
-                        None
-                    ],
+                    ["units-x", "units-dx", "units-y", "units-dy", "units-z", None],
                 )
             )
         elif fmt == "xydyz":
@@ -194,7 +193,7 @@ def read_3D(df, quantity):
             data_fm[2, :] = data[:, 1]
             data_fm[3, :] = data[:, 2]
             data_fm[4, :] = data[:, 3]
-            data_fm[5, :] = data_fm[4,:]
+            data_fm[5, :] = data_fm[4, :]
 
             units.append(
                 extract_units(
@@ -242,101 +241,121 @@ def read_3D(df, quantity):
     return Quantity(quantity, "x,dx,y,dy,zmin,zmax", specs, meta, units)
 
 
-def read_pfns(df):
+def read_pfns(df, allowed_labels):
     return [
-        read_specs(df, "PFNS"),
-        read_specs(df, "PFNS_sqrtE"),
-        read_specs(df, "PFNS_max"),
+        read_specs(df, "PFNS", allowed_labels),
+        read_specs(df, "PFNS_sqrtE", allowed_labels),
+        read_specs(df, "PFNS_max", allowed_labels),
     ]
 
 
-def read(fname: str, quantity: str, energy_range=None):
+def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
     print("parsing {}".format(fname))
     df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
-    if 'Einc' in df:
-        df1 = df[ df['Einc'].str.len() >= 1].explode(['Einc', 'data'])
-        df1['Einc'] = pd.to_numeric(df1['Einc'])
+    if "Einc" in df:
+        df1 = df[df["Einc"].str.len() >= 1].explode(["Einc", "data"])
+        df1["Einc"] = pd.to_numeric(df1["Einc"])
         if energy_range is not None:
             (emin, emax) = energy_range
-            df1 = df1[ (df1['Einc'] >= emin) & ~ (df1['Einc'] < emax)  ]
-            return read_json(df1, quantity)
+            df1 = df1[(df1["Einc"] >= emin) & ~(df1["Einc"] < emax)]
+            return read_json(df1, quantity, allowed_labels)
 
-        #TODO sanitize for unlisted Einc
+        # TODO sanitize for unlisted Einc
         # some of these entries are just thermal -> set Einc == [2.5E-08]
         # others have incident energy as a dimension -> set Einc == [x]
 
-        df2 = df[ df['Einc'].str.len() == 0]
-        df2['data'] = df2['data'].map( lambda x : x[0] )
-        return read_json(pd.concat([df, df2]), quantity)
+        df2 = df[df["Einc"].str.len() == 0]
+        df2["data"] = df2["data"].map(lambda x: x[0])
+        return read_json(pd.concat([df, df2]), quantity, allowed_labels)
     else:
-        df['data'] = df['data'].map( lambda x : x[0] )
-        return read_json(df, quantity)
+        df["data"] = df["data"].map(lambda x: x[0])
+        return read_json(df, quantity, allowed_labels)
 
 
-def read_nubarTKEA(df):
+def read_nubarTKEA(df, allowed_labels):
     """
     convert all <nu_fragment | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubarTKEA = read_3D(df, "nubarTKEA")
+    nubarTKEA = read_3D(df, "nubarTKEA", allowed_labels)
 
     return nubarTKEA
 
-def read_nubartTKEA(df):
+
+def read_nubartTKEA(df, allowed_labels):
     """
     convert all <nu_total | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
     """
-    nubartTKEA = read_3D(df, "nubartTKEA")
+    nubartTKEA = read_3D(df, "nubartTKEA", allowed_labels)
 
     return nubartTKEA
 
 
-def read_json(df: pd.DataFrame, quantity: str):
+def set_bibtex(quantity, meta):
+    path = Path("./" + quantity + "_meta.bib")
+    bibtex = []
+
+    for i, row in enumerate(meta):
+        search_string = (
+            str(row["authors"]) + " " + str(row["title"]) + " " + str(row["year"])
+        )
+        print("search string:\n" + search_string)
+        print("enter bibtex below: ")
+        bibtex.append(sys.stdin.readlines())
+
+    with open(path, "w") as f:
+        for entry in bibtex:
+            for line in entry:
+                f.write(line)
+            f.write("\n")
+
+
+def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None):
     q = quantity.replace("HF", "").replace("LF", "")
     if q == "nubar":
-        return read_scalar(df, "nubar")
+        return read_scalar(df, "nubar", allowed_labels)
     elif q == "nubarA":
-        return read_specs(df, "nubarA")
+        return read_specs(df, "nubarA", allowed_labels)
     elif q == "nubarZ":
-        return read_specs(df, "nubarZ")
+        return read_specs(df, "nubarZ", allowed_labels)
     elif q == "nubarTKE":
-        return read_specs(df, "nubarTTKE")
+        return read_specs(df, "nubarTTKE", allowed_labels)
     elif q == "nugbar":
-        return read_scalar(df, "nugbar")
+        return read_scalar(df, "nugbar", allowed_labels)
     elif q == "nugbarA":
-        return read_specs(df, "nugbarA")
+        return read_specs(df, "nugbarA", allowed_labels)
     elif q == "nugbarTKE":
-        return read_specs(df, "nugbarTTKE")
+        return read_specs(df, "nugbarTTKE", allowed_labels)
     elif q == "pfns":
-        return read_pfns(df)
+        return read_pfns(df, allowed_labels)
     elif q == "pfns_cm":
-        return read_specs(df, "PFNS_cm")
+        return read_specs(df, "PFNS_cm", allowed_labels)
     elif q == "pfgs":
-        return read_specs(df, "PFGS")
+        return read_specs(df, "PFGS", allowed_labels)
     elif q == "pfgsA":
-        return read_specs(df, "PFGSA")
+        return read_specs(df, "PFGSA", allowed_labels)
     elif q == "pnu":
-        return read_specs(df, "Pnu")
+        return read_specs(df, "Pnu", allowed_labels)
     elif q == "pnug":
-        return read_specs(df, "Pnug")
+        return read_specs(df, "Pnug", allowed_labels)
     elif q == "multiplicityRatioA":
-        return read_specs(df, "multiplicityRatioA")
+        return read_specs(df, "multiplicityRatioA", allowed_labels)
     elif q == "encomA":
-        return read_specs(df, "EncomA")
+        return read_specs(df, "EncomA", allowed_labels)
     elif q == "egtbarA":
-        return read_specs(df, "EgTbarA")
+        return read_specs(df, "EgTbarA", allowed_labels)
     elif q == "encomTKE":
-        return read_specs(df, "EncomTKE")
+        return read_specs(df, "EncomTKE", allowed_labels)
     elif q == "egtbarTKE":
-        return read_specs(df, "EgTbarTKE")
+        return read_specs(df, "EgTbarTKE", allowed_labels)
     elif q == "egtbarnu":
-        return read_specs(df, "EgTbarnubar")
+        return read_specs(df, "EgTbarnubar", allowed_labels)
     elif q == "nubarTKEA":
-        return read_nubarTKEA(df)
+        return read_nubarTKEA(df, allowed_labels)
     elif q == "nubartTKEA":
-        return read_nubartTKEA(df)
+        return read_nubartTKEA(df, allowed_labels)
     elif q == "pfnsA":
-        return read_3D(df, "PFNSA")
+        return read_3D(df, "PFNSA", allowed_labels)
     elif q == "encomATKE":
-        return read_3D(df, "encomATKE")
+        return read_3D(df, "encomATKE", allowed_labels)
     else:
         raise ValueError("Unknown quantity: " + quantity)

@@ -574,7 +574,7 @@ class HistData:
     def estimate_mean(self, histories):
         """
         For a set of scalar quantities organized by history along axis 0,
-        return the mean, and the standard error in the mean sqrt(stddev/N)
+        return the mean, and the standard error in the mean sqrt(var/N)
         """
         if histories.size == 0:
             return 0, 0
