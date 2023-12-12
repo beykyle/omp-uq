@@ -4,11 +4,15 @@ import matplotlib
 from matplotlib import pyplot as plt
 from pathlib import Path
 from matplotlib.ticker import StrMethodFormatter
+from matplotlib.lines import Line2D
+
 
 import statsmodels.stats.api as sms
 
+plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+plt.rc('text', usetex=True)
+
 matplotlib.rcParams["font.size"] = 12
-matplotlib.rcParams["font.family"] = "serif"
 matplotlib.rcParams["font.weight"] = "normal"
 matplotlib.rcParams["axes.labelsize"] = 18.0
 matplotlib.rcParams["xtick.labelsize"] = 18.0
@@ -19,7 +23,6 @@ matplotlib.rcParams["ytick.major.pad"] = "10"
 matplotlib.rcParams["image.cmap"] = "BuPu"
 
 from fission_exp import Quantity, maxwellian, PFNSA, read
-
 
 def normalize_to_maxwell(x, y, dy, temp_MeV, ratio=None):
     m = maxwellian(x, temp_MeV)
@@ -644,7 +647,6 @@ class Plotter:
         lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc='upper right')
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc='lower right')
-        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
         #plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
