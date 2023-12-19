@@ -14,6 +14,10 @@ post_dir = Path(__file__).parent / "post"
 all_quantities = [
     "nubar",
     "nugbar",
+    "enbar",
+    "egbar",
+    "enbarcom",
+    "egbarcom",
     "nubarA",
     "nugbarA",
     "nubarZ",
@@ -31,6 +35,8 @@ all_quantities = [
     "egtbarnu",
     "pfns",
     "pfgs",
+    "pfnscom",
+    "pfgscom",
     "multratioA",
     "pfnsTKE",
     "pfgsTKE",
@@ -45,9 +51,16 @@ all_quantities = [
     "encomA",
     "encomTKE",
     "encomATKE",
-    "nnangles",
+    "nnanglesLAB",
+    "nnanglesCOM",
+    "nnanglesLABLF",
+    "nnanglesCOMLF",
+    "nnanglesLABHF",
+    "nnanglesCOMHF",
 ]
 
+def cos_to_degrees(cos):
+    return np.arccos(cos) * 180 / np.pi
 
 def balance_load(num_jobs, rank, size):
     stride, remainder = divmod(num_jobs, size)
@@ -111,6 +124,10 @@ class HistData:
         self.quantities = check_pairs(
             quantities,
             [
+                ("enbar", "pfns"),
+                ("egbar", "pfgs"),
+                ("enbarcom", "pfnscom"),
+                ("egbarcom", "pfgscom"),
                 ("enbarA", "pfnsA"),
                 ("egtbarA", "pfgsA"),
                 ("enbarTKE", "pfnsTKE"),
@@ -124,6 +141,10 @@ class HistData:
                 ("multratioA", "nubarA"),
                 ("multratioA", "nugbarA"),
                 ("nuATKE", "nutATKE"),
+                ("nnanglesLAB", "nnanglesLABLF"),
+                ("nnanglesLAB", "nnanglesLABHF"),
+                ("nnanglesCOM", "nnanglesCOMLF"),
+                ("nnanglesCOM", "nnanglesCOMHF"),
             ],
         )
         self.scalar_qs = {}
@@ -192,6 +213,14 @@ class HistData:
                 self.scalar_qs["nubar"] = np.zeros((nensemble))
             elif q == "nugbar":
                 self.scalar_qs["nugbar"] = np.zeros((nensemble))
+            elif q == "enbar":
+                self.scalar_qs["enbar"] = np.zeros((nensemble))
+            elif q == "egbar":
+                self.scalar_qs["egbar"] = np.zeros((nensemble))
+            elif q == "enbarcom":
+                self.scalar_qs["enbarcom"] = np.zeros((nensemble))
+            elif q == "egbarcom":
+                self.scalar_qs["egbarcom"] = np.zeros((nensemble))
             elif q == "nubarA":
                 self.vector_qs["nubarA"] = np.zeros((nensemble, self.abins.size))
                 self.bins["nubarA"] = self.abins
@@ -263,10 +292,38 @@ class HistData:
                 self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
                 self.bins["pfgs"] = self.gecenters
                 self.bin_edges["pfgs"] = self.gebins
-            elif q == "nnangles":
-                self.vector_qs["nnangles"] = np.zeros((nensemble, self.thetabins.size))
-                self.bins["nnangles"] = self.thetacenters
-                self.bin_edges["nnangles"] = self.thetabins
+            elif q == "pfnscom":
+                self.vector_qs["pfnscom"] = np.zeros((nensemble, self.tecenters.size))
+                self.bins["pfnscom"] = self.tecenters
+                self.bin_edges["pfnscom"] = self.tebins
+            elif q == "pfgscom":
+                self.vector_qs["pfgscom"] = np.zeros((nensemble, self.gecenters.size))
+                self.bins["pfgscom"] = self.gecenters
+                self.bin_edges["pfgscom"] = self.gebins
+            elif q == "nnanglesLAB":
+                self.vector_qs["nnanglesLAB"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesLAB"] = self.thetacenters
+                self.bin_edges["nnanglesLAB"] = self.thetabins
+            elif q == "nnanglesLABLF":
+                self.vector_qs["nnanglesLABLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesLABLF"] = self.thetacenters
+                self.bin_edges["nnanglesLABLF"] = self.thetabins
+            elif q == "nnanglesLABHF":
+                self.vector_qs["nnanglesLABHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesLABHF"] = self.thetacenters
+                self.bin_edges["nnanglesLABHF"] = self.thetabins
+            elif q == "nnanglesCOM":
+                self.vector_qs["nnanglesCOM"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesCOM"] = self.thetacenters
+                self.bin_edges["nnanglesCOM"] = self.thetabins
+            elif q == "nnanglesCOMLF":
+                self.vector_qs["nnanglesCOMLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesCOMLF"] = self.thetacenters
+                self.bin_edges["nnanglesCOMLF"] = self.thetabins
+            elif q == "nnanglesCOMHF":
+                self.vector_qs["nnanglesCOMHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nnanglesCOMHF"] = self.thetacenters
+                self.bin_edges["nnanglesCOMHF"] = self.thetabins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
@@ -424,6 +481,25 @@ class HistData:
         for k in self.bins:
             self.bins[k] = pickle_load(self.res_dir / "{}_bins{}.npy".format(k, f))
 
+
+    def filter_lol(self, num, lol, mask_generator):
+        nevents = len(lol)
+        v = np.zeros(int(num))
+        totals_v = np.zeros(nevents)
+        c = 0
+        nu = np.zeros(nevents)
+        for i in range(nevents):
+            h = np.asarray(lol[i])
+            h = h[mask_generator(i)]
+            numi = h.size
+            v[c : c + numi] = h
+            c = c + numi
+            nu[i] = h.size
+            totals_v[i] = np.sum(h)
+
+        return v[0:c], np.array(totals_v), nu
+
+
     def hist_from_list_of_lists(
         self, num, lol, bins, mask_generator=None, totals=False, fragment=True
     ):
@@ -444,22 +520,24 @@ class HistData:
         or event-by-event (False) for totals. If the latter, sums over every other entry in totals_v
         before finding the means
         """
-        v = np.zeros(int(num))
-        totals_v = []
 
         c = 0
-        if mask_generator is not none:
-            v, _ = self.filter_lol(num, lol, mask_generator)
+        if mask_generator is not None:
+            v, totals_v, nu = self.filter_lol(num, lol, mask_generator)
         else:
+            v = np.zeros(int(num))
+            totals_v = np.zeros(len(lol))
             for i in range(lol.size):
                 h = np.asarray(lol[i])
                 numi = h.size
                 v[c : c + numi] = h
                 c = c + numi
-                totals_v.append(np.sum(h))
+                totals_v[i] = np.sum(h)
+            totals_v = np.array(totals_v)
+            v = v[0:c]
 
-        mean, sem = self.estimate_mean(v[0:c])
-        hist, stdev = self.histogram_with_binomial_uncertainty(v[0:c], bins=bins)
+        mean, sem = self.estimate_mean(v)
+        hist, stdev = self.histogram_with_binomial_uncertainty(v, bins=bins)
 
         if totals:
             totals_v = np.asarray(totals_v)
@@ -506,19 +584,6 @@ class HistData:
             sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
             return hbar, sem
 
-    def filter_lol(self, num, lol, mask_generator):
-        v = np.zeros(int(num))
-        c = 0
-        nu = np.zeros(len(lol))
-        for i in range(lol.size):
-            h = np.asarray(lol[i])
-            h = h[mask_generator(i)]
-            numi = h.size
-            v[c : c + numi] = h
-            c = c + numi
-            nu[i] = len(h)
-
-        return v[0:c], nu
 
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
@@ -580,7 +645,7 @@ class HistData:
             gelab = hs.getGammaElab()
             ages = hs.getGammaAges()
             num_gammas = np.sum(hs.getNug())
-            _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
+            _, _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
             (
                 self.scalar_qs["nugbar"][n],
                 self.scalar_qs["nugbar_stddev"][n],
@@ -615,8 +680,8 @@ class HistData:
             (
                 self.vector_qs["pfns"][n],
                 self.vector_qs["pfns_stddev"][n],
-                _,
-                _,
+                self.scalar_qs["enbar"][n],
+                self.scalar_qs["enbar_stddev"][n],
                 _,
             ) = self.hist_from_list_of_lists(
                 num_neutrons, nelab, self.bin_edges["pfns"], self.neutron_cut(nelab)
@@ -629,11 +694,38 @@ class HistData:
             (
                 self.vector_qs["pfgs"][n],
                 self.vector_qs["pfgs_stddev"][n],
-                _,
-                _,
+                self.scalar_qs["egbar"][n],
+                self.scalar_qs["egbar_stddev"][n],
                 _,
             ) = self.hist_from_list_of_lists(
                 num_gammas, gelab, self.bin_edges["pfgs"], self.gamma_cut(gelab, ages)
+            )
+
+        if "pfnscom" in self.vector_qs:
+            necom = hs.getNeutronEcm()
+            num_neutrons = np.sum(hs.getNutot())
+            (
+                self.vector_qs["pfnscom"][n],
+                self.vector_qs["pfnscom_stddev"][n],
+                self.scalar_qs["enbarcom"][n],
+                self.scalar_qs["enbarcom_stddev"][n],
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_neutrons, necom, self.bin_edges["pfnscom"], self.neutron_cut(necom)
+            )
+
+        if "pfgscom" in self.vector_qs:
+            gecom = hs.getGammaEcm()
+            ages = hs.getGammaAges()
+            num_gammas = np.sum(hs.getNugtot())
+            (
+                self.vector_qs["pfgscom"][n],
+                self.vector_qs["pfgscom_stddev"][n],
+                self.scalar_qs["egbarcom"][n],
+                self.scalar_qs["egbarcom_stddev"][n],
+                _,
+            ) = self.hist_from_list_of_lists(
+                num_gammas, gecom, self.bin_edges["pfgscom"], self.gamma_cut(gecom, ages)
             )
 
         # nu dependent
@@ -661,19 +753,48 @@ class HistData:
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
-        if "nnangles" in self.vector_qs:
-            nncos = hs.histories[:,20]
-            nelab = hs.getNeutronElab()
+        if "nnanglesLAB" in self.vector_qs:
             num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nnangles()
+            nnLF, nnHF, nnAll = hs.nnangles( lab = True )
             (
-                self.vector_qs["nnangles"][n],
-                self.vector_qs["nnangles_stddev"][n],
-                _,
-                _,
-                _,
-            ) = self.hist_from_list_of_lists(
-                num_neutrons, nnall, self.bin_edges["nnangles"], self.neutron_cut(nelab)
+                self.vector_qs["nnanglesLAB"][n],
+                self.vector_qs["nnanglesLAB_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nnanglesLAB"]
+            )
+            (
+                self.vector_qs["nnanglesLABLF"][n],
+                self.vector_qs["nnanglesLABLF_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nnanglesLABLF"]
+            )
+            (
+                self.vector_qs["nnanglesLABHF"][n],
+                self.vector_qs["nnanglesLABHF_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nnanglesLABHF"]
+            )
+
+        if "nnanglesCOM" in self.vector_qs:
+            num_neutrons = np.sum(hs.getNutot())
+            nnLF, nnHF, nnAll = hs.nnangles( lab = True )
+            (
+                self.vector_qs["nnanglesCOM"][n],
+                self.vector_qs["nnanglesCOM_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nnanglesCOM"]
+            )
+            (
+                self.vector_qs["nnanglesCOMLF"][n],
+                self.vector_qs["nnanglesCOMLF_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nnanglesCOMLF"]
+            )
+            (
+                self.vector_qs["nnanglesCOMHF"][n],
+                self.vector_qs["nnanglesCOMHF_stddev"][n],
+            ) = self.histogram_with_binomial_uncertainty(
+                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nnanglesCOMHF"]
             )
 
         # Z dependent
