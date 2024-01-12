@@ -12,7 +12,7 @@ import statsmodels.stats.api as sms
 plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 plt.rc('text', usetex=True)
 
-matplotlib.rcParams["font.size"] = 12
+matplotlib.rcParams["font.size"] = 14
 matplotlib.rcParams["font.weight"] = "normal"
 matplotlib.rcParams["axes.labelsize"] = 18.0
 matplotlib.rcParams["xtick.labelsize"] = 18.0
