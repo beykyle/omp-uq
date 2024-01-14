@@ -253,20 +253,42 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
     print("parsing {}".format(fname))
     df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
     if "Einc" in df:
+
+        # set of entries where Einc is a separate column
         df1 = df[df["Einc"].str.len() >= 1].explode(["Einc", "data"])
         df1["Einc"] = pd.to_numeric(df1["Einc"])
+
+        # set of entries where Einc is included as x variable in data
+        df2 = df[df["Einc"].str.len() == 0]
+
         if energy_range is not None:
             (emin, emax) = energy_range
-            df1 = df1[(df1["Einc"] >= emin) & ~(df1["Einc"] < emax)]
-            return read_json(df1, quantity, allowed_labels)
 
-        # TODO sanitize for unlisted Einc
-        # some of these entries are just thermal -> set Einc == [2.5E-08]
-        # others have incident energy as a dimension -> set Einc == [x]
+            # filter first set
+            df1 = df1[(df1["Einc"] >= emin) & (df1["Einc"] < emax)]
+            df1["data"] = df1["data"].map(lambda x: x[0])
 
-        df2 = df[df["Einc"].str.len() == 0]
+            # filter second set
+            df2["data"] = df2["data"].map(lambda x: x[0])
+            df2["data"] = df2["data"][
+                df2["data"].apply(
+                    lambda x: x == [
+                        point for point in x
+                        if point[0] >= emin and point[0] < emax
+                    ]
+                )
+            ]
+            df2 = df2[df2['data'].notna()]
+
+            return read_json(pd.concat([df1, df2]), quantity, allowed_labels)
+
+        df1["data"] = df1["data"].map(lambda x: x[0])
         df2["data"] = df2["data"].map(lambda x: x[0])
-        return read_json(pd.concat([df, df2]), quantity, allowed_labels)
+
+        # if no filter required just concat and go
+        df = pd.concat([df1, df2])
+        df["data"] = df["data"].map(lambda x: x[0])
+        return read_json(df, quantity, allowed_labels)
     else:
         df["data"] = df["data"].map(lambda x: x[0])
         return read_json(df, quantity, allowed_labels)
@@ -309,7 +331,7 @@ def set_bibtex(quantity, meta):
             f.write("\n")
 
 
-def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None):
+def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None):
     q = quantity.replace("HF", "").replace("LF", "")
     if q == "nubar":
         return read_scalar(df, "nubar", allowed_labels)
