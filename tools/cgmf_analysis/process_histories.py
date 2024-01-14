@@ -51,12 +51,12 @@ all_quantities = [
     "encomA",
     "encomTKE",
     "encomATKE",
-    "nnanglesLAB",
-    "nnanglesCOM",
-    "nnanglesLABLF",
-    "nnanglesCOMLF",
-    "nnanglesLABHF",
-    "nnanglesCOMHF",
+    "nfanglesLAB",
+    "nfanglesCOM",
+    "nfanglesLABLF",
+    "nfanglesCOMLF",
+    "nfanglesLABHF",
+    "nfanglesCOMHF",
 ]
 
 def cos_to_degrees(cos):
@@ -141,10 +141,10 @@ class HistData:
                 ("multratioA", "nubarA"),
                 ("multratioA", "nugbarA"),
                 ("nuATKE", "nutATKE"),
-                ("nnanglesLAB", "nnanglesLABLF"),
-                ("nnanglesLAB", "nnanglesLABHF"),
-                ("nnanglesCOM", "nnanglesCOMLF"),
-                ("nnanglesCOM", "nnanglesCOMHF"),
+                ("nfanglesLAB", "nfanglesLABLF"),
+                ("nfanglesLAB", "nfanglesLABHF"),
+                ("nfanglesCOM", "nfanglesCOMLF"),
+                ("nfanglesCOM", "nfanglesCOMHF"),
             ],
         )
         self.scalar_qs = {}
@@ -300,30 +300,30 @@ class HistData:
                 self.vector_qs["pfgscom"] = np.zeros((nensemble, self.gecenters.size))
                 self.bins["pfgscom"] = self.gecenters
                 self.bin_edges["pfgscom"] = self.gebins
-            elif q == "nnanglesLAB":
-                self.vector_qs["nnanglesLAB"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesLAB"] = self.thetacenters
-                self.bin_edges["nnanglesLAB"] = self.thetabins
-            elif q == "nnanglesLABLF":
-                self.vector_qs["nnanglesLABLF"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesLABLF"] = self.thetacenters
-                self.bin_edges["nnanglesLABLF"] = self.thetabins
-            elif q == "nnanglesLABHF":
-                self.vector_qs["nnanglesLABHF"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesLABHF"] = self.thetacenters
-                self.bin_edges["nnanglesLABHF"] = self.thetabins
-            elif q == "nnanglesCOM":
-                self.vector_qs["nnanglesCOM"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesCOM"] = self.thetacenters
-                self.bin_edges["nnanglesCOM"] = self.thetabins
-            elif q == "nnanglesCOMLF":
-                self.vector_qs["nnanglesCOMLF"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesCOMLF"] = self.thetacenters
-                self.bin_edges["nnanglesCOMLF"] = self.thetabins
-            elif q == "nnanglesCOMHF":
-                self.vector_qs["nnanglesCOMHF"] = np.zeros((nensemble, self.thetacenters.size))
-                self.bins["nnanglesCOMHF"] = self.thetacenters
-                self.bin_edges["nnanglesCOMHF"] = self.thetabins
+            elif q == "nfanglesLAB":
+                self.vector_qs["nfanglesLAB"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesLAB"] = self.thetacenters
+                self.bin_edges["nfanglesLAB"] = self.thetabins
+            elif q == "nfanglesLABLF":
+                self.vector_qs["nfanglesLABLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesLABLF"] = self.thetacenters
+                self.bin_edges["nfanglesLABLF"] = self.thetabins
+            elif q == "nfanglesLABHF":
+                self.vector_qs["nfanglesLABHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesLABHF"] = self.thetacenters
+                self.bin_edges["nfanglesLABHF"] = self.thetabins
+            elif q == "nfanglesCOM":
+                self.vector_qs["nfanglesCOM"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesCOM"] = self.thetacenters
+                self.bin_edges["nfanglesCOM"] = self.thetabins
+            elif q == "nfanglesCOMLF":
+                self.vector_qs["nfanglesCOMLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesCOMLF"] = self.thetacenters
+                self.bin_edges["nfanglesCOMLF"] = self.thetabins
+            elif q == "nfanglesCOMHF":
+                self.vector_qs["nfanglesCOMHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.bins["nfanglesCOMHF"] = self.thetacenters
+                self.bin_edges["nfanglesCOMHF"] = self.thetabins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
                     (nensemble, self.TKEcenters.size, self.tecenters.size)
@@ -753,48 +753,48 @@ class HistData:
                     mask_generator=self.gamma_cut(gelab, ages),
                     totals=True,
                 )
-        if "nnanglesLAB" in self.vector_qs:
+        if "nfanglesLAB" in self.vector_qs:
             num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nnangles( lab = True )
+            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
             (
-                self.vector_qs["nnanglesLAB"][n],
-                self.vector_qs["nnanglesLAB_stddev"][n],
+                self.vector_qs["nfanglesLAB"][n],
+                self.vector_qs["nfanglesLAB_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nnanglesLAB"]
+                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nfanglesLAB"]
             )
             (
-                self.vector_qs["nnanglesLABLF"][n],
-                self.vector_qs["nnanglesLABLF_stddev"][n],
+                self.vector_qs["nfanglesLABLF"][n],
+                self.vector_qs["nfanglesLABLF_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nnanglesLABLF"]
+                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nfanglesLABLF"]
             )
             (
-                self.vector_qs["nnanglesLABHF"][n],
-                self.vector_qs["nnanglesLABHF_stddev"][n],
+                self.vector_qs["nfanglesLABHF"][n],
+                self.vector_qs["nfanglesLABHF_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nnanglesLABHF"]
+                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nfanglesLABHF"]
             )
 
-        if "nnanglesCOM" in self.vector_qs:
+        if "nfanglesCOM" in self.vector_qs:
             num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nnangles( lab = True )
+            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
             (
-                self.vector_qs["nnanglesCOM"][n],
-                self.vector_qs["nnanglesCOM_stddev"][n],
+                self.vector_qs["nfanglesCOM"][n],
+                self.vector_qs["nfanglesCOM_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nnanglesCOM"]
+                cos_to_degrees(np.asarray(nnAll)), self.bin_edges["nfanglesCOM"]
             )
             (
-                self.vector_qs["nnanglesCOMLF"][n],
-                self.vector_qs["nnanglesCOMLF_stddev"][n],
+                self.vector_qs["nfanglesCOMLF"][n],
+                self.vector_qs["nfanglesCOMLF_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nnanglesCOMLF"]
+                cos_to_degrees(np.asarray(nnLF)), self.bin_edges["nfanglesCOMLF"]
             )
             (
-                self.vector_qs["nnanglesCOMHF"][n],
-                self.vector_qs["nnanglesCOMHF_stddev"][n],
+                self.vector_qs["nfanglesCOMHF"][n],
+                self.vector_qs["nfanglesCOMHF_stddev"][n],
             ) = self.histogram_with_binomial_uncertainty(
-                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nnanglesCOMHF"]
+                cos_to_degrees(np.asarray(nnHF)), self.bin_edges["nfanglesCOMHF"]
             )
 
         # Z dependent
