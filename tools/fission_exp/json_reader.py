@@ -266,7 +266,7 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
 
             # filter first set
             df1 = df1[(df1["Einc"] >= emin) & (df1["Einc"] < emax)]
-            df1["data"] = df1["data"].map(lambda x: x[0])
+            #df1["data"] = df1["data"].map(lambda x: x[0])
 
             # filter second set
             df2["data"] = df2["data"].map(lambda x: x[0])
