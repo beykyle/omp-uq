@@ -702,6 +702,7 @@ class HistData:
             )
 
         if "pfnscom" in self.vector_qs:
+            nelab = hs.getNeutronElab()
             necom = hs.getNeutronEcm()
             num_neutrons = np.sum(hs.getNutot())
             (
@@ -711,7 +712,7 @@ class HistData:
                 self.scalar_qs["enbarcom_stddev"][n],
                 _,
             ) = self.hist_from_list_of_lists(
-                num_neutrons, necom, self.bin_edges["pfnscom"], self.neutron_cut(necom)
+                num_neutrons, necom, self.bin_edges["pfnscom"], self.neutron_cut(nelab)
             )
 
         if "pfgscom" in self.vector_qs:
@@ -1013,7 +1014,6 @@ class HistData:
                     bins=self.bin_edges["pfnscomA"][1],
                     mask_generator=self.kinematic_cut(nelab, min_energy),
                 )
-                # TODO use kinematic cut here?
 
             # < d nu_g / d E_g | A >
             if "pfgsA" in self.tensor_qs or "egtbarA" in self.vector_qs:
