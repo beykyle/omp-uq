@@ -91,7 +91,7 @@ class Plotter:
                     x,
                     vec_all[i, ...] + vec_stddev[i, ...],
                     vec_all[i, ...] - vec_stddev[i, ...],
-                    alpha=1.0 / vec_all.shape[0],
+                    alpha=0.3,
                     zorder=100,
                     step="mid",
                     color=p1[0].get_color(),
@@ -131,7 +131,7 @@ class Plotter:
                     x,
                     spec_all[i, ...] + spec_stddev_all[i, ...],
                     spec_all[i, ...] - spec_stddev_all[i, ...],
-                    alpha=1.0 / spec_all.shape[0],
+                    alpha=0.3,
                     zorder=100,
                     color=p1[0].get_color(),
                 )
