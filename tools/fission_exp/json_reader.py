@@ -4,9 +4,57 @@ import sys
 import argparse
 import pickle
 from pathlib import Path
+from x4i3 import exfor_manager
+import json
 
 from .spec_analysis import Spec
 
+
+def exfor_to_json(entry: int,  subentry: int, quantity: str):
+
+    # grab entry
+    query = exfor_manager.retrieve(ENTRY=entry).getSimplifiedDataSets()
+    if query == {}:
+        return
+
+    # will throw key error if entry and subentry are not in query
+    data_set = query[(str(entry), str(entry*1000 + subentry), ' ')]
+
+    # convert subentry meta fields string to dict
+    meta = [
+        [val.strip() for val in line.split(":")]
+        for line in data_set.strHeader().split("#")[1:]
+    ]
+    meta = dict([[line[0].lower(), line[1]] for line in meta])
+
+    # set expected meta fields
+    first_auth_surname = meta["authors"][0:meta["authors"].find(" ")]
+    year = meta['year']
+    meta['label'] = f"{first_auth_surname} et al., {year}"
+    meta['exfor'] = meta.pop("subent")
+    meta["quantity"] = quantity
+
+    # handle fmt and units
+    meta["fmt"] = ""
+    dim_symbols = ["x", "y", "z"]
+    non_err_dims = 0
+    for i in range(len(data_set.labels)):
+        symbol = dim_symbols[non_err_dims]
+        if data_set.labels[i].find("ERR") > 0:
+            meta["fmt"] += f"d{symbol}"
+            meta[f"units-d{symbol}"] = data_set.units[i].lower()
+        else:
+            meta["fmt"] += f"{symbol}"
+            meta[f"units-{symbol}"] = data_set.units[i].lower()
+            non_err_dims += 1
+
+    # handle data
+    def santize(line):
+        return [ float(x) if x is not None else 0.0 for x in line ]
+
+    meta["data"] = [ [ santize(line) for line in data_set.data ] ]
+
+    return json.loads(meta)
 
 class Quantity:
     def __init__(self, quantity: str, fmt: str, data: list, meta: list, units: list):
