@@ -282,12 +282,9 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
 
             return read_json(pd.concat([df1, df2]), quantity, allowed_labels)
 
-        df1["data"] = df1["data"].map(lambda x: x[0])
-        df2["data"] = df2["data"].map(lambda x: x[0])
-
         # if no filter required just concat and go
+        df2["data"] = df2["data"].map(lambda x: x[0])
         df = pd.concat([df1, df2])
-        df["data"] = df["data"].map(lambda x: x[0])
         return read_json(df, quantity, allowed_labels)
     else:
         df["data"] = df["data"].map(lambda x: x[0])
@@ -312,6 +309,21 @@ def read_nubartTKEA(df, allowed_labels):
     return nubartTKEA
 
 
+def read_PFNSALAH(df, allowed_labels):
+    pfns = read_specs(df, "PFNSALAH", allowed_labels)
+
+    def get_mass_div(comment: str):
+        key = "A_L/A_H = "
+        idx = comment.find(key) + len(key)
+        end_idx = idx + comment[idx:].find(",")
+        substrs = [sub.strip("") for sub in  comment[idx:end_idx].split("/") ]
+        return int(substrs[0]), int(substrs[1])
+
+    A = [get_mass_div(entry["comments"]) for entry in pfns.meta ]
+
+    return pfns, A
+
+
 def set_bibtex(quantity, meta):
     path = Path("./" + quantity + "_meta.bib")
     bibtex = []
@@ -331,8 +343,11 @@ def set_bibtex(quantity, meta):
             f.write("\n")
 
 
+
 def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None):
     q = quantity.replace("HF", "").replace("LF", "")
+    if q == "Enbar":
+        return read_scalar(df, "Enbar", allowed_labels)
     if q == "nubar":
         return read_scalar(df, "nubar", allowed_labels)
     elif q == "nubarA":
@@ -347,6 +362,10 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_specs(df, "nugbarA", allowed_labels)
     elif q == "nugbarTKE":
         return read_specs(df, "nugbarTTKE", allowed_labels)
+    elif q == "nubartotAHF":
+        return read_specs(df, "nubartotAHF", allowed_labels)
+    elif q == "nubartotALF":
+        return read_specs(df, "nubartotALF", allowed_labels)
     elif q == "pfns":
         return read_pfns(df, allowed_labels)
     elif q == "pfns_cm":
@@ -379,5 +398,9 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_3D(df, "PFNSA", allowed_labels)
     elif q == "encomATKE":
         return read_3D(df, "encomATKE", allowed_labels)
+    elif q == "nugnuA":
+        return read_3D(df, "nugnu", allowed_labels)
+    elif q == "PFNSALAH":
+        return read_PFNSALAH(df, allowed_labels)
     else:
         raise ValueError("Unknown quantity: " + quantity)
