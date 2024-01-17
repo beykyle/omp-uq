@@ -91,11 +91,11 @@ def main():
     run_samples(
         start = int(sys.argv[1]),
         end = int(sys.argv[2]),
-        sample_omp_dir = Path("/home/beykyle/omplib/data/WLHSamples/samples/"),
-        output_dir = Path("/home/beykyle/turbo/omp_uq/run3_all/cf252/wlh"),
-        omp_prefix = "wlh",
-        zaid = 98252,
-        einc = 0.0,
+        sample_omp_dir = Path(sys.argv[3]),
+        output_dir = Path(sys.argv[4]),
+        omp_prefix = sys.argv[5],
+        zaid = int(sys.argv[6]),
+        einc = float(sys.argv[7]),
     )
 
 
