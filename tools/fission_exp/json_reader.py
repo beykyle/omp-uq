@@ -11,9 +11,10 @@ from .spec_analysis import Spec
 
 
 def exfor_to_json(entry: int,  subentry: int, quantity: str):
+    db = exfor_manager.X4DBManagerDefault()
 
     # grab entry
-    query = exfor_manager.retrieve(ENTRY=entry).getSimplifiedDataSets()
+    query = next(iter(db.retrieve(ENTRY=entry).values())).getSimplifiedDataSets()
     if query == {}:
         return
 
@@ -28,7 +29,9 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str):
     meta = dict([[line[0].lower(), line[1]] for line in meta])
 
     # set expected meta fields
-    first_auth_surname = meta["authors"][0:meta["authors"].find(" ")]
+    idx_end_surname = meta["authors"].find(" ")
+    idx_beg_surname = meta["authors"][0:idx_end_surname].rfind(".") + 1
+    first_auth_surname = meta["authors"][idx_beg_surname:idx_end_surname]
     year = meta['year']
     meta['label'] = f"{first_auth_surname} et al., {year}"
     meta['exfor'] = meta.pop("subent")
@@ -39,11 +42,12 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str):
     dim_symbols = ["x", "y", "z"]
     non_err_dims = 0
     for i in range(len(data_set.labels)):
-        symbol = dim_symbols[non_err_dims]
         if data_set.labels[i].find("ERR") > 0:
+            symbol = dim_symbols[non_err_dims -1]
             meta["fmt"] += f"d{symbol}"
             meta[f"units-d{symbol}"] = data_set.units[i].lower()
         else:
+            symbol = dim_symbols[non_err_dims]
             meta["fmt"] += f"{symbol}"
             meta[f"units-{symbol}"] = data_set.units[i].lower()
             non_err_dims += 1
@@ -54,7 +58,7 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str):
 
     meta["data"] = [ [ santize(line) for line in data_set.data ] ]
 
-    return json.loads(meta)
+    return meta
 
 class Quantity:
     def __init__(self, quantity: str, fmt: str, data: list, meta: list, units: list):
@@ -295,6 +299,31 @@ def read_pfns(df, allowed_labels):
         read_specs(df, "PFNS_sqrtE", allowed_labels),
         read_specs(df, "PFNS_max", allowed_labels),
     ]
+
+
+def print_entries(entries: list, out_fname: str):
+    entry = pd.Series(
+        index=[i for i in range(len(entries))],
+        data=dict(enumerate(entries))
+    )
+    r = json.loads(entry.to_json(orient="records"))
+    with open(Path(out_fname), 'w') as f:
+        return json.dump(r, f, indent=1)
+
+
+def add_entries(fname: str, out_fname: str, entries: list):
+    df = pd.read_json(Path(fname))
+    index = [i for i in range(len(entries))]
+    data = dict(enumerate(entries))
+    entry = pd.Series(
+        index=index,
+        data=data,
+    )
+    series = pd.concat([df["entries"], entry], ignore_index=True)
+    df = pd.DataFrame(data={"entries": series})
+    r = json.loads(df.to_json(orient="records"))
+    with open(out_fname, 'w') as f:
+        json.dump(r, f, indent=1)
 
 
 def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
