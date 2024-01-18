@@ -10,7 +10,7 @@ import json
 from .spec_analysis import Spec
 
 
-def exfor_to_json(entry: int,  subentry: int, quantity: str):
+def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None):
     db = exfor_manager.X4DBManagerDefault()
 
     # grab entry
@@ -39,24 +39,35 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str):
 
     # handle fmt and units
     meta["fmt"] = ""
-    dim_symbols = ["x", "y", "z"]
-    non_err_dims = 0
-    for i in range(len(data_set.labels)):
-        if data_set.labels[i].find("ERR") > 0:
-            symbol = dim_symbols[non_err_dims -1]
-            meta["fmt"] += f"d{symbol}"
-            meta[f"units-d{symbol}"] = data_set.units[i].lower()
-        else:
-            symbol = dim_symbols[non_err_dims]
-            meta["fmt"] += f"{symbol}"
-            meta[f"units-{symbol}"] = data_set.units[i].lower()
-            non_err_dims += 1
+    if label_mapping is not None:
+        mask = [label in label_mapping for label in data_set.labels]
+        for i in range(len(data_set.labels)):
+            label = data_set.labels[i]
+            if label in label_mapping:
+                symbol = label_mapping[label]
+                meta["fmt"] += f"{symbol}"
+                meta[f"units-{symbol}"] = data_set.units[i].lower()
+    else:
+        mask = [True for label in data_set.labels]
+        dim_symbols = ["x", "y", "z"]
+        non_err_dims = 0
+        for i in range(len(data_set.labels)):
+            if data_set.labels[i].find("ERR") > 0:
+                symbol = dim_symbols[non_err_dims - 1]
+                meta["fmt"] += f"d{symbol}"
+                meta[f"units-d{symbol}"] = data_set.units[i].lower()
+            else:
+                symbol = dim_symbols[non_err_dims]
+                meta["fmt"] += f"{symbol}"
+                meta[f"units-{symbol}"] = data_set.units[i].lower()
+                non_err_dims += 1
 
     # handle data
     def santize(line):
-        return [ float(x) if x is not None else 0.0 for x in line ]
+        line = [line[i] for i in range(len(line)) if mask[i]]
+        return [float(x) if x is not None else 0.0 for x in line]
 
-    meta["data"] = [ [ santize(line) for line in data_set.data ] ]
+    meta["data"] = [[santize(line) for line in data_set.data]]
 
     return meta
 
