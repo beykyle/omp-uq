@@ -764,8 +764,8 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            amin = d[4, :]
-            mask = a == amin
+            ad = np.round(d[4, :])
+            mask = a == ad
             tke = d[0, :][mask]
             dtke = d[1, :][mask]
             nu = d[2, :][mask]
@@ -821,7 +821,7 @@ class Plotter:
     def encomATKE(self, a: int, encomatke, cgmf_datasets=None):
         plts_sim = []
         for d in cgmf_datasets:
-            (abins, TKEbins) = d.bins["nutATKE"]
+            (abins, TKEbins) = d.bins["encomATKE"]
             index = np.nonzero(a == abins)[0][0]
             plts_sim.append(
                 self.plot_cgmf_vec_from_tensor(d, "encomATKE", TKEbins, index, mc=True)
