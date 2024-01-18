@@ -37,37 +37,47 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
     meta['exfor'] = meta.pop("subent")
     meta["quantity"] = quantity
 
+    # guess at label mapping if not provided
+    labels = data_set.labels
+    dim_symbols = ["x", "y", "z"]
+    if label_mapping is None:
+        label_mapping = dict()
+        non_err_dims = 0
+        for i, label in enumerate(labels):
+            if not label.find("ERR") > 0:
+                symbol = dim_symbols[non_err_dims]
+                label_mapping[label] = symbol
+                non_err_dims += 1
+            else:
+                symbol = f"d{symbol}"
+                label_mapping[label] = symbol
+
+    # invert label mapping
+    symbol_map = {v: k for k, v in label_mapping.items()}
+    order = ["x", "dx", "y", "dy", "z", "dz"]
+    order = [sym for sym in order if sym in symbol_map.keys()]
+
+    # grab exfor indices in desired order
+    def exfor_index_of(label):
+        return next(i for i in range(len(labels)) if labels[i] == label)
+
+    exfor_indices = [exfor_index_of(symbol_map[sym]) for sym in order]
+
     # handle fmt and units
     meta["fmt"] = ""
-    if label_mapping is not None:
-        mask = [label in label_mapping for label in data_set.labels]
-        for i in range(len(data_set.labels)):
-            label = data_set.labels[i]
-            if label in label_mapping:
-                symbol = label_mapping[label]
-                meta["fmt"] += f"{symbol}"
-                meta[f"units-{symbol}"] = data_set.units[i].lower()
-    else:
-        mask = [True for label in data_set.labels]
-        dim_symbols = ["x", "y", "z"]
-        non_err_dims = 0
-        for i in range(len(data_set.labels)):
-            if data_set.labels[i].find("ERR") > 0:
-                symbol = dim_symbols[non_err_dims - 1]
-                meta["fmt"] += f"d{symbol}"
-                meta[f"units-d{symbol}"] = data_set.units[i].lower()
-            else:
-                symbol = dim_symbols[non_err_dims]
-                meta["fmt"] += f"{symbol}"
-                meta[f"units-{symbol}"] = data_set.units[i].lower()
-                non_err_dims += 1
+    mask = [label in label_mapping for label in labels]
+    for symbol, i in zip(order, exfor_indices):
+            meta["fmt"] += f"{symbol}"
+            meta[f"units-{symbol}"] = data_set.units[i].lower()
 
-    # handle data
-    def santize(line):
-        line = [line[i] for i in range(len(line)) if mask[i]]
-        return [float(x) if x is not None else 0.0 for x in line]
+    # santize data and put in desired order
+    def reorder_santize(line):
+        ordered_line = []
+        for i in exfor_indices:
+            ordered_line.append(float(line[i]) if line[i] is not None else 0.0)
+        return ordered_line
 
-    meta["data"] = [[santize(line) for line in data_set.data]]
+    meta["data"] = [[reorder_santize(line) for line in data_set.data]]
 
     return meta
 
@@ -221,7 +231,28 @@ def read_3D(df, quantity, allowed_labels):
         entry = dfq.iloc[[i]]
         data = np.array(list(d))
         data_fm = np.zeros((6, data.shape[0]))
-        if fmt == "xdxyz":
+        if fmt == "xyz":
+            data_fm[0, :] = data[:,0]
+            data_fm[2, :] = data[:, 2]
+            data_fm[4, :] = data_fm[4, :]
+            units.append(
+                extract_units(
+                    entry,
+                    ["units-x", None, "units-y", None, "units-z", None],
+                )
+            )
+        elif fmt == "xyzdz":
+            data_fm[0, :] = data[:,0]
+            data_fm[2, :] = data[:, 2]
+            data_fm[4, :] = data_fm[4, :]
+            data_fm[5, :] = data_fm[5, :]
+            units.append(
+                extract_units(
+                    entry,
+                    ["units-x", None, "units-y", None, "units-z", "units-z"],
+                )
+            )
+        elif fmt == "xdxyz":
             data_fm[:3, :] = data[:, :3]
             data_fm[4, :] = data[:, 3]
             data_fm[5, :] = data_fm[4, :]
@@ -231,7 +262,7 @@ def read_3D(df, quantity, allowed_labels):
                     ["units-x", "units-dx", "units-y", None, "units-z", "units-z"],
                 )
             )
-        if fmt == "xminxmaxyz":
+        elif fmt == "xminxmaxyz":
             data_fm[0, :] = (data[:, 0] + data[:, 1]) * 0.5
             data_fm[1, :] = data[:, 1] - data[:, 0]
             data_fm[2, :] = data[:, 2]
@@ -396,6 +427,23 @@ def read_nubartTKEA(df, allowed_labels):
 
     return nubartTKEA
 
+def read_nubarATKE(df, allowed_labels):
+    """
+    convert all <nu_fragment | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
+    """
+    nubarATKE = read_3D(df, "nubarATKE", allowed_labels)
+
+    return nubarATKE
+
+
+def read_nubartATKE(df, allowed_labels):
+    """
+    convert all <nu_total | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
+    """
+    nubartATKE = read_3D(df, "nubartATKE", allowed_labels)
+
+    return nubartATKE
+
 
 def read_PFNSALAH(df, allowed_labels):
     pfns = read_specs(df, "PFNSALAH", allowed_labels)
@@ -478,6 +526,10 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_specs(df, "EgTbarTKE", allowed_labels)
     elif q == "egtbarnu":
         return read_specs(df, "EgTbarnubar", allowed_labels)
+    elif q == "nubarATKE":
+        return read_nubarATKE(df, allowed_labels)
+    elif q == "nubartATKE":
+        return read_nubartATKE(df, allowed_labels)
     elif q == "nubarTKEA":
         return read_nubarTKEA(df, allowed_labels)
     elif q == "nubartTKEA":
