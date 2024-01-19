@@ -3,6 +3,7 @@ import pickle
 from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
+import time
 
 from mpi4py import MPI
 
@@ -59,8 +60,10 @@ all_quantities = [
     "nfanglesCOMHF",
 ]
 
+
 def cos_to_degrees(cos):
     return np.arccos(cos) * 180 / np.pi
+
 
 def balance_load(num_jobs, rank, size):
     stride, remainder = divmod(num_jobs, size)
@@ -301,27 +304,39 @@ class HistData:
                 self.bins["pfgscom"] = self.gecenters
                 self.bin_edges["pfgscom"] = self.gebins
             elif q == "nfanglesLAB":
-                self.vector_qs["nfanglesLAB"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLAB"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLAB"] = self.thetacenters
                 self.bin_edges["nfanglesLAB"] = self.thetabins
             elif q == "nfanglesLABLF":
-                self.vector_qs["nfanglesLABLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLABLF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLABLF"] = self.thetacenters
                 self.bin_edges["nfanglesLABLF"] = self.thetabins
             elif q == "nfanglesLABHF":
-                self.vector_qs["nfanglesLABHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLABHF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLABHF"] = self.thetacenters
                 self.bin_edges["nfanglesLABHF"] = self.thetabins
             elif q == "nfanglesCOM":
-                self.vector_qs["nfanglesCOM"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOM"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOM"] = self.thetacenters
                 self.bin_edges["nfanglesCOM"] = self.thetabins
             elif q == "nfanglesCOMLF":
-                self.vector_qs["nfanglesCOMLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOMLF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOMLF"] = self.thetacenters
                 self.bin_edges["nfanglesCOMLF"] = self.thetabins
             elif q == "nfanglesCOMHF":
-                self.vector_qs["nfanglesCOMHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOMHF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOMHF"] = self.thetacenters
                 self.bin_edges["nfanglesCOMHF"] = self.thetabins
             elif q == "pfnsTKE":
@@ -481,7 +496,6 @@ class HistData:
         for k in self.bins:
             self.bins[k] = pickle_load(self.res_dir / "{}_bins{}.npy".format(k, f))
 
-
     def filter_lol(self, num, lol, mask_generator):
         nevents = len(lol)
         v = np.zeros(int(num))
@@ -498,7 +512,6 @@ class HistData:
             totals_v[i] = np.sum(h)
 
         return v[0:c], np.array(totals_v), nu
-
 
     def hist_from_list_of_lists(
         self, num, lol, bins, mask_generator=None, totals=False, fragment=True
@@ -584,7 +597,6 @@ class HistData:
             sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
             return hbar, sem
 
-
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
         Given list of lists representing gamma energies and ages for each fragment,
@@ -634,6 +646,19 @@ class HistData:
         return cut
 
     def process_ensemble(self, hs: fh.Histories, n: int):
+        gelab = hs.getGammaElab()
+        gecom = hs.getGammaEcm()
+        ages = hs.getGammaAges()
+        num_gammas = np.sum(hs.getNug())
+        nug_tot = hs.getNutot()
+        nug_fragment = hs.getNu()
+
+        nelab = hs.getNeutronElab()
+        necom = hs.getNeutronEcm()
+        num_neutrons = np.sum(hs.getNutot())
+        nu_tot = hs.getNutot()
+        nu_fragment = hs.getNu()
+
         # scalar quantities
         if "nubar" in self.scalar_qs:
             (
@@ -642,14 +667,11 @@ class HistData:
             ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
 
         if "nugbar" in self.scalar_qs:
-            gelab = hs.getGammaElab()
-            ages = hs.getGammaAges()
-            num_gammas = np.sum(hs.getNug())
             _, _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
             (
                 self.scalar_qs["nugbar"][n],
                 self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean( nu.reshape((hs.numberEvents,2)).sum(axis=1) )
+            ) = self.estimate_mean(nu.reshape((hs.numberEvents, 2)).sum(axis=1))
 
         if "pnu" in self.vector_qs:
             nutot = (
@@ -675,8 +697,6 @@ class HistData:
 
         # energy dependent vector quantities
         if "pfns" in self.vector_qs:
-            nelab = hs.getNeutronElab()
-            num_neutrons = np.sum(hs.getNutot())
             (
                 self.vector_qs["pfns"][n],
                 self.vector_qs["pfns_stddev"][n],
@@ -688,9 +708,6 @@ class HistData:
             )
 
         if "pfgs" in self.vector_qs:
-            gelab = hs.getGammaElab()
-            ages = hs.getGammaAges()
-            num_gammas = np.sum(hs.getNugtot())
             (
                 self.vector_qs["pfgs"][n],
                 self.vector_qs["pfgs_stddev"][n],
@@ -702,9 +719,6 @@ class HistData:
             )
 
         if "pfnscom" in self.vector_qs:
-            nelab = hs.getNeutronElab()
-            necom = hs.getNeutronEcm()
-            num_neutrons = np.sum(hs.getNutot())
             (
                 self.vector_qs["pfnscom"][n],
                 self.vector_qs["pfnscom_stddev"][n],
@@ -716,9 +730,6 @@ class HistData:
             )
 
         if "pfgscom" in self.vector_qs:
-            gecom = hs.getGammaEcm()
-            ages = hs.getGammaAges()
-            num_gammas = np.sum(hs.getNugtot())
             (
                 self.vector_qs["pfgscom"][n],
                 self.vector_qs["pfgscom_stddev"][n],
@@ -726,7 +737,10 @@ class HistData:
                 self.scalar_qs["egbarcom_stddev"][n],
                 _,
             ) = self.hist_from_list_of_lists(
-                num_gammas, gecom, self.bin_edges["pfgscom"], self.gamma_cut(gecom, ages)
+                num_gammas,
+                gecom,
+                self.bin_edges["pfgscom"],
+                self.gamma_cut(gecom, ages),
             )
 
         # nu dependent
@@ -734,10 +748,10 @@ class HistData:
             for l, nu in enumerate(self.nubins):
                 # TODO egtbar* experiments use energies and multiplcities event by event
                 # not fragment bt fragment
-                mask = np.where(hs.getNu() == nu)
-                num_gammas = np.sum(hs.getNug()[mask])
-                gelab = hs.getGammaElab()[mask]
-                ages = hs.getGammaElab()[mask]
+                mask = np.where(nug_tot == nu)
+                num_gammas = np.sum(nug_tot[mask])
+                gelab_nug = gelab[mask]
+                ages_nug = ages[mask]
 
                 (
                     _,
@@ -755,8 +769,7 @@ class HistData:
                     totals=True,
                 )
         if "nfanglesLAB" in self.vector_qs:
-            num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
+            nnLF, nnHF, nnAll = hs.nFangles(Eth=self.Ethn, Emax=4)
             (
                 self.vector_qs["nfanglesLAB"][n],
                 self.vector_qs["nfanglesLAB_stddev"][n],
@@ -777,8 +790,7 @@ class HistData:
             )
 
         if "nfanglesCOM" in self.vector_qs:
-            num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
+            nnLF, nnHF, nnAll = hs.nFangles(Eth=self.Ethn, Emax=4)
             (
                 self.vector_qs["nfanglesCOM"][n],
                 self.vector_qs["nfanglesCOM_stddev"][n],
@@ -800,26 +812,24 @@ class HistData:
 
         # Z dependent
         for l, z in enumerate(self.zbins):
-            # TODO add cuts for energy and time
             mask = np.where(hs.Z == z)
-            num_ns = np.sum(hs.getNu()[mask])
-            num_gs = np.sum(hs.getNug()[mask])
+            num_ns = np.sum(nu_fragment[mask])
+            num_gs = np.sum(nug_fragment[mask])
             if "nubarZ" in self.vector_qs:
                 (
                     self.vector_qs["nubarZ"][n, l],
                     self.vector_qs["nubarZ_stddev"][n, l],
-                ) = self.estimate_mean(hs.getNu()[mask])
+                ) = self.estimate_mean(nu_fragment[mask])
 
             if "nugbarZ" in self.vector_qs:
                 (
                     self.vector_qs["nugbarZ"][n, l],
                     self.vector_qs["nugbarZ_stddev"][n, l],
-                ) = self.estimate_mean(hs.getNug()[mask])
+                ) = self.estimate_mean(nug_fragment[mask])
+
             # < d nu / d E_n | A >
             if "pfnsZ" in self.tensor_qs or "enbarZ" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
-                necm = hs.getNeutronEcm()[mask]
-
+                nelab_Z = nelab[mask]
                 (
                     self.tensor_qs["pfnsZ"][n, l, :],
                     self.tensor_qs["pfnsZ_stddev"][n, l, :],
@@ -828,15 +838,15 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_ns,
-                    nelab,
+                    nelab_Z,
                     bins=self.bin_edges["pfnsZ"][1],
-                    mask_generator=self.neutron_cut(nelab),
+                    mask_generator=self.neutron_cut(nelab_Z),
                 )
 
             # < d nu_g / d E_g | A >
             if "pfgsZ" in self.tensor_qs or "egtbarZ" in self.vector_qs:
-                gelab = hs.getGammaElab()[mask]
-                ages = hs.getGammaAges()[mask]
+                gelab_Z = gelab[mask]
+                ages_Z = ages[mask]
 
                 (
                     self.tensor_qs["pfgsZ"][n, l, :],
@@ -848,43 +858,40 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
-                    gelab,
+                    gelab_Z,
                     bins=self.bin_edges["pfgsZ"][1],
-                    mask_generator=self.gamma_cut(gelab, ages),
+                    mask_generator=self.gamma_cut(gelab_Z, ages_Z),
                     totals=True,
                 )
 
         # TKE dependent
         for l in range(self.TKEcenters.size):
-            # TODO add cuts for energy and time
             TKE_min = self.TKEbins[l]
             TKE_max = self.TKEbins[l + 1]
             TKE = hs.getTKEpost()
             mask = np.logical_and(TKE >= TKE_min, TKE < TKE_max)
 
-            num_neutrons = np.sum(hs.getNutot()[mask])
-            num_gammas = np.sum(hs.getNugtot()[mask])
+            num_neutrons_TKE = np.sum(nu_tot[mask])
+            num_gammas_TKE = np.sum(nug_tot[mask])
 
             # < nu | TKE >
             if "nubarTKE" in self.vector_qs:
                 (
                     self.vector_qs["nubarTKE"][n, l],
                     self.vector_qs["nubarTKE_stddev"][n, l],
-                ) = self.estimate_mean(hs.getNutot()[mask])
+                ) = self.estimate_mean(nu_tot[mask])
 
             if "nugbarTKE" in self.vector_qs:
                 (
                     self.vector_qs["nugbarTKE"][n, l],
                     self.vector_qs["nugbarTKE_stddev"][n, l],
-                ) = self.estimate_mean(hs.getNugtot()[mask])
+                ) = self.estimate_mean(nug_tot[mask])
 
             # for PFNS and PFGS, data is fragment by fragment, rather than event by event
             mask = mask.repeat(2, axis=0)
 
             # < d nu / dE | TKE >
             if "pfnsTKE" in self.tensor_qs or "enbarTKE" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
-
                 (
                     self.tensor_qs["pfnsTKE"][n, l, :],
                     self.tensor_qs["pfnsTKE_stddev"][n, l, :],
@@ -892,15 +899,13 @@ class HistData:
                     self.vector_qs["enbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons,
-                    nelab,
+                    num_neutrons_TKE,
+                    nelab[mask],
                     bins=self.bin_edges["pfnsTKE"][1],
-                    mask_generator=self.neutron_cut(nelab),
+                    mask_generator=self.neutron_cut(nelab_TKE),
                 )
 
             if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
-                necm = hs.getNeutronEcm()[mask]
                 ke_pre = hs.getKEpre()[mask]
                 A = hs.getA()[mask]
                 # Bowman small angle cut (E[Mev] = m_n *(1 cm/ns)**2)
@@ -913,17 +918,14 @@ class HistData:
                     self.vector_qs["encomTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_neutrons,
-                    necm,
+                    num_neutrons_TKE,
+                    necom[mask],
                     bins=self.bin_edges["pfnscomTKE"][1],
-                    mask_generator=self.kinematic_cut(nelab, min_energy),
+                    mask_generator=self.kinematic_cut(nelab[mask], ke_pre / A),
                 )
 
             # < d nu_g / dE_g | TKE >
             if "pfgsTKE" in self.tensor_qs:
-                gelab = hs.getGammaElab()[mask]
-                ages = hs.getGammaAges()[mask]
-
                 (
                     self.tensor_qs["pfgsTKE"][n, l, :],
                     self.tensor_qs["pfgsTKE_stddev"][n, l, :],
@@ -933,35 +935,33 @@ class HistData:
                     self.vector_qs["egtbarTKE_stddev"][n, l],
                     _,
                 ) = self.hist_from_list_of_lists(
-                    num_gammas,
-                    gelab,
+                    num_gammas_TKE,
+                    gelab[mask],
                     bins=self.bin_edges["pfgsTKE"][1],
-                    mask_generator=self.gamma_cut(gelab, ages),
+                    mask_generator=self.gamma_cut(gelab[mask], ages[mask]),
                     totals=True,
                 )
 
         # A dependent
         for l, a in enumerate(self.abins):
-            # TODO add cuts for energy and time
             mask = np.where(hs.getA() == a)
-            num_ns = np.sum(hs.getNu()[mask])
-            num_gs = np.sum(hs.getNug()[mask])
+            num_ns = np.sum(nu_fragment[mask])
+            num_gs = np.sum(nu_fragment[mask])
 
-            # < * | A n>
-            # TODO add back energy and time cutoff masks
-            if "nubarA" in self.vector_qs or "multratioA" in self.vector_qs:
+            # < * | a n>
+            if "nubara" in self.vector_qs or "multratioA" in self.vector_qs:
                 (
                     self.vector_qs["nubarA"][n, l],
                     self.vector_qs["nubarA_stddev"][n, l],
                 ) = self.estimate_mean(hs.nu[mask])
 
-            if "nugbarA" in self.vector_qs or "multratioA" in self.vector_qs:
+            if "nugbara" in self.vector_qs or "multratioA" in self.vector_qs:
                 (
                     self.vector_qs["nugbarA"][n, l],
                     self.vector_qs["nugbarA_stddev"][n, l],
                 ) = self.estimate_mean(hs.nug[mask])
 
-            if "multratioA" in self.vector_qs:
+            if "multratioa" in self.vector_qs:
                 nu, nug = (
                     self.vector_qs["nubarA"][n, l],
                     self.vector_qs["nugbarA"][n, l],
@@ -976,13 +976,9 @@ class HistData:
                         dnug**2 / nu**2 + dnu**2 * (dnug / dnu) ** 2
                     )
 
-            # < d nu / d E_n | A >
-            if "pfnsA" in self.tensor_qs or "enbarA" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
-                necm = hs.getNeutronEcm()[mask]
-                ke_pre = hs.getKEpre()[mask]
-                min_energy = ke_pre / float(a)
-
+            # < d nu / d e_n | A >
+            if "pfnsa" in self.tensor_qs or "enbarA" in self.vector_qs:
+                min_energy = hs.getKEpre()[mask] / float(a)
                 (
                     self.tensor_qs["pfnsA"][n, l, :],
                     self.tensor_qs["pfnsA_stddev"][n, l, :],
@@ -991,17 +987,13 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_ns,
-                    nelab,
+                    nelab[mask],
                     bins=self.bin_edges["pfnsA"][1],
-                    mask_generator=self.kinematic_cut(nelab, min_energy),
+                    mask_generator=self.kinematic_cut(nelab[mask], min_energy),
                 )
 
-            if "pfnscomA" in self.tensor_qs or "encomA" in self.vector_qs:
-                nelab = hs.getNeutronElab()[mask]
-                necm = hs.getNeutronEcm()[mask]
-                ke_pre = hs.getKEpre()[mask]
-                min_energy = ke_pre / float(a)
-
+            if "pfnscoma" in self.tensor_qs or "encomA" in self.vector_qs:
+                min_energy = hs.getKEpre()[mask] / float(a)
                 (
                     self.tensor_qs["pfnscomA"][n, l, :],
                     self.tensor_qs["pfnscomA_stddev"][n, l, :],
@@ -1010,16 +1002,13 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_ns,
-                    necm,
+                    necom[mask],
                     bins=self.bin_edges["pfnscomA"][1],
-                    mask_generator=self.kinematic_cut(nelab, min_energy),
+                    mask_generator=self.kinematic_cut(nelab[mask], min_energy),
                 )
 
-            # < d nu_g / d E_g | A >
-            if "pfgsA" in self.tensor_qs or "egtbarA" in self.vector_qs:
-                gelab = hs.getGammaElab()[mask]
-                ages = hs.getGammaAges()[mask]
-
+            # < d nu_g / d e_g | A >
+            if "pfgsa" in self.tensor_qs or "egtbarA" in self.vector_qs:
                 (
                     self.tensor_qs["pfgsA"][n, l, :],
                     self.tensor_qs["pfgsA_stddev"][n, l, :],
@@ -1030,23 +1019,23 @@ class HistData:
                     _,
                 ) = self.hist_from_list_of_lists(
                     num_gs,
-                    gelab,
+                    gelab[mask],
                     bins=self.bin_edges["pfgsA"][1],
-                    mask_generator=self.gamma_cut(gelab, ages),
-                    totals=True,
+                    mask_generator=self.gamma_cut(gelab[mask], ages[mask]),
+                    totals=true,
                 )
 
-            # < nu | TKE, A >
-            if "nuATKE" in self.tensor_qs:
+            # < nu | tke, a >
+            if "nuATke" in self.tensor_qs:
                 for m in range(self.TKEcenters.size):
-                    TKE_min = self.TKEbins[m]
-                    TKE_max = self.TKEbins[m + 1]
-                    TKE = hs.getTKEpost()
+                    tke_min = self.TKEbins[m]
+                    tke_max = self.TKEbins[m + 1]
+                    tke = hs.getTKEpost()
                     mask_nut = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         np.logical_or(hs.getAHF() == a, hs.getALF() == a),
                     )
-                    TKE = TKE.repeat(2, axis=0)
+                    tke = tke.repeat(2, axis=0)
                     mask_nu = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         hs.getA() == a,
@@ -1055,28 +1044,25 @@ class HistData:
                     (
                         self.tensor_qs["nuATKE"][n, l, m],
                         self.tensor_qs["nuATKE_stddev"][n, l, m],
-                    ) = self.estimate_mean(hs.getNu()[mask_nu])
+                    ) = self.estimate_mean(nu_fragment[mask_nu])
 
                     (
                         self.tensor_qs["nutATKE"][n, l, m],
                         self.tensor_qs["nutATKE_stddev"][n, l, m],
-                    ) = self.estimate_mean(hs.getNutot()[mask_nut])
+                    ) = self.estimate_mean(nu_tot[mask_nut])
 
-            if "encomATKE" in self.tensor_qs:
+            if "encomatke" in self.tensor_qs:
                 for m in range(self.TKEcenters.size):
-                    TKE_min = self.TKEbins[m]
-                    TKE_max = self.TKEbins[m + 1]
-                    TKE = hs.getTKEpost()
-                    TKE = TKE.repeat(2, axis=0)
+                    tke_min = self.TKEbins[m]
+                    tke_max = self.TKEbins[m + 1]
+                    tke = hs.getTKEpost()
+                    tke = tke.repeat(2, axis=0)
                     mask = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         hs.getA() == a,
                     )
-                    necm = hs.getNeutronEcm()[mask]
-                    num_neutrons = np.sum(hs.getNu()[mask])
-                    if num_neutrons > 0:
-                        # TODO kinematic cut?
-
+                    num_ns = np.sum(nu_fragment[mask])
+                    if num_ns > 0:
                         (
                             _,
                             _,
@@ -1084,7 +1070,7 @@ class HistData:
                             self.tensor_qs["encomATKE_stddev"][n, l, m],
                             _,
                         ) = self.hist_from_list_of_lists(
-                            num_neutrons, necm, np.array([0, 100])
+                            num_ns, necom[mask], np.array([0, 100])
                         )
 
     def gather(self, mpi_comm, rank, size, rank_slice):
@@ -1145,9 +1131,15 @@ class HistData:
                 sys.stdout.flush()
 
             if not self.convert_cgmf_to_npy or self.hist_fname_postfix == ".npy":
+                st = time.perf_counter()
                 hs = fh.Histories.load(fname)
+                ft = time.perf_counter()
+                read_time = ft - st
             else:
+                st = time.perf_counter()
                 hs = fh.Histories(filename=fname, ang_mom_printed=True)
+                ft = time.perf_counter()
+                read_time = ft - st
                 if self.convert_cgmf_to_npy:
                     fname_out = self.hist_dir / (
                         "{}_{}{}".format(
@@ -1160,19 +1152,35 @@ class HistData:
 
             if mpi_comm is None:
                 print(
-                    "Processing {} histories from {} ...".format(
-                        hs.getNutot().size, fname
+                    "Reading took {:.2f} s. Now processing {} histories from {} ...".format(
+                        read_time, hs.getNutot().size, fname
                     )
                 )
             else:
                 print(
-                    "Processing {} histories from {} on rank {}".format(
-                        hs.getNutot().size, fname, mpi_comm.Get_rank()
+                    "Reading took {:.2f} s. Now processing {} histories from {} on rank {}".format(
+                        read_time, hs.getNutot().size, fname, mpi_comm.Get_rank()
                     )
                 )
                 sys.stdout.flush()
 
+            st = time.perf_counter()
             self.process_ensemble(hs, n)
+            ft = time.perf_counter()
+            proc_time = (ft - st) / 60.0
+            read_time = read_time / 60.0
+
+            if mpi_comm is None:
+                print(
+                    f"Processing took took {proc_time:.2f} min. Reading took {read_time:.2f} min"
+                )
+            else:
+                rank = mpi_comm.Get_rank()
+                print(
+                    f"Rank {rank} completed lap {n-start} of {end - start}:"
+                    f" Processing took took {proc_time:.2f} min. Reading took {read_time:.2f} min. "
+                )
+                sys.stdout.flush()
 
         if mpi_comm is not None:
             return start, end
