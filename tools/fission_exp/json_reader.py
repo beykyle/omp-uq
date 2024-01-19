@@ -4,9 +4,72 @@ import sys
 import argparse
 import pickle
 from pathlib import Path
+from x4i3 import exfor_manager
+import json
 
 from .spec_analysis import Spec
 
+
+def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None):
+    db = exfor_manager.X4DBManagerDefault()
+
+    # grab entry
+    query = next(iter(db.retrieve(ENTRY=entry).values())).getSimplifiedDataSets()
+    if query == {}:
+        return
+
+    # will throw key error if entry and subentry are not in query
+    data_set = query[(str(entry), str(entry*1000 + subentry), ' ')]
+
+    # convert subentry meta fields string to dict
+    meta = [
+        [val.strip() for val in line.split(":")]
+        for line in data_set.strHeader().split("#")[1:]
+    ]
+    meta = dict([[line[0].lower(), line[1]] for line in meta])
+
+    # set expected meta fields
+    idx_end_surname = meta["authors"].find(" ")
+    idx_beg_surname = meta["authors"][0:idx_end_surname].rfind(".") + 1
+    first_auth_surname = meta["authors"][idx_beg_surname:idx_end_surname]
+    year = meta['year']
+    meta['label'] = f"{first_auth_surname} et al., {year}"
+    meta['exfor'] = meta.pop("subent")
+    meta["quantity"] = quantity
+
+    # handle fmt and units
+    meta["fmt"] = ""
+    if label_mapping is not None:
+        mask = [label in label_mapping for label in data_set.labels]
+        for i in range(len(data_set.labels)):
+            label = data_set.labels[i]
+            if label in label_mapping:
+                symbol = label_mapping[label]
+                meta["fmt"] += f"{symbol}"
+                meta[f"units-{symbol}"] = data_set.units[i].lower()
+    else:
+        mask = [True for label in data_set.labels]
+        dim_symbols = ["x", "y", "z"]
+        non_err_dims = 0
+        for i in range(len(data_set.labels)):
+            if data_set.labels[i].find("ERR") > 0:
+                symbol = dim_symbols[non_err_dims - 1]
+                meta["fmt"] += f"d{symbol}"
+                meta[f"units-d{symbol}"] = data_set.units[i].lower()
+            else:
+                symbol = dim_symbols[non_err_dims]
+                meta["fmt"] += f"{symbol}"
+                meta[f"units-{symbol}"] = data_set.units[i].lower()
+                non_err_dims += 1
+
+    # handle data
+    def santize(line):
+        line = [line[i] for i in range(len(line)) if mask[i]]
+        return [float(x) if x is not None else 0.0 for x in line]
+
+    meta["data"] = [[santize(line) for line in data_set.data]]
+
+    return meta
 
 class Quantity:
     def __init__(self, quantity: str, fmt: str, data: list, meta: list, units: list):
@@ -249,6 +312,31 @@ def read_pfns(df, allowed_labels):
     ]
 
 
+def print_entries(entries: list, out_fname: str):
+    entry = pd.Series(
+        index=[i for i in range(len(entries))],
+        data=dict(enumerate(entries))
+    )
+    r = json.loads(entry.to_json(orient="records"))
+    with open(Path(out_fname), 'w') as f:
+        return json.dump(r, f, indent=1)
+
+
+def add_entries(fname: str, out_fname: str, entries: list):
+    df = pd.read_json(Path(fname))
+    index = [i for i in range(len(entries))]
+    data = dict(enumerate(entries))
+    entry = pd.Series(
+        index=index,
+        data=data,
+    )
+    series = pd.concat([df["entries"], entry], ignore_index=True)
+    df = pd.DataFrame(data={"entries": series})
+    r = json.loads(df.to_json(orient="records"))
+    with open(out_fname, 'w') as f:
+        json.dump(r, f, indent=1)
+
+
 def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
     print("parsing {}".format(fname))
     df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
@@ -282,12 +370,9 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
 
             return read_json(pd.concat([df1, df2]), quantity, allowed_labels)
 
-        df1["data"] = df1["data"].map(lambda x: x[0])
-        df2["data"] = df2["data"].map(lambda x: x[0])
-
         # if no filter required just concat and go
+        df2["data"] = df2["data"].map(lambda x: x[0])
         df = pd.concat([df1, df2])
-        df["data"] = df["data"].map(lambda x: x[0])
         return read_json(df, quantity, allowed_labels)
     else:
         df["data"] = df["data"].map(lambda x: x[0])
@@ -312,6 +397,21 @@ def read_nubartTKEA(df, allowed_labels):
     return nubartTKEA
 
 
+def read_PFNSALAH(df, allowed_labels):
+    pfns = read_specs(df, "PFNSALAH", allowed_labels)
+
+    def get_mass_div(comment: str):
+        key = "A_L/A_H = "
+        idx = comment.find(key) + len(key)
+        end_idx = idx + comment[idx:].find(",")
+        substrs = [sub.strip("") for sub in  comment[idx:end_idx].split("/") ]
+        return int(substrs[0]), int(substrs[1])
+
+    A = [get_mass_div(entry["comments"]) for entry in pfns.meta ]
+
+    return pfns, A
+
+
 def set_bibtex(quantity, meta):
     path = Path("./" + quantity + "_meta.bib")
     bibtex = []
@@ -331,8 +431,11 @@ def set_bibtex(quantity, meta):
             f.write("\n")
 
 
+
 def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None):
     q = quantity.replace("HF", "").replace("LF", "")
+    if q == "Enbar":
+        return read_scalar(df, "Enbar", allowed_labels)
     if q == "nubar":
         return read_scalar(df, "nubar", allowed_labels)
     elif q == "nubarA":
@@ -347,6 +450,10 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_specs(df, "nugbarA", allowed_labels)
     elif q == "nugbarTKE":
         return read_specs(df, "nugbarTTKE", allowed_labels)
+    elif q == "nubartotAHF":
+        return read_specs(df, "nubartotAHF", allowed_labels)
+    elif q == "nubartotALF":
+        return read_specs(df, "nubartotALF", allowed_labels)
     elif q == "pfns":
         return read_pfns(df, allowed_labels)
     elif q == "pfns_cm":
@@ -379,5 +486,9 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_3D(df, "PFNSA", allowed_labels)
     elif q == "encomATKE":
         return read_3D(df, "encomATKE", allowed_labels)
+    elif q == "nugnuA":
+        return read_3D(df, "nugnu", allowed_labels)
+    elif q == "PFNSALAH":
+        return read_PFNSALAH(df, allowed_labels)
     else:
         raise ValueError("Unknown quantity: " + quantity)
