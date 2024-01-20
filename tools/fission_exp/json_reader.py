@@ -10,7 +10,7 @@ import json
 from .spec_analysis import Spec
 
 
-def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None):
+def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None):
     db = exfor_manager.X4DBManagerDefault()
 
     # grab entry
@@ -19,7 +19,7 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
         return
 
     # will throw key error if entry and subentry are not in query
-    data_set = query[(str(entry), str(entry*1000 + subentry), ' ')]
+    data_set = query[(str(entry), str(entry * 1000 + int(subentry)), " ")]
 
     # convert subentry meta fields string to dict
     meta = [
@@ -32,9 +32,9 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
     idx_end_surname = meta["authors"].find(" ")
     idx_beg_surname = meta["authors"][0:idx_end_surname].rfind(".") + 1
     first_auth_surname = meta["authors"][idx_beg_surname:idx_end_surname]
-    year = meta['year']
-    meta['label'] = f"{first_auth_surname} et al., {year}"
-    meta['exfor'] = meta.pop("subent")
+    year = meta["year"]
+    meta["label"] = f"{first_auth_surname} et al., {year}"
+    meta["exfor"] = meta.pop("subent")
     meta["quantity"] = quantity
 
     # guess at label mapping if not provided
@@ -54,8 +54,19 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
 
     # invert label mapping
     symbol_map = {v: k for k, v in label_mapping.items()}
-    order = ["x", "dx", "y", "dy", "z", "dz"]
+    order = [
+        "x", "xmin",  "xmax", "dx",
+        "y", "ymin",  "ymax", "dy",
+        "z", "zmin",  "zmax", "dz"
+    ]
     order = [sym for sym in order if sym in symbol_map.keys()]
+
+    for label in label_mapping.keys():
+        if label not in labels:
+            raise ValueError(
+                f"{label} was in `label_mapping`, but was not found in the exfor column headers:\n"
+                f"{labels}"
+            )
 
     # grab exfor indices in desired order
     def exfor_index_of(label):
@@ -65,10 +76,9 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
 
     # handle fmt and units
     meta["fmt"] = ""
-    mask = [label in label_mapping for label in labels]
     for symbol, i in zip(order, exfor_indices):
-            meta["fmt"] += f"{symbol}"
-            meta[f"units-{symbol}"] = data_set.units[i].lower()
+        meta["fmt"] += f"{symbol}"
+        meta[f"units-{symbol}"] = data_set.units[i].lower()
 
     # santize data and put in desired order
     def reorder_santize(line):
@@ -80,6 +90,7 @@ def exfor_to_json(entry: int,  subentry: int, quantity: str, label_mapping=None)
     meta["data"] = [[reorder_santize(line) for line in data_set.data]]
 
     return meta
+
 
 class Quantity:
     def __init__(self, quantity: str, fmt: str, data: list, meta: list, units: list):
@@ -232,7 +243,7 @@ def read_3D(df, quantity, allowed_labels):
         data = np.array(list(d))
         data_fm = np.zeros((6, data.shape[0]))
         if fmt == "xyz":
-            data_fm[0, :] = data[:,0]
+            data_fm[0, :] = data[:, 0]
             data_fm[2, :] = data[:, 2]
             data_fm[4, :] = data_fm[4, :]
             units.append(
@@ -242,7 +253,7 @@ def read_3D(df, quantity, allowed_labels):
                 )
             )
         elif fmt == "xyzdz":
-            data_fm[0, :] = data[:,0]
+            data_fm[0, :] = data[:, 0]
             data_fm[2, :] = data[:, 2]
             data_fm[4, :] = data_fm[4, :]
             data_fm[5, :] = data_fm[5, :]
@@ -345,11 +356,10 @@ def read_pfns(df, allowed_labels):
 
 def print_entries(entries: list, out_fname: str):
     entry = pd.Series(
-        index=[i for i in range(len(entries))],
-        data=dict(enumerate(entries))
+        index=[i for i in range(len(entries))], data=dict(enumerate(entries))
     )
     r = json.loads(entry.to_json(orient="records"))
-    with open(Path(out_fname), 'w') as f:
+    with open(Path(out_fname), "w") as f:
         return json.dump(r, f, indent=1)
 
 
@@ -364,7 +374,7 @@ def add_entries(fname: str, out_fname: str, entries: list):
     series = pd.concat([df["entries"], entry], ignore_index=True)
     df = pd.DataFrame(data={"entries": series})
     r = json.loads(df.to_json(orient="records"))
-    with open(out_fname, 'w') as f:
+    with open(out_fname, "w") as f:
         json.dump(r, f, indent=1)
 
 
@@ -372,7 +382,6 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
     print("parsing {}".format(fname))
     df = pd.DataFrame.from_records(pd.read_json(fname)["entries"])
     if "Einc" in df:
-
         # set of entries where Einc is a separate column
         df1 = df[df["Einc"].str.len() >= 1].explode(["Einc", "data"])
         df1["Einc"] = pd.to_numeric(df1["Einc"])
@@ -385,19 +394,17 @@ def read(fname: str, quantity: str, energy_range=None, allowed_labels=None):
 
             # filter first set
             df1 = df1[(df1["Einc"] >= emin) & (df1["Einc"] < emax)]
-            #df1["data"] = df1["data"].map(lambda x: x[0])
+            # df1["data"] = df1["data"].map(lambda x: x[0])
 
             # filter second set
             df2["data"] = df2["data"].map(lambda x: x[0])
             df2["data"] = df2["data"][
                 df2["data"].apply(
-                    lambda x: x == [
-                        point for point in x
-                        if point[0] >= emin and point[0] < emax
-                    ]
+                    lambda x: x
+                    == [point for point in x if point[0] >= emin and point[0] < emax]
                 )
             ]
-            df2 = df2[df2['data'].notna()]
+            df2 = df2[df2["data"].notna()]
 
             return read_json(pd.concat([df1, df2]), quantity, allowed_labels)
 
@@ -427,6 +434,7 @@ def read_nubartTKEA(df, allowed_labels):
 
     return nubartTKEA
 
+
 def read_nubarATKE(df, allowed_labels):
     """
     convert all <nu_fragment | A, TKE> to u,du,nu,dnu,TKE_min,TKE_max
@@ -452,10 +460,10 @@ def read_PFNSALAH(df, allowed_labels):
         key = "A_L/A_H = "
         idx = comment.find(key) + len(key)
         end_idx = idx + comment[idx:].find(",")
-        substrs = [sub.strip("") for sub in  comment[idx:end_idx].split("/") ]
+        substrs = [sub.strip("") for sub in comment[idx:end_idx].split("/")]
         return int(substrs[0]), int(substrs[1])
 
-    A = [get_mass_div(entry["comments"]) for entry in pfns.meta ]
+    A = [get_mass_div(entry["comments"]) for entry in pfns.meta]
 
     return pfns, A
 
@@ -477,7 +485,6 @@ def set_bibtex(quantity, meta):
             for line in entry:
                 f.write(line)
             f.write("\n")
-
 
 
 def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None):
@@ -536,8 +543,8 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_nubartTKEA(df, allowed_labels)
     elif q == "pfnsA":
         return read_3D(df, "PFNSA", allowed_labels)
-    elif q == "encomATKE":
-        return read_3D(df, "encomATKE", allowed_labels)
+    elif q == "EncomATKE":
+        return read_3D(df, "EncomATKE", allowed_labels)
     elif q == "nugnuA":
         return read_3D(df, "nugnu", allowed_labels)
     elif q == "PFNSALAH":
