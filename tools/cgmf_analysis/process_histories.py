@@ -59,8 +59,10 @@ all_quantities = [
     "nfanglesCOMHF",
 ]
 
+
 def cos_to_degrees(cos):
     return np.arccos(cos) * 180 / np.pi
+
 
 def balance_load(num_jobs, rank, size):
     stride, remainder = divmod(num_jobs, size)
@@ -301,27 +303,39 @@ class HistData:
                 self.bins["pfgscom"] = self.gecenters
                 self.bin_edges["pfgscom"] = self.gebins
             elif q == "nfanglesLAB":
-                self.vector_qs["nfanglesLAB"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLAB"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLAB"] = self.thetacenters
                 self.bin_edges["nfanglesLAB"] = self.thetabins
             elif q == "nfanglesLABLF":
-                self.vector_qs["nfanglesLABLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLABLF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLABLF"] = self.thetacenters
                 self.bin_edges["nfanglesLABLF"] = self.thetabins
             elif q == "nfanglesLABHF":
-                self.vector_qs["nfanglesLABHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesLABHF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesLABHF"] = self.thetacenters
                 self.bin_edges["nfanglesLABHF"] = self.thetabins
             elif q == "nfanglesCOM":
-                self.vector_qs["nfanglesCOM"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOM"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOM"] = self.thetacenters
                 self.bin_edges["nfanglesCOM"] = self.thetabins
             elif q == "nfanglesCOMLF":
-                self.vector_qs["nfanglesCOMLF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOMLF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOMLF"] = self.thetacenters
                 self.bin_edges["nfanglesCOMLF"] = self.thetabins
             elif q == "nfanglesCOMHF":
-                self.vector_qs["nfanglesCOMHF"] = np.zeros((nensemble, self.thetacenters.size))
+                self.vector_qs["nfanglesCOMHF"] = np.zeros(
+                    (nensemble, self.thetacenters.size)
+                )
                 self.bins["nfanglesCOMHF"] = self.thetacenters
                 self.bin_edges["nfanglesCOMHF"] = self.thetabins
             elif q == "pfnsTKE":
@@ -481,7 +495,6 @@ class HistData:
         for k in self.bins:
             self.bins[k] = pickle_load(self.res_dir / "{}_bins{}.npy".format(k, f))
 
-
     def filter_lol(self, num, lol, mask_generator):
         nevents = len(lol)
         v = np.zeros(int(num))
@@ -498,7 +511,6 @@ class HistData:
             totals_v[i] = np.sum(h)
 
         return v[0:c], np.array(totals_v), nu
-
 
     def hist_from_list_of_lists(
         self, num, lol, bins, mask_generator=None, totals=False, fragment=True
@@ -584,7 +596,6 @@ class HistData:
             sem = np.sqrt(1 / histories.size * (np.mean(h2, axis=0) - hbar**2))
             return hbar, sem
 
-
     def gamma_cut(self, energy_lol: np.array, ages_lol: np.array):
         """
         Given list of lists representing gamma energies and ages for each fragment,
@@ -649,7 +660,7 @@ class HistData:
             (
                 self.scalar_qs["nugbar"][n],
                 self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean( nu.reshape((hs.numberEvents,2)).sum(axis=1) )
+            ) = self.estimate_mean(nu.reshape((hs.numberEvents, 2)).sum(axis=1))
 
         if "pnu" in self.vector_qs:
             nutot = (
@@ -726,7 +737,10 @@ class HistData:
                 self.scalar_qs["egbarcom_stddev"][n],
                 _,
             ) = self.hist_from_list_of_lists(
-                num_gammas, gecom, self.bin_edges["pfgscom"], self.gamma_cut(gecom, ages)
+                num_gammas,
+                gecom,
+                self.bin_edges["pfgscom"],
+                self.gamma_cut(gecom, ages),
             )
 
         # nu dependent
@@ -756,7 +770,7 @@ class HistData:
                 )
         if "nfanglesLAB" in self.vector_qs:
             num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
+            nnLF, nnHF, nnAll = hs.nFangles(Eth=self.Ethn, Emax=4)
             (
                 self.vector_qs["nfanglesLAB"][n],
                 self.vector_qs["nfanglesLAB_stddev"][n],
@@ -778,7 +792,7 @@ class HistData:
 
         if "nfanglesCOM" in self.vector_qs:
             num_neutrons = np.sum(hs.getNutot())
-            nnLF, nnHF, nnAll = hs.nFangles( Eth = self.Ethn, Emax=4 )
+            nnLF, nnHF, nnAll = hs.nFangles(Eth=self.Ethn, Emax=4)
             (
                 self.vector_qs["nfanglesCOM"][n],
                 self.vector_qs["nfanglesCOM_stddev"][n],
