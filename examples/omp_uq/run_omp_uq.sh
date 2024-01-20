@@ -15,4 +15,11 @@
 
 # For each job in array, run CGMF in parallell to handle a single sample,
 # with 36 MPI ranks per node
-srun -n 36 python -OO ./run_omp_uq.py $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID
+srun -n 36 python -OO ./run_omp_uq.py \
+    $SLURM_ARRAY_TASK_ID \
+    $SLURM_ARRAY_TASK_ID  \
+    /home/beykyle/omplib/data/WLHSamples/samples/  \
+    /home/beykyle/turbo/omp_uq/run3_all/cf252/wlh \
+    wlh \
+    98252  \
+    0.0
