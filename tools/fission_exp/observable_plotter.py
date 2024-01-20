@@ -9,8 +9,8 @@ from matplotlib.lines import Line2D
 
 import statsmodels.stats.api as sms
 
-plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
-plt.rc('text', usetex=True)
+plt.rc("font", **{"family": "serif", "serif": ["Computer Modern"]})
+plt.rc("text", usetex=True)
 
 matplotlib.rcParams["font.size"] = 14
 matplotlib.rcParams["font.weight"] = "normal"
@@ -23,6 +23,7 @@ matplotlib.rcParams["ytick.major.pad"] = "10"
 matplotlib.rcParams["image.cmap"] = "BuPu"
 
 from fission_exp import Quantity, maxwellian, PFNSA, read
+
 
 def normalize_to_maxwell(x, y, dy, temp_MeV, ratio=None):
     m = maxwellian(x, temp_MeV)
@@ -207,7 +208,9 @@ class Plotter:
             plts_sim.append(self.plot_spec(pfns, pfns_err, x, d.label))
 
         def plt_exp_spec(s, l):
-            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+            if allowed_labels is None or (
+                allowed_labels is not None and l in allowed_labels
+            ):
                 x = s.bins
                 pfns = s.spec
                 pfns_err = s.err
@@ -249,7 +252,9 @@ class Plotter:
         plt.legend(handles=plts_sim, fontsize=12, ncol=3, loc="lower left")
 
         plt.xlabel(r"$E_{lab}$ [MeV]")
-        plt.ylabel(r"$p(E_{\rm{lab}}) / " + r"M(E, kT = {}$ MeV$)$".format(temp), fontsize=16)
+        plt.ylabel(
+            r"$p(E_{\rm{lab}}) / " + r"M(E, kT = {}$ MeV$)$".format(temp), fontsize=16
+        )
 
     def pfgs(self, cgmf_datasets=None, allowed_labels=None):
         plts_sim = []
@@ -278,7 +283,9 @@ class Plotter:
             )
 
         for s, l, u in zip(specs, labels, units):
-            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+            if allowed_labels is None or (
+                allowed_labels is not None and l in allowed_labels
+            ):
                 p = plt_exp_spec(s.normalizePxdx(), l)
                 plts.append(p)
 
@@ -428,7 +435,9 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubarA.data, labels):
-            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+            if allowed_labels is None or (
+                allowed_labels is not None and l in allowed_labels
+            ):
                 p = plt.errorbar(
                     d[0, :],
                     d[2, :],
@@ -556,7 +565,9 @@ class Plotter:
         y = 0.8 * ma
         i = 0
         for d, l in zip(nugbar.data, labels):
-            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+            if allowed_labels is None or (
+                allowed_labels is not None and l in allowed_labels
+            ):
                 p = plt.errorbar(
                     [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
                 )
@@ -568,8 +579,10 @@ class Plotter:
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="lower right")
 
-        plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}')) # 2 decimal places
-        #plt.grid(visible=True, axis="x", which="major")
+        plt.gca().yaxis.set_major_formatter(
+            StrMethodFormatter("{x:,.2f}")
+        )  # 2 decimal places
+        # plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}_\gamma$ [photons]")
         plt.ylabel(r"$p(\bar{\nu}_\gamma)$")
 
@@ -619,7 +632,9 @@ class Plotter:
         y = 0.8 * ma
         i = 0
         for d, l in zip(nubar.data, labels):
-            if allowed_labels is None or (allowed_labels is not None and l in allowed_labels):
+            if allowed_labels is None or (
+                allowed_labels is not None and l in allowed_labels
+            ):
                 p = plt.errorbar(
                     [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
                 )
@@ -635,7 +650,6 @@ class Plotter:
                 plt.fill_betweenx([0, y], nu - dnu, nu + dnu, label=label, alpha=0.2)
             )
 
-
         if evaluated is not None:
             if isinstance(evaluated, list):
                 for val in evaluated:
@@ -643,11 +657,10 @@ class Plotter:
             else:
                 plot_eval(evaluated)
 
-
-        lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc='upper right')
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=2, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc='lower right')
-        #plt.grid(visible=True, axis="x", which="major")
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="lower right")
+        # plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
 
@@ -669,8 +682,9 @@ class Plotter:
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^{%d}\rangle $ [MeV]" % n)
 
-    def plot_exp_data_over(self, x, y, dx=None, dy=None, label=None, num_sets=1, remove_zeros=True):
-
+    def plot_exp_data_over(
+        self, x, y, dx=None, dy=None, label=None, num_sets=1, remove_zeros=True
+    ):
         if remove_zeros:
             mask = y > 0
             y = y[mask]
@@ -686,10 +700,10 @@ class Plotter:
                 y,
                 yerr=dy,
                 xerr=dx,
-                marker=".",
+                marker="d",
                 linestyle="none",
-                color="k",
-                markersize=12,
+                # color="k",
+                markersize=6,
                 label=label,
                 zorder=999,
             )
@@ -699,9 +713,9 @@ class Plotter:
                 y,
                 yerr=dy,
                 xerr=dx,
-                marker=".",
+                marker="d",
                 linestyle="none",
-                markersize=12,
+                markersize=6,
                 label=label,
                 zorder=999,
             )
@@ -740,9 +754,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim, fontsize=12, ncol=1)
+        plt.legend(handles=plts_sim, fontsize=12, ncol=1, loc="upper right")
 
         plt.xlabel(r"$E_{\rm cm}$ [MeV]")
         plt.ylabel(
@@ -764,19 +778,19 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            ad = np.round(d[4, :])
-            mask = a == ad
-            tke = d[0, :][mask]
-            dtke = d[1, :][mask]
-            nu = d[2, :][mask]
-            dnu = d[3, :][mask]
-            plts.append(
-                self.plot_exp_data_over(
-                    tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+            mask = a == np.round(d[4, :])
+            if (np.any(mask)):
+                tke = d[0, :][mask]
+                dtke = d[1, :][mask]
+                nu = d[2, :][mask]
+                dnu = d[3, :][mask]
+                plts.append(
+                    self.plot_exp_data_over(
+                        tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+                    )
                 )
-            )
 
-        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=12, ncol=1)
 
@@ -797,19 +811,19 @@ class Plotter:
         plts = []
 
         for d, l in zip(nubaratke.data, labels):
-            amin = d[4, :]
-            mask = a == amin
-            tke = d[0, :][mask]
-            dtke = d[1, :][mask]
-            nu = d[2, :][mask]
-            dnu = d[3, :][mask]
-            plts.append(
-                self.plot_exp_data_over(
-                    tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+            mask = a == np.round(d[4, :])
+            if (np.any(mask)):
+                tke = d[0, :][mask]
+                dtke = d[1, :][mask]
+                nu = d[2, :][mask]
+                dnu = d[3, :][mask]
+                plts.append(
+                    self.plot_exp_data_over(
+                        tke, nu, dy=dnu, dx=dtke, label=l, num_sets=len(labels)
+                    )
                 )
-            )
 
-        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, fontsize=12, ncol=1)
 
@@ -831,16 +845,17 @@ class Plotter:
         plts = []
 
         for d, l in zip(encomatke.data, labels):
-            mask = a == d[4, :]
-            tke = d[0, :][mask]
-            dtke = d[1, :][mask]
-            encom = d[2, :][mask]
-            dencom = d[3, :][mask]
-            plts.append(
-                self.plot_exp_data_over(
-                    tke, encom, dy=dencom, dx=dtke, label=l, num_sets=len(labels)
+            mask = a == np.round(d[4, :])
+            if (np.any(mask)):
+                tke = d[0, :][mask]
+                dtke = d[1, :][mask]
+                encom = d[2, :][mask]
+                dencom = d[3, :][mask]
+                plts.append(
+                    self.plot_exp_data_over(
+                        tke, encom, dy=dencom, dx=dtke, label=l, num_sets=len(labels)
+                    )
                 )
-            )
 
         lexp = plt.legend(handles=plts, fontsize=12, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
@@ -927,11 +942,11 @@ class Plotter:
                 self.plot_exp_data_over(
                     d[0, :],
                     d[2, :],
-                    dy = d[3, :],
-                    dx= d[1, :],
+                    dy=d[3, :],
+                    dx=d[1, :],
                     label=l,
                     num_sets=len(labels),
-                    remove_zeros=False
+                    remove_zeros=False,
                 )
             )
 
