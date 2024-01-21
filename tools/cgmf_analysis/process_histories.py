@@ -982,16 +982,16 @@ class HistData:
                 )
 
             # < nu | tke, a >
-            if "nuATke" in self.tensor_qs:
+            if "nuATKE" in self.tensor_qs:
                 for m in range(self.TKEcenters.size):
-                    tke_min = self.TKEbins[m]
-                    tke_max = self.TKEbins[m + 1]
-                    tke = hs.getTKEpost()
+                    TKE_min = self.TKEbins[m]
+                    TKE_max = self.TKEbins[m + 1]
+                    TKE = hs.getTKEpost()
                     mask_nut = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         np.logical_or(hs.getAHF() == a, hs.getALF() == a),
                     )
-                    tke = tke.repeat(2, axis=0)
+                    TKE = TKE.repeat(2, axis=0)
                     mask_nu = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         hs.getA() == a,
@@ -1007,12 +1007,12 @@ class HistData:
                         self.tensor_qs["nutATKE_stddev"][n, l, m],
                     ) = self.estimate_mean(nu_tot[mask_nut])
 
-            if "encomatke" in self.tensor_qs:
+            if "encomATKE" in self.tensor_qs:
                 for m in range(self.TKEcenters.size):
-                    tke_min = self.TKEbins[m]
-                    tke_max = self.TKEbins[m + 1]
-                    tke = hs.getTKEpost()
-                    tke = tke.repeat(2, axis=0)
+                    TKE_min = self.TKEbins[m]
+                    TKE_max = self.TKEbins[m + 1]
+                    TKE = hs.getTKEpost()
+                    TKE = TKE.repeat(2, axis=0)
                     mask = np.logical_and(
                         np.logical_and(TKE >= TKE_min, TKE < TKE_max),
                         hs.getA() == a,
