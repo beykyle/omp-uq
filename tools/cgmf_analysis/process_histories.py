@@ -52,6 +52,24 @@ all_quantities = [
     "encomA",
     "encomTKE",
     "encomATKE",
+    "nfanglesLAB",
+    "nfanglesLABLF",
+    "nfanglesLABHF",
+]
+
+
+def cos_to_degrees(cos):
+    return np.arccos(cos) * 180 / np.pi
+
+
+def balance_load(num_jobs, rank, size):
+    stride, remainder = divmod(num_jobs, size)
+    if stride > 0:
+        ranks_wout_extra_job = size - remainder
+        # divide up remainder evently among last ranks
+        if rank <= ranks_wout_extra_job:
+            start = rank * stride
+            end = start + stride
             if rank == ranks_wout_extra_job:
                 end = end + 1
         else:
