@@ -308,6 +308,8 @@ class Plotter:
         labels = [m["label"] for m in nugbarA.meta]
         plts = []
 
+        plt.plot([0,0],[0,0])
+
         for d, l in zip(nugbarA.data, labels):
             p = plt.errorbar(
                 d[0, :],
@@ -338,6 +340,8 @@ class Plotter:
 
         plts = []
         labels = [m["label"] for m in nubarTKE.meta]
+
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(nubarTKE.data, labels):
             plts.append(
@@ -468,6 +472,8 @@ class Plotter:
         labels = [m["label"] for m in pnug.meta]
         plts = []
 
+        plt.plot([0,0],[0,0])
+
         for d, l in zip(pnug.data, labels):
             y = d[2, :]
             yerr = d[3, :]
@@ -500,6 +506,7 @@ class Plotter:
 
         labels = [m["label"] for m in pnu.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(pnu.data, labels):
             y = d[2, :]
@@ -561,6 +568,7 @@ class Plotter:
 
         labels = [m["label"] for m in nugbar.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         y = 0.8 * ma
         i = 0
@@ -628,6 +636,7 @@ class Plotter:
 
         labels = [m["label"] for m in nubar.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         y = 0.8 * ma
         i = 0
@@ -671,6 +680,7 @@ class Plotter:
 
         labels = [m["label"] for m in pfnsa.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
@@ -738,6 +748,7 @@ class Plotter:
         labels = [m["label"] for m in pfnsa.meta]
 
         plts = []
+        plt.plot([0,0],[0,0])
         for d, l in zip(pfnsa.data, labels):
             data = PFNSA(np.vstack([d[4, :], d[0, :], d[2, :], d[3, :]]))
             x, pfns, pfns_err = data.getPFNS(a)
@@ -776,6 +787,7 @@ class Plotter:
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(nubaratke.data, labels):
             mask = a == np.round(d[4, :])
@@ -809,6 +821,7 @@ class Plotter:
 
         labels = [m["label"] for m in nubaratke.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(nubaratke.data, labels):
             mask = a == np.round(d[4, :])
@@ -843,6 +856,7 @@ class Plotter:
 
         labels = [m["label"] for m in encomatke.meta]
         plts = []
+        plt.plot([0,0],[0,0])
 
         for d, l in zip(encomatke.data, labels):
             mask = a == np.round(d[4, :])
