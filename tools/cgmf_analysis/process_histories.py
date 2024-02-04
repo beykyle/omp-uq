@@ -626,7 +626,7 @@ class HistData:
         gelab = hs.getGammaElab()
         gecom = hs.getGammaEcm()
         ages = hs.getGammaAges()
-        num_gammas = np.sum(hs.getNug())
+        num_gammas = np.sum(hs.getNugtot())
         nug_tot = hs.getNutot()
         nug_fragment = hs.getNu()
 

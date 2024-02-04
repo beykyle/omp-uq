@@ -10,7 +10,7 @@ import json
 from .spec_analysis import Spec
 
 
-def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None):
+def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None, einc=None):
     db = exfor_manager.X4DBManagerDefault()
 
     # grab entry
@@ -22,11 +22,15 @@ def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None):
     data_set = query[(str(entry), str(entry * 1000 + int(subentry)), " ")]
 
     # convert subentry meta fields string to dict
-    meta = [
+    meta = dict()
+    meta["quantity"] = quantity
+    meta_data = [
         [val.strip() for val in line.split(":")]
         for line in data_set.strHeader().split("#")[1:]
     ]
-    meta = dict([[line[0].lower(), line[1]] for line in meta])
+    for line in meta_data:
+        meta[line[0].lower()] =  line[1]
+
 
     # set expected meta fields
     idx_end_surname = meta["authors"].find(" ")
@@ -35,7 +39,9 @@ def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None):
     year = meta["year"]
     meta["label"] = f"{first_auth_surname} et al., {year}"
     meta["exfor"] = meta.pop("subent")
-    meta["quantity"] = quantity
+
+    if einc is not None:
+        meta["Einc"] = einc
 
     # guess at label mapping if not provided
     labels = data_set.labels
