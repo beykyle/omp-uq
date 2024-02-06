@@ -858,7 +858,7 @@ class HistData:
                     num_neutrons_TKE,
                     nelab[mask],
                     bins=self.bin_edges["pfnsTKE"][1],
-                    mask_generator=self.neutron_cut(nelab_TKE),
+                    #mask_generator=self.neutron_cut(nelab_TKE),
                 )
 
             if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
@@ -877,7 +877,7 @@ class HistData:
                     num_neutrons_TKE,
                     necom[mask],
                     bins=self.bin_edges["pfnscomTKE"][1],
-                    mask_generator=self.kinematic_cut(nelab[mask], ke_pre / A),
+                    #mask_generator=self.kinematic_cut(nelab[mask], ke_pre / A),
                 )
 
             # < d nu_g / dE_g | TKE >
