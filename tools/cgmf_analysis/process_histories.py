@@ -485,7 +485,7 @@ class HistData:
             numi = h.size
             v[c : c + numi] = h
             c = c + numi
-            nu[i] = h.size
+            nu[i] = numi
             totals_v[i] = np.sum(h)
 
         return v[0:c], np.array(totals_v), nu
@@ -644,11 +644,8 @@ class HistData:
             ) = self.estimate_mean(hs.nuLF + hs.nuHF + hs.preFissionNu)
 
         if "nugbar" in self.scalar_qs:
-            _, _, nu = self.filter_lol(num_gammas, gelab, self.gamma_cut(gelab, ages))
-            (
-                self.scalar_qs["nugbar"][n],
-                self.scalar_qs["nugbar_stddev"][n],
-            ) = self.estimate_mean(nu.reshape((hs.numberEvents, 2)).sum(axis=1))
+            _, nug = hs.nubarg(timeWindow=[self.max_time], Eth=self.Ethg)
+            self.scalar_qs["nugbar"][n] = nug[0]
 
         if "pnu" in self.vector_qs:
             nutot = (
