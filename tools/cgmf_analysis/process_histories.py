@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 import time
+import pickle
 
 from mpi4py import MPI
 
@@ -1137,3 +1138,14 @@ class HistData:
 
         if mpi_comm is not None:
             return start, end
+
+
+    @classmethod
+    def load(obj, fpath):
+        with open(fpath, 'rb') as handle:
+            return pickle.load(handle)
+
+
+    def save(fpath):
+        with open(fpath, 'wb') as handle:
+            pickle.dump(self, handle)
