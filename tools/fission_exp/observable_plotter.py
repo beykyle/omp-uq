@@ -120,7 +120,7 @@ class Plotter:
                 )
         elif plot_type == "fill":
             plt_handler.fill_between(
-                x, vec + vec_err, vec - vec_err, alpha=0.6, zorder=100
+                x, vec + vec_err, vec - vec_err, alpha=0.3, zorder=100
             )
             if mc:
                 plt_handler.fill_between(
@@ -178,7 +178,7 @@ class Plotter:
                 x,
                 spec + err,
                 spec - err,
-                alpha=0.6,
+                alpha=0.3,
                 zorder=100,
                 # step="mid"
                 color=p1[0].get_color(),
