@@ -202,6 +202,9 @@ class HistData:
         self.thetacenters = 0.5 * (self.thetabins[0:-1] + self.thetabins[1:])
         self.dtheta = self.thetabins[1:] - self.thetabins[:-1]
 
+        self.reset_bins()
+
+    def reset_bins(self):
         self.bins = {}
         self.bin_edges = {}
 
@@ -1146,6 +1149,6 @@ class HistData:
             return pickle.load(handle)
 
 
-    def save(fpath):
+    def save(self, fpath):
         with open(fpath, 'wb') as handle:
             pickle.dump(self, handle)
