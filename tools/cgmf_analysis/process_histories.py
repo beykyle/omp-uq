@@ -119,7 +119,7 @@ class HistData:
         # get ensemble range
         self.min_ensemble = ensemble_range[0]
         self.max_ensemble = ensemble_range[1]
-        nensemble = self.max_ensemble - self.min_ensemble + 1
+        self.nensemble = self.max_ensemble - self.min_ensemble + 1
 
         # aset up dictionaries which hold all our data
         self.quantities = check_pairs(
@@ -212,135 +212,135 @@ class HistData:
         # all arrays have as their first axis the ensemble
         for q in self.quantities:
             if q == "nubar":
-                self.scalar_qs["nubar"] = np.zeros((nensemble))
+                self.scalar_qs["nubar"] = np.zeros((self.nensemble))
             elif q == "nugbar":
-                self.scalar_qs["nugbar"] = np.zeros((nensemble))
+                self.scalar_qs["nugbar"] = np.zeros((self.nensemble))
             elif q == "enbar":
-                self.scalar_qs["enbar"] = np.zeros((nensemble))
+                self.scalar_qs["enbar"] = np.zeros((self.nensemble))
             elif q == "egbar":
-                self.scalar_qs["egbar"] = np.zeros((nensemble))
+                self.scalar_qs["egbar"] = np.zeros((self.nensemble))
             elif q == "enbarcom":
-                self.scalar_qs["enbarcom"] = np.zeros((nensemble))
+                self.scalar_qs["enbarcom"] = np.zeros((self.nensemble))
             elif q == "egbarcom":
-                self.scalar_qs["egbarcom"] = np.zeros((nensemble))
+                self.scalar_qs["egbarcom"] = np.zeros((self.nensemble))
             elif q == "nubarA":
-                self.vector_qs["nubarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["nubarA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["nubarA"] = self.abins
             elif q == "nugbarA":
-                self.vector_qs["nugbarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["nugbarA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["nugbarA"] = self.abins
             elif q == "enbarA":
-                self.vector_qs["enbarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["enbarA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["enbarA"] = self.abins
             elif q == "encomA":
-                self.vector_qs["encomA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["encomA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["encomA"] = self.abins
             elif q == "egtbarA":
-                self.vector_qs["egtbarA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["egtbarA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["egtbarA"] = self.abins
             elif q == "multratioA":
-                self.vector_qs["multratioA"] = np.zeros((nensemble, self.abins.size))
+                self.vector_qs["multratioA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["multratioA"] = self.abins
             elif q == "enbarZ":
-                self.vector_qs["enbarZ"] = np.zeros((nensemble, self.zbins.size))
+                self.vector_qs["enbarZ"] = np.zeros((self.nensemble, self.zbins.size))
                 self.bins["enbarZ"] = self.zbins
             elif q == "egtbarZ":
-                self.vector_qs["egtbarZ"] = np.zeros((nensemble, self.zbins.size))
+                self.vector_qs["egtbarZ"] = np.zeros((self.nensemble, self.zbins.size))
                 self.bins["egtbarZ"] = self.zbins
             elif q == "nubarZ":
-                self.vector_qs["nubarZ"] = np.zeros((nensemble, self.zbins.size))
+                self.vector_qs["nubarZ"] = np.zeros((self.nensemble, self.zbins.size))
                 self.bins["nubarZ"] = self.zbins
             elif q == "nugbarZ":
-                self.vector_qs["nugbarZ"] = np.zeros((nensemble, self.zbins.size))
+                self.vector_qs["nugbarZ"] = np.zeros((self.nensemble, self.zbins.size))
                 self.bins["nugbarZ"] = self.zbins
             elif q == "nubarTKE":
-                self.vector_qs["nubarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["nubarTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
                 self.bins["nubarTKE"] = self.TKEcenters
                 self.bin_edges["nubarTKE"] = self.TKEbins
             elif q == "nugbarTKE":
                 self.vector_qs["nugbarTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size)
+                    (self.nensemble, self.TKEcenters.size)
                 )
                 self.bins["nugbarTKE"] = self.TKEcenters
                 self.bin_edges["nugbarTKE"] = self.TKEbins
             elif q == "enbarTKE":
-                self.vector_qs["enbarTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["enbarTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
                 self.bins["enbarTKE"] = self.TKEcenters
                 self.bin_edges["enbarTKE"] = self.TKEbins
             elif q == "encomTKE":
-                self.vector_qs["encomTKE"] = np.zeros((nensemble, self.TKEcenters.size))
+                self.vector_qs["encomTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
                 self.bins["encomTKE"] = self.TKEcenters
                 self.bin_edges["encomTKE"] = self.TKEbins
             elif q == "egtbarTKE":
                 self.vector_qs["egtbarTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size)
+                    (self.nensemble, self.TKEcenters.size)
                 )
                 self.bins["egtbarTKE"] = self.TKEcenters
                 self.bin_edges["egtbarTKE"] = self.TKEbins
             elif q == "pnu":
-                self.vector_qs["pnu"] = np.zeros((nensemble, self.nubins.size))
+                self.vector_qs["pnu"] = np.zeros((self.nensemble, self.nubins.size))
                 self.bins["pnu"] = self.nubins
             elif q == "pnug":
-                self.vector_qs["pnug"] = np.zeros((nensemble, self.nugbins.size))
+                self.vector_qs["pnug"] = np.zeros((self.nensemble, self.nugbins.size))
                 self.bins["pnug"] = self.nugbins
             elif q == "egtbarnu":
-                self.vector_qs["egtbarnu"] = np.zeros((nensemble, self.nubins.size))
+                self.vector_qs["egtbarnu"] = np.zeros((self.nensemble, self.nubins.size))
                 self.bins["egtbarnu"] = self.nubins
             elif q == "pfns":
-                self.vector_qs["pfns"] = np.zeros((nensemble, self.ecenters.size))
+                self.vector_qs["pfns"] = np.zeros((self.nensemble, self.ecenters.size))
                 self.bins["pfns"] = self.ecenters
                 self.bin_edges["pfns"] = self.ebins
             elif q == "pfgs":
-                self.vector_qs["pfgs"] = np.zeros((nensemble, self.gecenters.size))
+                self.vector_qs["pfgs"] = np.zeros((self.nensemble, self.gecenters.size))
                 self.bins["pfgs"] = self.gecenters
                 self.bin_edges["pfgs"] = self.gebins
             elif q == "pfnscom":
-                self.vector_qs["pfnscom"] = np.zeros((nensemble, self.tecenters.size))
+                self.vector_qs["pfnscom"] = np.zeros((self.nensemble, self.tecenters.size))
                 self.bins["pfnscom"] = self.tecenters
                 self.bin_edges["pfnscom"] = self.tebins
             elif q == "pfgscom":
-                self.vector_qs["pfgscom"] = np.zeros((nensemble, self.gecenters.size))
+                self.vector_qs["pfgscom"] = np.zeros((self.nensemble, self.gecenters.size))
                 self.bins["pfgscom"] = self.gecenters
                 self.bin_edges["pfgscom"] = self.gebins
             elif q == "nfanglesLAB":
                 self.vector_qs["nfanglesLAB"] = np.zeros(
-                    (nensemble, self.thetacenters.size)
+                    (self.nensemble, self.thetacenters.size)
                 )
                 self.bins["nfanglesLAB"] = self.thetacenters
                 self.bin_edges["nfanglesLAB"] = self.thetabins
             elif q == "nfanglesLABLF":
                 self.vector_qs["nfanglesLABLF"] = np.zeros(
-                    (nensemble, self.thetacenters.size)
+                    (self.nensemble, self.thetacenters.size)
                 )
                 self.bins["nfanglesLABLF"] = self.thetacenters
                 self.bin_edges["nfanglesLABLF"] = self.thetabins
             elif q == "nfanglesLABHF":
                 self.vector_qs["nfanglesLABHF"] = np.zeros(
-                    (nensemble, self.thetacenters.size)
+                    (self.nensemble, self.thetacenters.size)
                 )
                 self.bins["nfanglesLABHF"] = self.thetacenters
                 self.bin_edges["nfanglesLABHF"] = self.thetabins
             elif q == "pfnsTKE":
                 self.tensor_qs["pfnsTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.tecenters.size)
+                    (self.nensemble, self.TKEcenters.size, self.tecenters.size)
                 )
                 self.bins["pfnsTKE"] = (self.TKEbins, self.tecenters)
                 self.bin_edges["pfnsTKE"] = (self.TKEbins, self.tebins)
             elif q == "pfgsTKE":
                 self.tensor_qs["pfgsTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.tgecenters.size)
+                    (self.nensemble, self.TKEcenters.size, self.tgecenters.size)
                 )
                 self.bins["pfgsTKE"] = (self.TKEbins, self.tgecenters)
                 self.bin_edges["pfgsTKE"] = (self.TKEbins, self.tgebins)
             elif q == "pfnscomTKE":
                 self.tensor_qs["pfnscomTKE"] = np.zeros(
-                    (nensemble, self.TKEcenters.size, self.com_tecenters.size)
+                    (self.nensemble, self.TKEcenters.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomTKE"] = (self.TKEbins, self.com_tecenters)
                 self.bin_edges["pfnscomTKE"] = (self.TKEbins, self.com_tebins)
             elif q == "pfnsZ":
                 self.tensor_qs["pfnsZ"] = np.zeros(
-                    (nensemble, self.zbins.size, self.tecenters.size)
+                    (self.nensemble, self.zbins.size, self.tecenters.size)
                 )
                 self.bins["pfnsZ"] = (self.zbins, self.tecenters)
                 self.bin_edges["pfnsZ"] = (self.zbins, self.tebins)
@@ -349,43 +349,43 @@ class HistData:
                 self.bins["pfgsZ"] = (self.zbins, self.tgebins)
             elif q == "pfnsA":
                 self.tensor_qs["pfnsA"] = np.zeros(
-                    (nensemble, self.abins.size, self.tecenters.size)
+                    (self.nensemble, self.abins.size, self.tecenters.size)
                 )
                 self.bins["pfnsA"] = (self.abins, self.tecenters)
                 self.bin_edges["pfnsA"] = (self.abins, self.tebins)
             elif q == "pfgsA":
                 self.tensor_qs["pfgsA"] = np.zeros(
-                    (nensemble, self.abins.size, self.tgecenters.size)
+                    (self.nensemble, self.abins.size, self.tgecenters.size)
                 )
                 self.bins["pfgsA"] = (self.abins, self.tgecenters)
                 self.bin_edges["pfgsA"] = (self.abins, self.tgebins)
             elif q == "pfnscomA":
                 self.tensor_qs["pfnscomA"] = np.zeros(
-                    (nensemble, self.abins.size, self.com_tecenters.size)
+                    (self.nensemble, self.abins.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomA"] = (self.abins, self.com_tecenters)
                 self.bin_edges["pfnscomA"] = (self.abins, self.com_tebins)
             elif q == "pfnscomZ":
                 self.tensor_qs["pfnscomZ"] = np.zeros(
-                    (nensemble, self.zbins.size, self.com_tecenters.size)
+                    (self.nensemble, self.zbins.size, self.com_tecenters.size)
                 )
                 self.bins["pfnscomZ"] = (self.zbins, self.com_tecenters)
                 self.bin_edges["pfnscomZ"] = (self.zbins, self.com_tebins)
             elif q == "nuATKE":
                 self.tensor_qs["nuATKE"] = np.zeros(
-                    (nensemble, self.abins.size, self.TKEcenters.size)
+                    (self.nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["nuATKE"] = (self.abins, self.TKEcenters)
                 self.bin_edges["nuATKE"] = (self.abins, self.TKEbins)
             elif q == "nutATKE":
                 self.tensor_qs["nutATKE"] = np.zeros(
-                    (nensemble, self.abins.size, self.TKEcenters.size)
+                    (self.nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["nutATKE"] = (self.abins, self.TKEcenters)
                 self.bin_edges["nutATKE"] = (self.abins, self.TKEbins)
             elif q == "encomATKE":
                 self.tensor_qs["encomATKE"] = np.zeros(
-                    (nensemble, self.abins.size, self.TKEcenters.size)
+                    (self.nensemble, self.abins.size, self.TKEcenters.size)
                 )
                 self.bins["encomATKE"] = (self.abins, self.TKEcenters)
                 self.bin_edges["encomATKE"] = (self.abins, self.TKEbins)
