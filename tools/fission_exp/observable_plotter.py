@@ -120,7 +120,7 @@ class Plotter:
                 )
         elif plot_type == "fill":
             plt_handler.fill_between(
-                x, vec + vec_err, vec - vec_err, alpha=0.3, zorder=100
+                x, vec + vec_err, vec - vec_err, alpha=0.5, zorder=100
             )
             if mc:
                 plt_handler.fill_between(
@@ -154,7 +154,7 @@ class Plotter:
             plt_handler = plt
 
         # p1 = plt.step(x, spec, label=label, zorder=100, linewidth=2, where="mid")
-        p1 = plt_handler.plot(x, spec, label=label, zorder=100, linewidth=2)
+        p1 = plt_handler.plot(x, spec, label=label, zorder=100, linewidth=1)
 
         if plot_type == "overlapping":
             for i in range(spec_all.shape[0]):
@@ -178,7 +178,7 @@ class Plotter:
                 x,
                 spec + err,
                 spec - err,
-                alpha=0.3,
+                alpha=0.5,
                 zorder=100,
                 # step="mid"
                 color=p1[0].get_color(),
@@ -260,7 +260,10 @@ class Plotter:
                     yerr=pfns_err,
                     xerr=s.xerr,
                     alpha=0.7,
+                    elinewidth=1,
                     label=l,
+                    marker=".",
+                    markersize=12,
                     linestyle="none",
                 )
 
@@ -278,14 +281,12 @@ class Plotter:
             p = plt_exp_spec(s, l)
             plts.append(p)
 
-        lexp = plt.legend(handles=plts,  ncol=3, loc="upper left")
+        lexp = plt.legend(handles=plts, ncol=3, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, ncol=3, loc="lower left", framealpha=1)
 
         plt.xlabel(r"$E_{lab}$ [MeV]")
-        plt.ylabel(
-            r"$p(E_{\rm{lab}}) / " + r"M(E, kT = {}$ MeV$)$".format(temp)
-        )
+        plt.ylabel(r"$p(E_{\rm{lab}}) / " + r"M(E, kT = {}$ MeV$)$".format(temp))
 
     def pfgs(self, cgmf_datasets=None, allowed_labels=None):
         plts_sim = []
@@ -310,7 +311,15 @@ class Plotter:
             y = s.spec
             yerr = s.err
             return plt.errorbar(
-                x, y, yerr=yerr, xerr=s.xerr, alpha=0.7, label=l, linestyle="none"
+                x,
+                y,
+                yerr=yerr,
+                xerr=s.xerr,
+                alpha=0.7,
+                marker=".",
+                markersize=12,
+                label=l,
+                linestyle="none",
             )
 
         for s, l, u in zip(specs, labels, units):
@@ -322,7 +331,7 @@ class Plotter:
 
         lexp = plt.legend(handles=plts, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, ncol=3, loc="lower left")
 
         plt.xlabel(r"$E_{lab}$ [MeV]")
         plt.ylabel(r"PFGS [MeV$^{-1}$]")
@@ -349,14 +358,15 @@ class Plotter:
                 d[1, :],
                 label=l,
                 linestyle="none",
-                marker=".",
+                marker="o",
+                markersize=3,
                 zorder=0,
             )
             plts.append(p)
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=3, loc="lower left")
+        plt.legend(handles=plts_sim, ncol=3, loc="lower left")
 
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [photons]")
@@ -383,12 +393,25 @@ class Plotter:
                     d[1, :],
                     label=l,
                     linestyle="none",
-                    marker=".",
+                    marker="o",
+                    elinewidth=1,
+                    alpha=0.7,
+                    markersize=3,
                 )
             )
 
-        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=False, edgecolor="k")
-        plt.legend(handles=plts_sim,  ncol=3, loc="lower right")
+        plt.gcf().legend(
+            handles=plts,
+            ncol=1,
+            loc="upper right",
+            shadow=False,
+            borderpad=0.2,
+            edgecolor="k",
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+        )
+        plt.legend(handles=plts_sim, ncol=3, loc="lower right")
 
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -413,13 +436,16 @@ class Plotter:
                     d[1, :],
                     label=l,
                     linestyle="none",
-                    marker=".",
+                    marker="o",
+                    elinewidth=1,
+                    alpha=0.7,
+                    markersize=3,
                 )
             )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=3, loc="lower right")
+        plt.legend(handles=plts_sim, ncol=3, loc="lower right")
 
         plt.xlabel(r"TKE [MeV]")
         plt.ylabel(r"$\bar{\nu}_\gamma$ [photons]")
@@ -444,14 +470,17 @@ class Plotter:
                 d[1, :],
                 label=l,
                 linestyle="none",
-                marker=".",
+                marker="o",
+                elinewidth=1,
+                alpha=0.7,
+                markersize=3,
                 zorder=0,
             )
             plts.append(p)
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc="lower right")
+        plt.legend(handles=plts_sim, ncol=1, loc="lower right")
 
         plt.xlabel(r"$Z$ [protons]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -479,13 +508,25 @@ class Plotter:
                     d[1, :],
                     label=l,
                     linestyle="none",
-                    marker=".",
+                    marker="o",
+                    elinewidth=1,
+                    alpha=0.7,
+                    markersize=3,
                     zorder=0,
                 )
                 plts.append(p)
 
-        plt.gcf().legend(handles=plts, loc="upper center", shadow=False, edgecolor="k")
-        plt.legend(handles=plts_sim,  ncol=2, loc="lower right")
+        plt.gcf().legend(
+            handles=plts,
+            loc="upper right",
+            borderpad=0.2,
+            edgecolor="k",
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+            ncol=2,
+        )
+        plt.legend(handles=plts_sim, ncol=2, loc="lower right")
 
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -516,9 +557,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc="upper left")
+        plt.legend(handles=plts_sim, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu_\gamma$ [photons]")
         plt.ylabel(r"$p(\nu_\gamma)$")
@@ -550,9 +591,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper right")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper right")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc="upper left")
+        plt.legend(handles=plts_sim, ncol=1, loc="upper left")
 
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$p(\nu)$  ")
@@ -602,9 +643,11 @@ class Plotter:
         y = 0.8 * ma
         i = 0
         for d, l in zip(nugbar.data, labels):
-            if allowed_labels is None or (
-                allowed_labels is not None and l in allowed_labels
-            ) and d[1] > 0:
+            if (
+                allowed_labels is None
+                or (allowed_labels is not None and l in allowed_labels)
+                and d[1] > 0
+            ):
                 p = plt.errorbar(
                     [d[0]], [y], xerr=[d[1] / 2], label=l, linestyle="none", marker="."
                 )
@@ -612,8 +655,17 @@ class Plotter:
                 y += 0.05 * ma
                 i += 1
 
-        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=False, edgecolor="k")
-        plt.legend(handles=plts_sim,  ncol=1, loc="lower right")
+        plt.gcf().legend(
+            handles=plts,
+            ncol=2,
+            loc="upper right",
+            shadow=False,
+            framealpha=1,
+            fancybox=True,
+            borderpad=0.2,
+            edgecolor="k",
+        )
+        plt.legend(handles=plts_sim, ncol=1, loc="lower right", framealpha=1)
 
         plt.gca().yaxis.set_major_formatter(
             StrMethodFormatter("{x:,.2f}")
@@ -694,8 +746,16 @@ class Plotter:
             else:
                 plot_eval(evaluated)
 
-        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=False, edgecolor="k")
-        plt.legend(handles=plts_sim,  ncol=1, loc="lower right")
+        plt.gcf().legend(
+            handles=plts,
+            ncol=2,
+            loc="upper right",
+            framealpha=1,
+            fancybox=True,
+            borderpad=0.2,
+            edgecolor="k",
+        )
+        plt.legend(handles=plts_sim, ncol=1, loc="lower right", framealpha=1.0)
         # plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
         plt.ylabel(r"$p(\bar{\nu})$")
@@ -715,7 +775,7 @@ class Plotter:
             means = [s.moment(n) / s.moment(0) for s in specs]
             plt.errorbar(data.mass, means, label=l)
 
-        plt.legend( ncol=1)
+        plt.legend(ncol=1)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle{E}^{%d}\rangle $ [MeV]" % n)
 
@@ -742,10 +802,11 @@ class Plotter:
                 y,
                 yerr=dy,
                 xerr=dx,
-                marker=".",
                 linestyle="none",
-                # color="k",
-                markersize=6,
+                marker="o",
+                elinewidth=1,
+                alpha=0.7,
+                markersize=3,
                 label=label,
                 zorder=999,
             )
@@ -755,9 +816,11 @@ class Plotter:
                 y,
                 yerr=dy,
                 xerr=dx,
-                marker=".",
                 linestyle="none",
-                markersize=6,
+                marker="o",
+                elinewidth=1,
+                alpha=0.7,
+                markersize=3,
                 label=label,
                 zorder=999,
             )
@@ -822,20 +885,29 @@ class Plotter:
                 if last_two:
                     ax.set_xlabel(r"$TKE$ [MeV]")
                 if is_on_left:
-                    ax.set_ylabel(
-                        r"$\langle E_{\rm cm} |\, TKE, A \rangle$ [MeV]")
+                    ax.set_ylabel(r"$\langle E_{\rm cm} |\, TKE, A \rangle$ [MeV]")
 
         plts = list(data_plts.values())
         if plts:
             fig.legend(
                 handles=plts,
                 loc="upper left",
-                shadow=True,
+                edgecolor="k",
+                borderpad=1,
+                framealpha=1,
+                fancybox=True,
+                frameon=True,
+                ncol=1,
             )
         fig.legend(
             handles=plts_sim,
             loc="upper right",
-            shadow=True,
+            edgecolor="k",
+            borderpad=1,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+            ncol=2,
         )
 
     def nubarATKE_tiled(
@@ -900,22 +972,28 @@ class Plotter:
                 if is_on_left:
                     ax.set_ylabel(
                         r"$\langle \nu | TKE, A \rangle$ [neutrons]".format(temp),
-
                     )
 
         plts = list(data_plts.values())
         fig.legend(
             handles=plts,
             ncol=len(plts),
-
             loc="upper left",
-            shadow=True,
+            edgecolor="k",
+            borderpad=1,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
         )
         fig.legend(
             handles=plts_sim,
-
             loc="upper right",
-            shadow=True,
+            edgecolor="k",
+            borderpad=1,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+            ncol=2,
         )
 
     def pfnsA_tiled(
@@ -940,7 +1018,7 @@ class Plotter:
                 ax.set_xscale("log")
                 ax.text(
                     0.5,
-                    ylim[0] + (ylim[1] - ylim[0]) * 0.7,
+                    ylim[0] + (ylim[1] - ylim[0]) * 0.75,
                     r"$A \sim {}$".format(a),
                     fontsize=16,
                 )
@@ -988,21 +1066,29 @@ class Plotter:
                     ax.set_xlabel(r"$E_{\rm cm}$ [MeV]")
                 if is_on_left:
                     ax.set_ylabel(
-                        r"$p(E_{{\rm cm}} | A) / M(E, kT = {}$ MeV$)$".format(temp))
+                        r"$p(E_{{\rm cm}} | A) / M(E, kT = {}$ MeV$)$".format(temp)
+                    )
 
         plts = list(data_plts.values())
         fig.legend(
             handles=plts,
-
             ncol=len(plts),
-            loc="upper left",
-            shadow=True,
+            loc="upper right",
+            edgecolor="k",
+            borderpad=1,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
         )
         fig.legend(
             handles=plts_sim,
-
-            loc="upper right",
-            shadow=True,
+            loc="upper left",
+            edgecolor="k",
+            borderpad=1,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+            ncol=2,
         )
 
     def pfnsA(self, a: int, pfnsa, cgmf_datasets=None, temp=None):
@@ -1041,13 +1127,12 @@ class Plotter:
                     )
                 )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, fancybox=True, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc="upper right")
+        plt.legend(handles=plts_sim, ncol=1, loc="upper right")
 
         plt.xlabel(r"$E_{\rm cm}$ [MeV]")
-        plt.ylabel(
-            r"$p(E | A = {}) / M(E, kT = {}$ MeV$)$".format(a, temp))
+        plt.ylabel(r"$p(E | A = {}) / M(E, kT = {}$ MeV$)$".format(a, temp))
 
     def nubarATKE(self, a: int, nubaratke, cgmf_datasets=None):
         plts_sim = []
@@ -1076,9 +1161,9 @@ class Plotter:
                     )
                 )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1)
+        plt.legend(handles=plts_sim, ncol=1)
 
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(r"$ \langle \nu | A = {} \rangle $ [neutrons]".format(a))
@@ -1110,9 +1195,9 @@ class Plotter:
                     )
                 )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="upper left")
+        lexp = plt.legend(handles=plts, ncol=1, loc="upper left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1)
+        plt.legend(handles=plts_sim, ncol=1)
 
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(
@@ -1145,9 +1230,9 @@ class Plotter:
                     )
                 )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc="lower left")
+        lexp = plt.legend(handles=plts, ncol=1, loc="lower left")
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=3)
+        plt.legend(handles=plts_sim, ncol=3)
 
         plt.xlabel(r"$TKE$ [MeV]")
         plt.ylabel(r"$ \langle E_{\rm cm} | A = %d \rangle $ [neutrons]" % a)
@@ -1178,9 +1263,9 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc=2)
+        plt.legend(handles=plts_sim, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \frac{ \nu_\gamma }{ \nu_n }$")
 
@@ -1204,12 +1289,24 @@ class Plotter:
                     d[1, :],
                     label=l,
                     linestyle="none",
-                    marker=".",
+                    marker="o",
+                    elinewidth=1,
+                    alpha=0.7,
+                    markersize=3,
                 )
             )
 
-        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=False, edgecolor="k")
-        plt.legend(handles=plts_sim,  ncol=1, loc="lower left")
+        plt.gcf().legend(
+            handles=plts,
+            borderpad=0.2,
+            framealpha=1,
+            fancybox=True,
+            frameon=True,
+            ncol=1,
+            loc="upper right",
+            edgecolor="k",
+        )
+        plt.legend(handles=plts_sim, ncol=1, loc="lower right")
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_{\rm cm} | A \rangle$ [MeV]")
 
@@ -1242,7 +1339,11 @@ class Plotter:
                 handles=plts,
                 ncol=1,
                 loc="upper right",
-                shadow=True,
+                borderpad=0.2,
+                edgecolor="k",
+                framealpha=1,
+                fancybox=True,
+                frameon=True,
             )
 
             plt.legend(
@@ -1314,7 +1415,7 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts,ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
         plt.legend(handles=plts_sim, ncol=1, loc=2)
         plt.xlabel(r"$A$ [u]")
@@ -1344,8 +1445,8 @@ class Plotter:
                 )
             )
 
-        lexp = plt.legend(handles=plts,  ncol=1, loc=1)
+        lexp = plt.legend(handles=plts, ncol=1, loc=1)
         plt.gca().add_artist(lexp)
-        plt.legend(handles=plts_sim,  ncol=1, loc=2)
+        plt.legend(handles=plts_sim, ncol=1, loc=2)
         plt.xlabel(r"$\nu$ [neutrons]")
         plt.ylabel(r"$ \langle{E}^T_\gamma\rangle $ [MeV]")
