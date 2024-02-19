@@ -387,7 +387,7 @@ class Plotter:
                 )
             )
 
-        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=True)
+        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=False, edgecolor="k")
         plt.legend(handles=plts_sim,  ncol=3, loc="lower right")
 
         plt.xlabel(r"TKE [MeV]")
@@ -484,7 +484,7 @@ class Plotter:
                 )
                 plts.append(p)
 
-        plt.gcf().legend(handles=plts, loc="upper center", shadow=True)
+        plt.gcf().legend(handles=plts, loc="upper center", shadow=False, edgecolor="k")
         plt.legend(handles=plts_sim,  ncol=2, loc="lower right")
 
         plt.xlabel(r"$A$ [u]")
@@ -612,7 +612,7 @@ class Plotter:
                 y += 0.05 * ma
                 i += 1
 
-        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=True)
+        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=False, edgecolor="k")
         plt.legend(handles=plts_sim,  ncol=1, loc="lower right")
 
         plt.gca().yaxis.set_major_formatter(
@@ -694,7 +694,7 @@ class Plotter:
             else:
                 plot_eval(evaluated)
 
-        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=True)
+        plt.gcf().legend(handles=plts,  ncol=2, loc="upper right", shadow=False, edgecolor="k")
         plt.legend(handles=plts_sim,  ncol=1, loc="lower right")
         # plt.grid(visible=True, axis="x", which="major")
         plt.xlabel(r"$\bar{\nu}$ [neutrons]")
@@ -1208,7 +1208,7 @@ class Plotter:
                 )
             )
 
-        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=True)
+        plt.gcf().legend(handles=plts,  ncol=1, loc="upper right", shadow=False, edgecolor="k")
         plt.legend(handles=plts_sim,  ncol=1, loc="lower left")
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_{\rm cm} | A \rangle$ [MeV]")
