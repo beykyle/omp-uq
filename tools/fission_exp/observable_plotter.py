@@ -105,9 +105,8 @@ class Plotter:
         else:
             plt_handler = plt
 
-        p1 = plt_handler.plot(x, vec, label=label, zorder=100, linewidth=2)
-
         if plot_type == "overlapping":
+            (p1,) = plt_handler.plot(x, vec, label=label, zorder=100, linewidth=2)
             for i in range(vec_all.shape[0]):
                 plt_handler.fill_between(
                     x,
@@ -119,8 +118,24 @@ class Plotter:
                     color=p1[0].get_color(),
                 )
         elif plot_type == "fill":
+            (p1,) = plt_handler.plot([], [], linewidth=5, label=label)
             plt_handler.fill_between(
-                x, vec + vec_err, vec - vec_err, alpha=0.5, zorder=100
+                x,
+                vec + vec_err,
+                vec - vec_err,
+                alpha=0.3,
+                zorder=100,
+                color=p1.get_color(),
+                linewidths=0,
+            )
+            plt_handler.fill_between(
+                x,
+                vec + vec_err / 2,
+                vec - vec_err / 2,
+                alpha=0.6,
+                zorder=100,
+                color=p1.get_color(),
+                linewidths=0,
             )
             if mc:
                 plt_handler.fill_between(
@@ -130,6 +145,7 @@ class Plotter:
                     alpha=0.2,
                     zorder=100,
                     color="k",
+                    linewidths=0,
                 )
                 plt_handler.fill_between(
                     x,
@@ -138,8 +154,9 @@ class Plotter:
                     alpha=0.2,
                     zorder=100,
                     color="k",
+                    linewidths=0,
                 )
-        return p1[0]
+        return p1
 
     def plot_spec(
         self, spec_all, spec_stddev_all, x, label, mc=True, plot_type="fill", ax=None
@@ -154,9 +171,9 @@ class Plotter:
             plt_handler = plt
 
         # p1 = plt.step(x, spec, label=label, zorder=100, linewidth=2, where="mid")
-        p1 = plt_handler.plot(x, spec, label=label, zorder=100, linewidth=1)
 
         if plot_type == "overlapping":
+            (p1,) = plt_handler.plot(x, spec, label=label, zorder=100, linewidth=1)
             for i in range(spec_all.shape[0]):
                 plt_handler.fill_between(
                     x,
@@ -167,6 +184,7 @@ class Plotter:
                     color=p1[0].get_color(),
                 )
         elif plot_type == "fill":
+            (p1,) = plt_handler.plot([], [], linewidth=5, label=label)
             if mc:
                 err = np.where(
                     spec_err > mean_mc_err, np.sqrt(spec_err**2 - mean_mc_err**2), 0
@@ -176,12 +194,23 @@ class Plotter:
                 err = confint
             plt_handler.fill_between(
                 x,
-                spec + err,
-                spec - err,
-                alpha=0.5,
+                spec + err / 2,
+                spec - err / 2,
+                alpha=0.6,
                 zorder=100,
                 # step="mid"
-                color=p1[0].get_color(),
+                color=p1.get_color(),
+                linewidths=0,
+            )
+            plt_handler.fill_between(
+                x,
+                spec + err,
+                spec - err,
+                alpha=0.3,
+                zorder=100,
+                # step="mid"
+                color=p1.get_color(),
+                linewidths=0,
             )
             if mc:
                 plt_handler.fill_between(
@@ -192,6 +221,7 @@ class Plotter:
                     zorder=100,
                     # step="mid",
                     color="k",
+                    linewidths=0,
                 )
                 plt_handler.fill_between(
                     x,
@@ -201,9 +231,10 @@ class Plotter:
                     zorder=100,
                     # step="mid",
                     color="k",
+                    linewidths=0,
                 )
 
-        return p1[0]
+        return p1
 
     def plot_cgmf_spec(self, d, quantity, x, **kwargs):
         spec_all = d.vector_qs[quantity]
