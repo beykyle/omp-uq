@@ -123,15 +123,6 @@ class Plotter:
                 x,
                 vec + vec_err,
                 vec - vec_err,
-                alpha=0.3,
-                zorder=100,
-                color=p1.get_color(),
-                linewidths=0,
-            )
-            plt_handler.fill_between(
-                x,
-                vec + vec_err / 2,
-                vec - vec_err / 2,
                 alpha=0.6,
                 zorder=100,
                 color=p1.get_color(),
@@ -194,19 +185,9 @@ class Plotter:
                 err = confint
             plt_handler.fill_between(
                 x,
-                spec + err / 2,
-                spec - err / 2,
-                alpha=0.6,
-                zorder=100,
-                # step="mid"
-                color=p1.get_color(),
-                linewidths=0,
-            )
-            plt_handler.fill_between(
-                x,
                 spec + err,
                 spec - err,
-                alpha=0.3,
+                alpha=0.6,
                 zorder=100,
                 # step="mid"
                 color=p1.get_color(),
@@ -1113,7 +1094,7 @@ class Plotter:
         )
         fig.legend(
             handles=plts_sim,
-            loc="upper left",
+            loc="upper center",
             edgecolor="k",
             borderpad=1,
             framealpha=1,
