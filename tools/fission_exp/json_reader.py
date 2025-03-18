@@ -499,6 +499,10 @@ def read_json(df: pd.DataFrame, quantity: str, allowed_labels=None, xrange=None)
         return read_scalar(df, "Enbar", allowed_labels)
     if q == "nubar":
         return read_scalar(df, "nubar", allowed_labels)
+    elif q == "YTKE":
+        return read_specs(df, "YTKE", allowed_labels)
+    elif q == "YApre":
+        return read_specs(df, "YApre", allowed_labels)
     elif q == "nubarA":
         return read_specs(df, "nubarA", allowed_labels)
     elif q == "nubarZ":
