@@ -239,7 +239,9 @@ class HistData:
                 self.vector_qs["egtbarA"] = np.zeros((self.nensemble, self.abins.size))
                 self.bins["egtbarA"] = self.abins
             elif q == "multratioA":
-                self.vector_qs["multratioA"] = np.zeros((self.nensemble, self.abins.size))
+                self.vector_qs["multratioA"] = np.zeros(
+                    (self.nensemble, self.abins.size)
+                )
                 self.bins["multratioA"] = self.abins
             elif q == "enbarZ":
                 self.vector_qs["enbarZ"] = np.zeros((self.nensemble, self.zbins.size))
@@ -254,7 +256,9 @@ class HistData:
                 self.vector_qs["nugbarZ"] = np.zeros((self.nensemble, self.zbins.size))
                 self.bins["nugbarZ"] = self.zbins
             elif q == "nubarTKE":
-                self.vector_qs["nubarTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
+                self.vector_qs["nubarTKE"] = np.zeros(
+                    (self.nensemble, self.TKEcenters.size)
+                )
                 self.bins["nubarTKE"] = self.TKEcenters
                 self.bin_edges["nubarTKE"] = self.TKEbins
             elif q == "nugbarTKE":
@@ -264,11 +268,15 @@ class HistData:
                 self.bins["nugbarTKE"] = self.TKEcenters
                 self.bin_edges["nugbarTKE"] = self.TKEbins
             elif q == "enbarTKE":
-                self.vector_qs["enbarTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
+                self.vector_qs["enbarTKE"] = np.zeros(
+                    (self.nensemble, self.TKEcenters.size)
+                )
                 self.bins["enbarTKE"] = self.TKEcenters
                 self.bin_edges["enbarTKE"] = self.TKEbins
             elif q == "encomTKE":
-                self.vector_qs["encomTKE"] = np.zeros((self.nensemble, self.TKEcenters.size))
+                self.vector_qs["encomTKE"] = np.zeros(
+                    (self.nensemble, self.TKEcenters.size)
+                )
                 self.bins["encomTKE"] = self.TKEcenters
                 self.bin_edges["encomTKE"] = self.TKEbins
             elif q == "egtbarTKE":
@@ -284,7 +292,9 @@ class HistData:
                 self.vector_qs["pnug"] = np.zeros((self.nensemble, self.nugbins.size))
                 self.bins["pnug"] = self.nugbins
             elif q == "egtbarnu":
-                self.vector_qs["egtbarnu"] = np.zeros((self.nensemble, self.nubins.size))
+                self.vector_qs["egtbarnu"] = np.zeros(
+                    (self.nensemble, self.nubins.size)
+                )
                 self.bins["egtbarnu"] = self.nubins
             elif q == "pfns":
                 self.vector_qs["pfns"] = np.zeros((self.nensemble, self.ecenters.size))
@@ -295,11 +305,15 @@ class HistData:
                 self.bins["pfgs"] = self.gecenters
                 self.bin_edges["pfgs"] = self.gebins
             elif q == "pfnscom":
-                self.vector_qs["pfnscom"] = np.zeros((self.nensemble, self.tecenters.size))
+                self.vector_qs["pfnscom"] = np.zeros(
+                    (self.nensemble, self.tecenters.size)
+                )
                 self.bins["pfnscom"] = self.tecenters
                 self.bin_edges["pfnscom"] = self.tebins
             elif q == "pfgscom":
-                self.vector_qs["pfgscom"] = np.zeros((self.nensemble, self.gecenters.size))
+                self.vector_qs["pfgscom"] = np.zeros(
+                    (self.nensemble, self.gecenters.size)
+                )
                 self.bins["pfgscom"] = self.gecenters
                 self.bin_edges["pfgscom"] = self.gebins
             elif q == "nfanglesLAB":
@@ -859,7 +873,7 @@ class HistData:
                     num_neutrons_TKE,
                     nelab[mask],
                     bins=self.bin_edges["pfnsTKE"][1],
-                    #mask_generator=self.neutron_cut(nelab_TKE),
+                    # mask_generator=self.neutron_cut(nelab_TKE),
                 )
 
             if "pfnscomTKE" in self.tensor_qs or "encomTKE" in self.vector_qs:
@@ -878,7 +892,7 @@ class HistData:
                     num_neutrons_TKE,
                     necom[mask],
                     bins=self.bin_edges["pfnscomTKE"][1],
-                    #mask_generator=self.kinematic_cut(nelab[mask], ke_pre / A),
+                    # mask_generator=self.kinematic_cut(nelab[mask], ke_pre / A),
                 )
 
             # < d nu_g / dE_g | TKE >
@@ -1142,13 +1156,11 @@ class HistData:
         if mpi_comm is not None:
             return start, end
 
-
     @classmethod
     def load(obj, fpath):
-        with open(fpath, 'rb') as handle:
+        with open(fpath, "rb") as handle:
             return pickle.load(handle)
 
-
     def save(self, fpath):
-        with open(fpath, 'wb') as handle:
+        with open(fpath, "wb") as handle:
             pickle.dump(self, handle)

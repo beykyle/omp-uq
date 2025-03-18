@@ -10,7 +10,9 @@ import json
 from .spec_analysis import Spec
 
 
-def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None, einc=None):
+def exfor_to_json(
+    entry: int, subentry: str, quantity: str, label_mapping=None, einc=None
+):
     db = exfor_manager.X4DBManagerDefault()
 
     # grab entry
@@ -29,8 +31,7 @@ def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None, 
         for line in data_set.strHeader().split("#")[1:]
     ]
     for line in meta_data:
-        meta[line[0].lower()] =  line[1]
-
+        meta[line[0].lower()] = line[1]
 
     # set expected meta fields
     idx_end_surname = meta["authors"].find(" ")
@@ -61,9 +62,18 @@ def exfor_to_json(entry: int, subentry: str, quantity: str, label_mapping=None, 
     # invert label mapping
     symbol_map = {v: k for k, v in label_mapping.items()}
     order = [
-        "x", "xmin",  "xmax", "dx",
-        "y", "ymin",  "ymax", "dy",
-        "z", "zmin",  "zmax", "dz"
+        "x",
+        "xmin",
+        "xmax",
+        "dx",
+        "y",
+        "ymin",
+        "ymax",
+        "dy",
+        "z",
+        "zmin",
+        "zmax",
+        "dz",
     ]
     order = [sym for sym in order if sym in symbol_map.keys()]
 

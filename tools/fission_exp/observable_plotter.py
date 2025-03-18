@@ -536,9 +536,18 @@ class Plotter:
             framealpha=1,
             fancybox=True,
             frameon=True,
-            ncol=2,
+            ncol=1,
         )
-        plt.legend(handles=plts_sim, ncol=2, loc="lower right")
+
+        plt.legend(
+            handles=plts_sim,
+            ncol=2,
+            loc="lower right",
+            framealpha=1,
+            edgecolor="k",
+            fancybox=True,
+            frameon=True,
+        )
 
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$\bar{\nu}$ [neutrons]")
@@ -1318,7 +1327,7 @@ class Plotter:
             loc="upper right",
             edgecolor="k",
         )
-        plt.legend(handles=plts_sim, ncol=1, loc="lower right")
+        plt.legend(handles=plts_sim, ncol=1, loc="lower right", framealpha=1)
         plt.xlabel(r"$A$ [u]")
         plt.ylabel(r"$ \langle {E}_{\rm cm} | A \rangle$ [MeV]")
 
