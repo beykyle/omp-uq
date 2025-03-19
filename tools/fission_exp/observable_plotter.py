@@ -97,8 +97,11 @@ class Plotter:
         self, vec_all, vec_stddev, x, label, mc=True, plot_type="fill", ax=None
     ):
         vec_err = np.sqrt(np.var(vec_all, axis=0))
-        mean_mc_err = np.mean(vec_stddev, axis=0)
+        mean_mc_err = np.mean(np.nan_to_num(vec_stddev,nan=np.inf), axis=0)
         vec = np.mean(vec_all, axis=0)
+        vec_err = np.where(
+            vec_err > mean_mc_err, np.sqrt(vec_err**2 - mean_mc_err**2), 0
+        )
 
         if ax:
             plt_handler = ax
